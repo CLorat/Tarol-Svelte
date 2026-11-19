@@ -18,7 +18,9 @@
   const create = changeForm<{ reserve: number | null }, Created>(
     (i) => requests.createAuction({ reserve: i.reserve ?? 0 }),
     { reserve: null },
-    { rules: rules.createAuction, onSuccess: (r) => {
+    {
+      rules: rules.createAuction,
+      onSuccess: (r) => {
         router.go(`#/auctions/${r.value.id}`);
       },
     },
@@ -34,7 +36,9 @@
   </ChangeForm>
 </section>
 <section aria-labelledby="all">
-  <h2 id="all">All auctions {#if auctions.total !== undefined}<span data-testid="total">({auctions.total})</span>{/if}</h2>
+  <h2 id="all">
+    All auctions {#if auctions.total !== undefined}<span data-testid="total">({auctions.total})</span>{/if}
+  </h2>
   <QueryState state={auctions}>
     <DataTable list={auctions} {columns} caption="All auctions" rowKey={(r: AuctionRow) => r.id} bind:sort>
       {#snippet cell(row: AuctionRow, c: Column)}

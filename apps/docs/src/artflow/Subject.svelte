@@ -15,7 +15,10 @@
   const t = getMessages();
   const toasts = getToasts();
   const { client } = getTarol();
-  const subject = query<Export>(() => ({ path: `/tarol/admin/subjects/${encodeURIComponent(id)}/export`, query: { tenant } }));
+  const subject = query<Export>(() => ({
+    path: `/tarol/admin/subjects/${encodeURIComponent(id)}/export`,
+    query: { tenant },
+  }));
   const personal = ['name', 'email'];
   let erasing = $state(false);
 

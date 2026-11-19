@@ -1,0 +1,1016 @@
+{
+  "Button": {
+    "package": "@clorat/tarol-design",
+    "name": "Button",
+    "doc": "A button. `type` defaults to `button` (never an accidental submit); `loading` disables it, shows a spinner and sets `aria-busy`.",
+    "extends": "HTMLButtonAttributes",
+    "props": [
+      {
+        "name": "variant",
+        "type": "'primary' | 'secondary' | 'danger' | 'ghost'",
+        "optional": true,
+        "bindable": false,
+        "default": "'primary'",
+        "doc": "`primary` (default), `secondary`, `danger` or `ghost`."
+      },
+      {
+        "name": "loading",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Shows a spinner and disables the button."
+      },
+      {
+        "name": "children",
+        "type": "Snippet",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": ""
+      }
+    ]
+  },
+  "Combobox": {
+    "package": "@clorat/tarol-design",
+    "name": "Combobox",
+    "doc": "A combobox (WAI-ARIA APG editable combobox with list autocomplete) on the native `popover`: typing filters the options and opens the list; Arrow Down/Up move the active option (focus stays in the input, `aria-activedescendant`), Enter chooses it, Escape closes the list and a second Escape clears the text, Alt+Arrow Down opens without moving. Leaving the field restores the chosen option's label. With `filter={false}` the app supplies `options` for the text it gets in `onquery` (a server search).",
+    "extends": "",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible label."
+      },
+      {
+        "name": "options",
+        "type": "readonly Option[]",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The options."
+      },
+      {
+        "name": "value",
+        "type": "string | null",
+        "optional": true,
+        "bindable": true,
+        "default": "null",
+        "doc": "The chosen option's value, or `null` (bindable)."
+      },
+      {
+        "name": "filter",
+        "type": "((option: Option, text: string) => boolean) | false",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Filters `options` by the text (default: contains, ignoring case), or `false` when `options` are already filtered."
+      },
+      {
+        "name": "onquery",
+        "type": "((text: string) => void)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Called with the text whenever it changes (for a server search)."
+      },
+      {
+        "name": "onchange",
+        "type": "((value: string | null) => void)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Called after an option was chosen."
+      },
+      {
+        "name": "loading",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Shows the loading text instead of \"no results\" while the app fetches options."
+      },
+      {
+        "name": "hint",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Help text under the input."
+      },
+      {
+        "name": "error",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The error text, already translated."
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Marks the field as required."
+      },
+      {
+        "name": "placeholder",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The input's placeholder (already translated)."
+      }
+    ]
+  },
+  "DateField": {
+    "package": "@clorat/tarol-design",
+    "name": "DateField",
+    "doc": "A labelled date input on the native `input type=date`: the browser supplies the localized format, the picker and its keyboard support. The value is an ISO date (`YYYY-MM-DD`, as a backend `DateOnly` is serialized) or `null` when empty.",
+    "extends": "Omit<HTMLInputAttributes, 'value' | 'type' | 'min' | 'max'>",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible label."
+      },
+      {
+        "name": "value",
+        "type": "string | null",
+        "optional": true,
+        "bindable": true,
+        "default": "null",
+        "doc": "The date as `YYYY-MM-DD`, or `null` (bindable)."
+      },
+      {
+        "name": "min",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The earliest date, `YYYY-MM-DD`."
+      },
+      {
+        "name": "max",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The latest date, `YYYY-MM-DD`."
+      },
+      {
+        "name": "hint",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Help text under the input."
+      },
+      {
+        "name": "error",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The error text, already translated."
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Marks the field as required."
+      }
+    ]
+  },
+  "Dialog": {
+    "package": "@clorat/tarol-design",
+    "name": "Dialog",
+    "doc": "A modal dialog on the native `<dialog>`: the browser traps focus, makes the page inert and closes it on Escape. Focus returns to the element that opened it. A click on the backdrop closes it unless `dismissible` is false.",
+    "extends": "",
+    "props": [
+      {
+        "name": "open",
+        "type": "boolean",
+        "optional": true,
+        "bindable": true,
+        "default": "false",
+        "doc": "Open state (bindable)."
+      },
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The heading, the dialog's accessible name."
+      },
+      {
+        "name": "dismissible",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "true",
+        "doc": "Backdrop click and Escape close it. Default `true`."
+      },
+      {
+        "name": "children",
+        "type": "Snippet",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The body."
+      },
+      {
+        "name": "footer",
+        "type": "Snippet",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Actions at the bottom (buttons)."
+      },
+      {
+        "name": "onclose",
+        "type": "(() => void)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Called after it closed, however it closed."
+      }
+    ]
+  },
+  "Field": {
+    "package": "@clorat/tarol-design",
+    "name": "Field",
+    "doc": "Label, hint and error around one control. The control snippet receives the ids to wire: `id`, `aria-describedby` and `aria-invalid`, so the error is announced with the field.",
+    "extends": "",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible label (the app's own, already translated text)."
+      },
+      {
+        "name": "hint",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Help text under the control."
+      },
+      {
+        "name": "error",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The error text (already translated, e.g. `t(form.error(path))`); shown and announced when set."
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Marks the field as required (label suffix and `aria-required`)."
+      },
+      {
+        "name": "control",
+        "type": "Snippet<[Control]>",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The control."
+      }
+    ]
+  },
+  "MenuButton": {
+    "package": "@clorat/tarol-design",
+    "name": "MenuButton",
+    "doc": "A menu button (WAI-ARIA APG menu button) on the native `popover`: Enter, Space or Arrow Down open the menu on its first item, Arrow Up on its last; Arrow keys move (wrapping), Home/End, Enter or Space choose, Escape closes and returns focus to the button, Tab closes. A click outside closes it (light dismiss). Use it for actions, not for choosing a value.",
+    "extends": "",
+    "props": [
+      {
+        "name": "items",
+        "type": "readonly Item[]",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The actions, in order."
+      },
+      {
+        "name": "children",
+        "type": "Snippet",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The button's content (text, or an icon with a `VisuallyHidden` text)."
+      },
+      {
+        "name": "onselect",
+        "type": "(id: string) => void",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "Called with the chosen item's id; the menu is closed by then."
+      },
+      {
+        "name": "variant",
+        "type": "'secondary' | 'ghost'",
+        "optional": true,
+        "bindable": false,
+        "default": "'secondary'",
+        "doc": "`secondary` (default) or `ghost`."
+      }
+    ]
+  },
+  "NumberField": {
+    "package": "@clorat/tarol-design",
+    "name": "NumberField",
+    "doc": "A labelled number input; the bound value is a `number`, or `null` when empty.",
+    "extends": "Omit<HTMLInputAttributes, 'value' | 'type'>",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible label."
+      },
+      {
+        "name": "value",
+        "type": "number | null",
+        "optional": true,
+        "bindable": true,
+        "default": "null",
+        "doc": "The value (bindable); `null` when the input is empty."
+      },
+      {
+        "name": "hint",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Help text under the input."
+      },
+      {
+        "name": "error",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The error text, already translated."
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Marks the field as required."
+      }
+    ]
+  },
+  "Skeleton": {
+    "package": "@clorat/tarol-design",
+    "name": "Skeleton",
+    "doc": "A placeholder with a fixed size, so content that arrives later does not shift the layout (philosophy P1).",
+    "extends": "",
+    "props": [
+      {
+        "name": "width",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "'100%'",
+        "doc": "Width, any CSS length. Default `100%`."
+      },
+      {
+        "name": "height",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "'1em'",
+        "doc": "Height, any CSS length. Default `1em`."
+      }
+    ]
+  },
+  "Spinner": {
+    "package": "@clorat/tarol-design",
+    "name": "Spinner",
+    "doc": "A loading indicator. Decorative by default (`label` omitted); with a `label` it is announced as a status.",
+    "extends": "",
+    "props": [
+      {
+        "name": "size",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "'1.25rem'",
+        "doc": "The size, any CSS length. Default `1.25rem`."
+      },
+      {
+        "name": "label",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Announced text; without it the spinner is hidden from assistive technology."
+      }
+    ]
+  },
+  "Tabs": {
+    "package": "@clorat/tarol-design",
+    "name": "Tabs",
+    "doc": "Tabs (WAI-ARIA APG tabs, automatic activation): one tab stop for the tab list; Arrow Left/Right move and select (wrapping), Home/End go to the first and last tab. Only the selected panel is rendered; it is focusable so its content can be reached with Tab.",
+    "extends": "",
+    "props": [
+      {
+        "name": "tabs",
+        "type": "readonly Tab[]",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The tabs, in order."
+      },
+      {
+        "name": "selected",
+        "type": "string",
+        "optional": true,
+        "bindable": true,
+        "default": "",
+        "doc": "The selected tab's id (bindable). Default: the first tab."
+      },
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The tab list's accessible name (already translated)."
+      },
+      {
+        "name": "children",
+        "type": "Snippet<[string]>",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "Renders the selected panel; receives the selected id."
+      },
+      {
+        "name": "onchange",
+        "type": "((id: string) => void)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Called after the selection changed."
+      }
+    ]
+  },
+  "TextField": {
+    "package": "@clorat/tarol-design",
+    "name": "TextField",
+    "doc": "A labelled text input (`type` text, email, password, search, tel, url).",
+    "extends": "Omit<HTMLInputAttributes, 'value' | 'type'>",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible label."
+      },
+      {
+        "name": "value",
+        "type": "string | null",
+        "optional": true,
+        "bindable": true,
+        "default": "''",
+        "doc": "The value (bindable)."
+      },
+      {
+        "name": "type",
+        "type": "'text' | 'email' | 'password' | 'search' | 'tel' | 'url'",
+        "optional": true,
+        "bindable": false,
+        "default": "'text'",
+        "doc": "The input type. Default `text`."
+      },
+      {
+        "name": "hint",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Help text under the input."
+      },
+      {
+        "name": "error",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The error text, already translated."
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Marks the field as required."
+      }
+    ]
+  },
+  "ThemeRoot": {
+    "package": "@clorat/tarol-design",
+    "name": "ThemeRoot",
+    "doc": "The root of the design system: sets `.t-root` (tokens apply only inside it), the theme and density, the message catalogue for its subtree, and the notification region. Nothing outside it is touched.",
+    "extends": "",
+    "props": [
+      {
+        "name": "theme",
+        "type": "'light' | 'dark' | 'auto'",
+        "optional": true,
+        "bindable": false,
+        "default": "'auto'",
+        "doc": "`light`, `dark`, or `auto` (follows `prefers-color-scheme`). Default `auto`."
+      },
+      {
+        "name": "density",
+        "type": "'comfortable' | 'compact'",
+        "optional": true,
+        "bindable": false,
+        "default": "'comfortable'",
+        "doc": "`comfortable` (default) or `compact`."
+      },
+      {
+        "name": "locale",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "'en'",
+        "doc": "The language of the subtree (`lang` attribute), e.g. `de`. Default `en`."
+      },
+      {
+        "name": "messages",
+        "type": "Catalogue | readonly Catalogue[]",
+        "optional": true,
+        "bindable": false,
+        "default": "en",
+        "doc": "The catalogues, tried in order: the app's own first, then a built-in one (`en`, the default, or `de` from this package). Only the catalogues an app passes are bundled."
+      },
+      {
+        "name": "children",
+        "type": "Snippet",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": ""
+      }
+    ]
+  },
+  "Toaster": {
+    "package": "@clorat/tarol-design",
+    "name": "Toaster",
+    "doc": "The notification region of a ThemeRoot (rendered by it). Errors are announced assertively, the others politely.",
+    "extends": "",
+    "props": []
+  },
+  "VisuallyHidden": {
+    "package": "@clorat/tarol-design",
+    "name": "VisuallyHidden",
+    "doc": "Content for assistive technology only.",
+    "extends": "",
+    "props": []
+  },
+  "AppShell": {
+    "package": "@clorat/tarol-components",
+    "name": "AppShell",
+    "doc": "The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark.",
+    "extends": "",
+    "props": [
+      {
+        "name": "title",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The app's name in the header."
+      },
+      {
+        "name": "navLabel",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The navigation's accessible name (the app's own text); the nav is rendered when `nav` is set."
+      },
+      {
+        "name": "nav",
+        "type": "Snippet",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Navigation links."
+      },
+      {
+        "name": "actions",
+        "type": "Snippet",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Header actions (user menu, sign-out)."
+      },
+      {
+        "name": "children",
+        "type": "Snippet",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The page."
+      }
+    ]
+  },
+  "ChangeForm": {
+    "package": "@clorat/tarol-components",
+    "name": "ChangeForm",
+    "doc": "A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that belongs to no field (403, 409, malformed body) is shown and announced above the button.",
+    "extends": "",
+    "props": [
+      {
+        "name": "form",
+        "type": "Form<object, unknown>",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The form from `changeForm(...)`."
+      },
+      {
+        "name": "submitLabel",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The submit button's text (the app's own)."
+      },
+      {
+        "name": "children",
+        "type": "Snippet",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The fields."
+      },
+      {
+        "name": "actions",
+        "type": "Snippet",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "More buttons next to submit (e.g. cancel)."
+      }
+    ]
+  },
+  "DataTable": {
+    "package": "@clorat/tarol-components",
+    "name": "DataTable",
+    "doc": "A table over a keyset `list(...)`: column headers that switch the backend sort, a \"load more\" button for the next page, and virtual scrolling above `virtualizeAbove` rows (only the visible rows are in the DOM). Cells are a snippet, so any formatting or component fits. It is a WAI-ARIA data grid: one tab stop; arrow keys move between cells, Home/End to the row's ends, Ctrl+Home/End to the first and last cell, Page Up/Down by 10 rows (scrolling virtual rows into the DOM). A cell with one widget (a link, a button, the sort button) focuses that widget instead of the cell.",
+    "extends": "",
+    "props": [
+      {
+        "name": "list",
+        "type": "List<T>",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The list from `list(...)`."
+      },
+      {
+        "name": "columns",
+        "type": "readonly Column[]",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The columns, in order."
+      },
+      {
+        "name": "cell",
+        "type": "Snippet<[T, Column]>",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "Renders one cell."
+      },
+      {
+        "name": "rowKey",
+        "type": "(row: T) => string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "A stable key per row (usually the id)."
+      },
+      {
+        "name": "caption",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The table's accessible name (the app's own text)."
+      },
+      {
+        "name": "sort",
+        "type": "string",
+        "optional": true,
+        "bindable": true,
+        "default": "",
+        "doc": "The backend sort value in use (bindable): the list's request should read it."
+      },
+      {
+        "name": "virtualizeAbove",
+        "type": "number",
+        "optional": true,
+        "bindable": false,
+        "default": "200",
+        "doc": "Render only visible rows when there are more than this. Default 200 (docs/migration/design.md)."
+      },
+      {
+        "name": "rowHeight",
+        "type": "number",
+        "optional": true,
+        "bindable": false,
+        "default": "40",
+        "doc": "The fixed row height in px used for virtual scrolling. Default 40."
+      },
+      {
+        "name": "maxHeight",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "'70vh'",
+        "doc": "The height of the scroll area when virtualized. Default `70vh`."
+      }
+    ]
+  },
+  "DetailLayout": {
+    "package": "@clorat/tarol-components",
+    "name": "DetailLayout",
+    "doc": "The page of one aggregate over a `query(...)` of its view: a heading from the value, optional facts (`meta`), actions (e.g. a `MenuButton`) and an aside, with loading, error and stale states from `QueryState`. The heading is the page's `h1`; while the first read runs a skeleton of the same height holds its place (no layout shift).",
+    "extends": "",
+    "props": [
+      {
+        "name": "query",
+        "type": "Query<T>",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The view, from `query(...)`."
+      },
+      {
+        "name": "title",
+        "type": "(value: T) => string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The heading of the loaded value (already translated where needed)."
+      },
+      {
+        "name": "children",
+        "type": "Snippet<[T]>",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The main content."
+      },
+      {
+        "name": "meta",
+        "type": "Snippet<[T]>",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Short facts under the heading (status, dates)."
+      },
+      {
+        "name": "actions",
+        "type": "Snippet<[T]>",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Actions next to the heading."
+      },
+      {
+        "name": "aside",
+        "type": "Snippet<[T]>",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "A side column (related lists, history); below the content on narrow screens."
+      }
+    ]
+  },
+  "FormField": {
+    "package": "@clorat/tarol-components",
+    "name": "FormField",
+    "doc": "One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is the client rule's or the server's code, as a message from the catalogue with the rule's bounds.",
+    "extends": "",
+    "props": [
+      {
+        "name": "form",
+        "type": "Form<object, unknown>",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The form from `changeForm(...)`."
+      },
+      {
+        "name": "path",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The backend field path."
+      },
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible label (the app's own text)."
+      },
+      {
+        "name": "type",
+        "type": "'text' | 'number' | 'email' | 'password' | 'tel' | 'url'",
+        "optional": true,
+        "bindable": false,
+        "default": "'text'",
+        "doc": "`text` (default), `number`, `email`, `password`, `tel`, `url`."
+      },
+      {
+        "name": "rules",
+        "type": "readonly Rule[]",
+        "optional": true,
+        "bindable": false,
+        "default": "[]",
+        "doc": "The field's rules: their bounds fill the message (`Enter between {min} and {max} characters.`)."
+      },
+      {
+        "name": "hint",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Help text."
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Marks the field as required."
+      }
+    ]
+  },
+  "QueryState": {
+    "package": "@clorat/tarol-components",
+    "name": "QueryState",
+    "doc": "Loading, empty, error and stale states around a query or list from `@clorat/tarol-svelte`. While the first read runs it shows skeletons of a fixed height (no layout shift); an error shows the code's message and a retry; the content stays visible while revalidating.",
+    "extends": "",
+    "props": [
+      {
+        "name": "state",
+        "type": "State",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The query or list."
+      },
+      {
+        "name": "children",
+        "type": "Snippet",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The content, rendered once there is a value (or at least one item)."
+      },
+      {
+        "name": "empty",
+        "type": "Snippet",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Replaces the default empty text."
+      },
+      {
+        "name": "loading",
+        "type": "Snippet",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Replaces the default skeletons."
+      },
+      {
+        "name": "rows",
+        "type": "number",
+        "optional": true,
+        "bindable": false,
+        "default": "3",
+        "doc": "Skeleton rows while the first read runs. Default 3."
+      }
+    ]
+  },
+  "SearchBox": {
+    "package": "@clorat/tarol-components",
+    "name": "SearchBox",
+    "doc": "The global search box over the backend's `MapTarolSearch` entry (`GET /search?q=…`): a `Combobox` that asks the server as the user types (debounced, the previous request aborted) and lists the hits by title. Choosing a hit calls `onselect` with it, e.g. to navigate to its aggregate. Hits are shown as plain text; the server's highlighted snippets are not requested (they are HTML, BC-8), so no server text is ever rendered as markup.",
+    "extends": "",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible label (the app's own text)."
+      },
+      {
+        "name": "onselect",
+        "type": "(hit: SearchHit) => void",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "Called with the chosen hit."
+      },
+      {
+        "name": "path",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "'/search'",
+        "doc": "The search entry's path. Default `/search`."
+      },
+      {
+        "name": "types",
+        "type": "readonly string[]",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Only these searchable types (the `types` parameter). Default: every type the user may read."
+      },
+      {
+        "name": "limit",
+        "type": "number",
+        "optional": true,
+        "bindable": false,
+        "default": "8",
+        "doc": "Hits per request (the backend allows at most 50). Default 8."
+      },
+      {
+        "name": "minLength",
+        "type": "number",
+        "optional": true,
+        "bindable": false,
+        "default": "2",
+        "doc": "Characters before the first request. Default 2."
+      },
+      {
+        "name": "debounce",
+        "type": "number",
+        "optional": true,
+        "bindable": false,
+        "default": "150",
+        "doc": "Milliseconds to wait after the last keystroke. Default 150."
+      },
+      {
+        "name": "describe",
+        "type": "((hit: SearchHit) => string)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Shows a type's name next to a hit's title, e.g. `(type) => t('type.' + type)`. Default: the title only."
+      },
+      {
+        "name": "placeholder",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The input's placeholder (already translated)."
+      }
+    ]
+  }
+}

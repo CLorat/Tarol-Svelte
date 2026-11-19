@@ -42,9 +42,9 @@ test compares with the live document). Step 9 adds the component catalogue to th
 
 The Playwright project (`apps/docs/playwright.config.ts`, `@playwright/test` 1.63.0, Chromium 1243 as installed):
 * the **production build** served by `vite preview`, which proxies `/api` to the sample (same origin; BC-1 not needed);
-* `e2e/global-setup.ts` starts the AppHost (`TAROL_NET`, default `../../../Tarol-Net`) unless `TAROL_E2E_URL` is set or
+* `e2e/apphost.ts` (run by the `sample` setup project) starts the AppHost (`TAROL_NET`, default `../../../Tarol-Net`) unless `TAROL_E2E_URL` is set or
   one is already up, waits for `/health/ready` (≤ 240 s) and for a client list written after the start, and
-  `global-teardown.ts` stops the process group it started [verified both: reuse, and start + stop in 26 s];
+  the `sample teardown` project stops the process group it started [verified both: reuse, and start + stop in 26 s];
 * `e2e/fixtures.ts`: `signIn(page, 'alice' | 'bob')` gives the page a machine user's token before it loads (a test-only
   `TokenProvider` in `src/auth.ts`, active only when the test defines `window.__tarolE2E`), the tenant computed by
   `zitadelTenant` from the token's organisation; `expectAccessible(page)` (axe-core 4.14.1, WCAG 2.0–2.2 A/AA); and an
