@@ -129,6 +129,22 @@ describe('ChangeForm and FormField', () => {
     await expectAccessible();
   });
 
+  it('sends with one click after a blocked submit was corrected (the error clears while typing)', async () => {
+    let sent = 0;
+    const f = fakeClient(0, () => {
+      sent += 1;
+      return { ok: true, value: undefined, status: 201, replayed: false, stale: false, notModified: false };
+    });
+    render(BidForm, { client: f.client });
+    await page.getByRole('button', { name: 'Create' }).click();
+    const title = page.getByLabelText(/Title/);
+    await expect.element(title).toHaveAttribute('aria-invalid', 'true');
+    await userEvent.type(title, 'Irises');
+    await expect.element(title).not.toHaveAttribute('aria-invalid'); // before the blur: no layout shift on the click
+    await page.getByRole('button', { name: 'Create' }).click();
+    await expect.poll(() => sent).toBe(1);
+  });
+
   it('binds by path, submits with Enter and puts the server field error on its field', async () => {
     const f = fakeClient(0, () => ({
       ok: false,

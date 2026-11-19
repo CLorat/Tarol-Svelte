@@ -4,6 +4,9 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-components`: `FormField` checks a field that shows an error while typing (**fix**: a corrected form
+  needed two clicks, because the blur removed the error line under the pointer).
+* `apps/docs`: ArtFlow example screens and the end-to-end suite against `samples/Sagas` (INP, CLS, axe); CI job `e2e`.
 * `@clorat/tarol-components`: `DetailLayout`, `SearchBox` (titles as text; snippets after BC-8); `DataTable` is a
   keyboard-navigable grid (**behaviour change**: cells are `gridcell`s).
 * `@clorat/tarol-svelte`: optimistic changes: `Query.patch`/`List.patch` and `changeForm(…, { optimistic })`, rolled back
