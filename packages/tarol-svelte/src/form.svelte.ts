@@ -3,7 +3,7 @@ import { getTarol } from './context.js';
 import { check, rulePath, type Rules } from './rules.js';
 
 /** Settings of {@link changeForm}. */
-export interface FormOptions<T> {
+export interface FormOptions<T, I = unknown> {
   /** Client rules per field path, generated from the backend's validation metadata (SV-5). */
   readonly rules?: Rules;
   /** Extra settings of the change, e.g. the expected version of the aggregate being edited. */
@@ -12,6 +12,12 @@ export interface FormOptions<T> {
   readonly onSuccess?: (result: Extract<Result<T>, { ok: true }>) => void;
   /** The client, when not taken from {@link setTarol}'s context. */
   readonly client?: TarolClient;
+  /**
+   * An optimistic change (opt-in, SV-6): called with the input right before it is sent, it shows the expected result,
+   * usually `(input) => view.patch((v) => ({ ...v, … }))`, and returns the rollback. The rollback runs when the change
+   * fails (a 409 `Stream.VersionConflict` included) or throws; on success the own-change revalidation replaces the patch.
+   */
+  readonly optimistic?: (input: I) => (() => void) | undefined;
 }
 
 /** The reactive state of a form bound to one backend change. */
@@ -79,7 +85,7 @@ function rulePaths(values: unknown, rules: Rules): string[] {
 export function changeForm<I extends object, T = undefined>(
   change: (input: I) => ChangeRequest,
   initial: I,
-  options: FormOptions<T> = {},
+  options: FormOptions<T, I> = {},
 ): Form<I, T> {
   const client = options.client ?? getTarol().client;
   const rules = options.rules ?? {};
@@ -128,12 +134,15 @@ export function changeForm<I extends object, T = undefined>(
       if (sent?.body !== body) sent = { body, key: globalThis.crypto.randomUUID() };
       pending = true;
       formError = undefined;
+      let rollback = options.optimistic?.(input);
       try {
         const version = options.expectedVersion?.();
         const r = await client.change<T>(
           change(input),
           version === undefined ? { key: sent.key } : { key: sent.key, expectedVersion: version },
         );
+        if (!r.ok) rollback?.();
+        rollback = undefined;
         if (r.ok) {
           sent = undefined;
           serverErrors = {};
@@ -148,6 +157,7 @@ export function changeForm<I extends object, T = undefined>(
         } else formError = r.violation;
         return r;
       } finally {
+        rollback?.(); // the change threw (aborted): nothing was confirmed
         pending = false;
       }
     },

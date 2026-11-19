@@ -8,6 +8,7 @@ import { Component } from 'svelte';
 import { ComponentConstructorOptions } from 'svelte';
 import { Form } from '@clorat/tarol-svelte';
 import type { List } from '@clorat/tarol-svelte';
+import type { Query } from '@clorat/tarol-svelte';
 import { Rule } from '@clorat/tarol-svelte';
 import type { Snippet } from 'svelte';
 import { SvelteComponent } from 'svelte';
@@ -62,6 +63,24 @@ export interface DataTableProps<T> {
     virtualizeAbove?: number | undefined;
 }
 
+// Warning: (ae-forgotten-export) The symbol "$$IsomorphicComponent_2" needs to be exported by the entry point index.d.ts
+//
+// @public
+export const DetailLayout: $$IsomorphicComponent_2;
+
+// @public
+export type DetailLayout<T> = InstanceType<typeof DetailLayout<T>>;
+
+// @public
+export interface DetailLayoutProps<T> {
+    actions?: Snippet<[T]> | undefined;
+    aside?: Snippet<[T]> | undefined;
+    children: Snippet<[T]>;
+    meta?: Snippet<[T]> | undefined;
+    query: Query<T>;
+    title: (value: T) => string;
+}
+
 // Warning: (ae-forgotten-export) The symbol "Props_3" needs to be exported by the entry point index.d.ts
 //
 // @public
@@ -77,6 +96,23 @@ export const QueryState: Component<Props_4, {}, "">;
 
 // @public
 export type QueryState = ReturnType<typeof QueryState>;
+
+// Warning: (ae-forgotten-export) The symbol "Props_5" needs to be exported by the entry point index.d.ts
+//
+// @public
+export const SearchBox: Component<Props_5, {}, "">;
+
+// @public
+export type SearchBox = ReturnType<typeof SearchBox>;
+
+// @public
+export interface SearchHit {
+    readonly aggregate: string;
+    readonly id: string;
+    readonly score: number;
+    readonly title: string;
+    readonly type: string;
+}
 
 // @public
 export function setAt(root: object, path: string, value: unknown): void;

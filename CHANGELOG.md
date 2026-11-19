@@ -4,6 +4,10 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-components`: `DetailLayout`, `SearchBox` (titles as text; snippets after BC-8); `DataTable` is a
+  keyboard-navigable grid (**behaviour change**: cells are `gridcell`s).
+* `@clorat/tarol-svelte`: optimistic changes: `Query.patch`/`List.patch` and `changeForm(…, { optimistic })`, rolled back
+  on any failure (409 included); `FormOptions<T, I>`.
 * `@clorat/tarol-design`: `Combobox` (APG list autocomplete on `popover`), `MenuButton`, `Tabs`, `DateField`; message
   `ui.noResults`.
 * `@clorat/tarol-oidc` 0.1.0: `createOidc` (authorization code + PKCE on oauth4webapi, tokens in memory, refresh at 80 %

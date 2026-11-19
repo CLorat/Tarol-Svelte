@@ -2,7 +2,9 @@
   @component
   A table over a keyset `list(...)`: column headers that switch the backend sort, a "load more" button for the next page,
   and virtual scrolling above `virtualizeAbove` rows (only the visible rows are in the DOM). Cells are a snippet, so any
-  formatting or component fits.
+  formatting or component fits. It is a WAI-ARIA data grid: one tab stop; arrow keys move between cells, Home/End to the
+  row's ends, Ctrl+Home/End to the first and last cell, Page Up/Down by 10 rows (scrolling virtual rows into the DOM). A
+  cell with one widget (a link, a button, the sort button) focuses that widget instead of the cell.
 -->
 <script module lang="ts">
   import type { List } from '@clorat/tarol-svelte';
@@ -30,10 +32,13 @@
     /** The height of the scroll area when virtualized. Default `70vh`. */
     maxHeight?: string | undefined;
   }
+
+  const focusable = 'a[href], button, input, select, textarea, [tabindex]:not(td):not(th)';
 </script>
 
 <script lang="ts" generics="T">
   import { Button, getMessages } from '@clorat/tarol-design';
+  import { tick } from 'svelte';
 
   let {
     list,
@@ -57,16 +62,91 @@
     virtual ? Math.min(list.items.length, Math.ceil((scrollTop + viewport) / rowHeight) + overscan) : list.items.length,
   );
   const visible = $derived(list.items.slice(first, last));
+
+  // the active cell: row 0 is the header, rows 1… the data rows (aria-rowindex - 1)
+  let active = $state({ row: 0, col: 0 });
+  let table = $state<HTMLTableElement>();
+  let scroller = $state<HTMLDivElement>();
+
+  const cellAt = (row: number, col: number): HTMLElement | undefined =>
+    table?.querySelector<HTMLTableRowElement>(`tr[aria-rowindex="${String(row + 1)}"]`)?.cells[col];
+
+  // one tab stop: only the active cell (or its widget) is in the tab order
+  $effect(() => {
+    const { row, col } = active;
+    // reading the rendered rows and columns reruns this when they change
+    if (!table || visible.length + columns.length === 0) return;
+    for (const cell of table.querySelectorAll<HTMLElement>('th, td')) {
+      const on = cell === cellAt(row, col);
+      const widgets = cell.querySelectorAll<HTMLElement>(focusable);
+      for (const w of widgets) w.tabIndex = on ? 0 : -1;
+      cell.tabIndex = on && widgets.length === 0 ? 0 : -1;
+    }
+  });
+
+  async function move(row: number, col: number): Promise<void> {
+    const rows = list.items.length;
+    active = { row: Math.max(0, Math.min(rows, row)), col: Math.max(0, Math.min(columns.length - 1, col)) };
+    if (virtual && scroller && active.row > 0) {
+      // bring the row into the rendered window before focusing it
+      const top = (active.row - 1) * rowHeight;
+      const header = rowHeight;
+      if (top < scroller.scrollTop) scroller.scrollTop = top;
+      else if (top + rowHeight > scroller.scrollTop + viewport - header)
+        scroller.scrollTop = top + 2 * rowHeight - viewport;
+      scrollTop = scroller.scrollTop;
+    }
+    await tick();
+    const cell = cellAt(active.row, active.col);
+    (cell?.querySelector<HTMLElement>(focusable) ?? cell)?.focus();
+  }
+
+  function keydown(e: KeyboardEvent): void {
+    const target = e.target as HTMLElement;
+    // keys typed into a field inside a cell belong to the field
+    if (target.matches('input, select, textarea')) return;
+    const cell = target.closest('td, th');
+    const row = Number(cell?.parentElement?.getAttribute('aria-rowindex') ?? 1) - 1;
+    const col = (cell as HTMLTableCellElement | null)?.cellIndex ?? 0;
+    const end = columns.length - 1;
+    const map: Record<string, [number, number] | undefined> = {
+      ArrowDown: [row + 1, col],
+      ArrowUp: [row - 1, col],
+      ArrowRight: [row, col + 1],
+      ArrowLeft: [row, col - 1],
+      Home: e.ctrlKey ? [0, 0] : [row, 0],
+      End: e.ctrlKey ? [list.items.length, end] : [row, end],
+      PageDown: [row + 10, col],
+      PageUp: [row - 10, col],
+    };
+    const to = map[e.key];
+    if (!to) return;
+    e.preventDefault();
+    void move(to[0], to[1]);
+  }
 </script>
 
 <div
+  bind:this={scroller}
   class="t-table-scroll"
   style:max-height={virtual ? maxHeight : undefined}
   style:overflow-y={virtual ? 'auto' : undefined}
   bind:clientHeight={viewport}
   onscroll={(e) => (scrollTop = e.currentTarget.scrollTop)}
 >
-  <table class="t-table" aria-rowcount={list.items.length + 1} aria-busy={list.loading || undefined}>
+  <table
+    bind:this={table}
+    class="t-table"
+    role="grid"
+    aria-rowcount={list.items.length + 1}
+    aria-busy={list.loading || undefined}
+    onkeydown={keydown}
+    onfocusin={(e) => {
+      const cell = (e.target as HTMLElement).closest<HTMLTableCellElement>('td, th');
+      const row = Number(cell?.parentElement?.getAttribute('aria-rowindex') ?? 0) - 1;
+      if (cell && row >= 0) active = { row, col: cell.cellIndex };
+    }}
+  >
     <caption class="t-visually-hidden">{caption}</caption>
     <thead>
       <tr aria-rowindex="1">
@@ -159,6 +239,11 @@
   }
   .t-sort[aria-pressed='true'] {
     color: var(--t-color-fg);
+  }
+  td:focus-visible,
+  th:focus-visible {
+    outline: 2px solid var(--t-color-focus);
+    outline-offset: -2px;
   }
   .t-table-more {
     display: flex;

@@ -32,7 +32,7 @@
   "scripts": {
     "build": "svelte-package -i src/lib -o dist && node ../../eng/doc-svelte-dts.mjs dist",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
-    "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/datatable.js DataTable && node ../../eng/bundle-svelte.mjs dist/index.js .size/form.js \"ChangeForm, FormField\" && node ../../eng/bundle-svelte.mjs dist/index.js .size/querystate.js QueryState && node ../../eng/bundle-svelte.mjs dist/index.js .size/appshell.js AppShell && size-limit",
+    "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/datatable.js DataTable && node ../../eng/bundle-svelte.mjs dist/index.js .size/form.js \"ChangeForm, FormField\" && node ../../eng/bundle-svelte.mjs dist/index.js .size/querystate.js QueryState && node ../../eng/bundle-svelte.mjs dist/index.js .size/appshell.js AppShell && node ../../eng/bundle-svelte.mjs dist/index.js .size/detail.js DetailLayout && node ../../eng/bundle-svelte.mjs dist/index.js .size/search.js SearchBox && size-limit",
     "check:package": "publint --strict",
     "api:update": "api-extractor run --local",
     "api:check": "api-extractor run"
@@ -70,6 +70,18 @@
     {
       "name": "AppShell",
       "path": ".size/appshell.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "DetailLayout (with QueryState)",
+      "path": ".size/detail.js",
+      "limit": "2.5 kB",
+      "gzip": true
+    },
+    {
+      "name": "SearchBox",
+      "path": ".size/search.js",
       "limit": "2 kB",
       "gzip": true
     }

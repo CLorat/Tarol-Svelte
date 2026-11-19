@@ -185,3 +185,62 @@ on the option would be dead code (it was, as a no-op, in the first build).
 | "Row actions: edit, delete" | `<MenuButton items onselect>` | `<select>` for actions; own key handlers |
 | "Details, bids and history sections" | `<Tabs label tabs bind:selected>` with a `children(id)` snippet | rendering all panels and hiding them with CSS |
 | "End date of the auction" | `<DateField bind:value min>` (ISO string) | `Date` objects and `toISOString()` |
+
+## 10. Built in step 7, part 2: components and optimistic changes
+
+**Public API (new or changed)**, reports `packages/tarol-components/api/tarol-components.api.md` and
+`packages/tarol-svelte/api/tarol-svelte.api.md`:
+* `@clorat/tarol-components`: `DetailLayout` (+ `DetailLayoutProps`: `query`, `title`, `children`, `meta`, `actions`,
+  `aside`), `SearchBox` (`label`, `onselect`, `path` = `/search`, `types`, `limit` = 8, `minLength` = 2, `debounce` = 150,
+  `describe`, `placeholder`) and `SearchHit`.
+* `@clorat/tarol-svelte`: `Query.patch(update)` and `List.patch(update)` (return the rollback); `FormOptions` gets a second
+  type parameter `I` (default `unknown`, so existing code compiles) and `optimistic: (input: I) => (() => void) | undefined`.
+* **Behaviour change**: `DataTable` is now a WAI-ARIA grid (`role="grid"`): its cells are `gridcell`s, not `cell`s
+  (tests that query `getByRole('cell')` must use `gridcell`); only one element of the table is in the tab order (the
+  sort buttons and widgets in cells get `tabindex=-1` except in the active cell).
+
+**Choices made while building**
+
+* Grid navigation: arrows, Home/End (row), Ctrl+Home/End (table), Page Up/Down (10 rows). A cell with a widget focuses the
+  widget, otherwise the cell itself. Keys typed into an input inside a cell are left to the input. With virtual rows the
+  grid scrolls the target row into the rendered window, waits for the render, then focuses it (Page Down from row 0 to
+  row 300 of 1,000 is tested). The one-tab-stop rule is applied after each render to the widgets the app's `cell`
+  snippet renders, because the component does not own them.
+* Optimistic changes (SV-6): the form calls `optimistic(input)` right before sending and keeps the returned rollback. A
+  `Failed` result of any kind rolls back (409 `Stream.VersionConflict`, 400, 403 …), as does a thrown change (aborted);
+  success keeps the patch until the own-change revalidation (`Tarol-Read-After`) replaces it with the server's value. The
+  rollback restores the previous value only if no newer read replaced the patch meanwhile, then reads again.
+* `DetailLayout` composes `QueryState` (loading skeletons of the heading's height, the error with retry, the stale note) and
+  renders the page's `h1`.
+* `SearchBox` (BC-8): the backend's snippets are HTML built by the index (`ts_headline`, OpenSearch and Typesense
+  highlights with `<b>`) [verified by reading `Tarol.Search.*` at `73b35ff`], so the box **does not request them**
+  (`snippets` is not sent) and shows each hit's `title` as text. A test renders a title containing `<img onerror>` and
+  asserts it stays text. Highlighted snippets follow BC-8 (plain text with marker offsets); `SearchHit` has no `snippet`
+  member until then. Requests are debounced and the previous one is aborted on the next keystroke; a 503
+  `Search.Building` shows its message as the field's error.
+* Budgets: `DetailLayout` measures **2.13 KB gzip / 1.81 KB brotli** because it bundles `QueryState` (1.37 KB alone); its
+  entry is labelled "DetailLayout (with QueryState)" with **2.5 KB**. The 2 KB per component was step 4's choice (SV-15's
+  2 KB is per primitive). `SearchBox` 0.87 / 0.77 (its `Combobox` counts in tarol-design), `DataTable` with the grid
+  **3.10 / 2.69** (was 2.26; budget 6), tarol-svelte **2.71 KB gzip / 2.38 KB brotli** (was 2.62; budget 3) [verified].
+
+**Suppressions:** none.
+
+**Verification**
+
+* Tests: tarol-svelte **32** (25 + 7 optimistic: shown before the answer and kept on success, rolled back on 409 with a
+  new read, on 400, on a throw; a newer read wins over the rollback; nothing to patch without a value; a list patch and
+  its rollback); tarol-components **14** (7 + grid keys with one tab stop and axe, widget focus and virtual rows by Page
+  Down, detail layout with axe, optimistic bid kept / rolled back on 409 in the real components, search box: from the
+  second character, title as text with an `<img onerror>` title, choosing opens the hit, the previous request aborted).
+  3 runs in a row green [verified].
+* Deliberate violation: removing the rollback on failure fails 2 optimistic tests [verified].
+* `eng/check-text.mjs` 21 components, 0 literal texts; svelte-check 0/0; ESLint 0; API reports regenerated.
+
+### Skill evaluation checklist (additions)
+
+| Task | Expected API | Mistakes to avoid |
+|---|---|---|
+| "Show the bid immediately" | `changeForm(…, { expectedVersion, optimistic: (i) => view.patch(…) })` | assigning `view.value`; no rollback |
+| "An auction's page with actions" | `<DetailLayout query title>` + `actions` snippet with `MenuButton` | an own `h1` and loading code around it |
+| "A search box in the header" | `<SearchBox label onselect>` | `{@html}` of snippets; polling; no debounce |
+| "Keyboard access to the table" | nothing: `DataTable` is a grid | own `keydown` handlers; two buttons in a cell |
