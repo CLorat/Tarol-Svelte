@@ -19,7 +19,7 @@
     "api:update": "pnpm -r --if-present api:update",
     "api:check": "pnpm -r --if-present api:check",
     "eng:test": "node --test \"eng/tests/*.test.mjs\"",
-    "verify": "pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm size && pnpm check:packages && pnpm api:check && pnpm eng:test"
+    "verify": "pnpm format:check && pnpm build && pnpm lint && pnpm typecheck && pnpm test && pnpm size && pnpm check:packages && pnpm api:check && pnpm eng:test"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
