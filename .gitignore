@@ -9,3 +9,5 @@ docs/migration/measurements/dist/
 docs/migration/measurements/tw/out.css
 docs/migration/measurements/e/m_*.js
 .size/
+.svelte-kit/
+.vitest/

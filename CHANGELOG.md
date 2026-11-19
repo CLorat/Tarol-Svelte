@@ -4,6 +4,12 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-codegen` 0.1.0: `tarol-codegen <openapi> -o <file> [--check]`; generates types, `requests`, `rules` and
+  `tarol(client)` from a Tarol backend's OpenAPI document.
+* `@clorat/tarol-design` 0.1.0: tokens (light, dark, compact density, reduced motion), `ThemeRoot`, `Button`, `Field`,
+  `TextField`, `NumberField`, `Dialog`, `Toaster`, `Spinner`, `Skeleton`, `VisuallyHidden`, catalogues `en` and `de`.
+* `@clorat/tarol-components` 0.1.0: `DataTable` (keyset paging, backend sort, virtualization above 200 rows),
+  `QueryState`, `ChangeForm`, `FormField`, `AppShell`.
 * `@clorat/tarol-svelte` 0.1.0: `setTarol`, `query`, `list` (keyset), `changeForm` (server field errors by path, client
   rules, idempotent retries), `live`; revalidation on focus, own changes and push topics.
 * `@clorat/tarol-client` 0.1.0: `createClient` (changes with idempotency keys and `If-Match`, reads with the ETag cache

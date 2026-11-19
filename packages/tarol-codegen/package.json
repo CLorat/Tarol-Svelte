@@ -1,0 +1,43 @@
+{
+  "name": "@clorat/tarol-codegen",
+  "version": "0.1.0",
+  "description": "Generates a typed tarol-svelte client (types, request builders, calls, validation rules) from a Tarol backend's OpenAPI document.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CLorat/Tarol-Svelte.git",
+    "directory": "packages/tarol-codegen"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "bin": {
+    "tarol-codegen": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/generate.d.ts",
+      "default": "./dist/generate.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/api-temp",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/cli.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "check:package": "publint --strict && attw --pack . --profile esm-only",
+    "api:update": "api-extractor run --local",
+    "api:check": "api-extractor run"
+  },
+  "devDependencies": {
+    "@clorat/tarol-client": "workspace:*",
+    "@clorat/tarol-svelte": "workspace:*"
+  }
+}

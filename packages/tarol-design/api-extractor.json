@@ -1,0 +1,1 @@
+{ "extends": "../../eng/api-extractor.base.json", "projectFolder": "." }

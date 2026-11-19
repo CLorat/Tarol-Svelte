@@ -1,0 +1,95 @@
+// The design tokens: one source for tokens.css (scripts/build-css.mjs) and for the contrast check (eng/check-contrast.mjs).
+// Colours are sRGB hex so the WCAG contrast is computed exactly. Every token is a CSS custom property `--t-<name>`.
+
+/** Light theme colours (the default). */
+export const light = {
+  'color-bg': '#ffffff',
+  'color-bg-subtle': '#f6f7f9',
+  'color-bg-muted': '#eceef2',
+  'color-fg': '#16181d',
+  'color-fg-muted': '#4f5563',
+  'color-border': '#d4d8e0',
+  'color-border-strong': '#7b8291',
+  'color-accent': '#2753d6',
+  'color-accent-hover': '#1f43b0',
+  'color-accent-fg': '#ffffff',
+  'color-danger': '#c0272d',
+  'color-danger-hover': '#9e1f24',
+  'color-danger-fg': '#ffffff',
+  'color-success': '#17733a',
+  'color-warning': '#8a5a00',
+  'color-focus': '#2753d6',
+  'color-backdrop': 'rgb(22 24 29 / 0.45)',
+};
+
+/** Dark theme colours: applied for `prefers-color-scheme: dark` unless `data-theme="light"`, or with `data-theme="dark"`. */
+export const dark = {
+  'color-bg': '#15171c',
+  'color-bg-subtle': '#1d2027',
+  'color-bg-muted': '#272b34',
+  'color-fg': '#eceef2',
+  'color-fg-muted': '#a9afbc',
+  'color-border': '#353a45',
+  'color-border-strong': '#7d8494',
+  'color-accent': '#8ea9ff',
+  'color-accent-hover': '#a9beff',
+  'color-accent-fg': '#0d1330',
+  'color-danger': '#ff8a8a',
+  'color-danger-hover': '#ffa3a3',
+  'color-danger-fg': '#2a0607',
+  'color-success': '#6fd68f',
+  'color-warning': '#f0c35c',
+  'color-focus': '#8ea9ff',
+  'color-backdrop': 'rgb(0 0 0 / 0.6)',
+};
+
+/** Pairs that carry text (≥ 4.5:1) or are UI boundaries (≥ 3:1), checked in both themes (philosophy P6). */
+export const pairs = [
+  ['color-fg', 'color-bg', 4.5],
+  ['color-fg', 'color-bg-subtle', 4.5],
+  ['color-fg', 'color-bg-muted', 4.5],
+  ['color-fg-muted', 'color-bg', 4.5],
+  ['color-fg-muted', 'color-bg-subtle', 4.5],
+  ['color-accent-fg', 'color-accent', 4.5],
+  ['color-accent-fg', 'color-accent-hover', 4.5],
+  ['color-danger-fg', 'color-danger', 4.5],
+  ['color-danger-fg', 'color-danger-hover', 4.5],
+  ['color-accent', 'color-bg', 4.5],
+  ['color-danger', 'color-bg', 4.5],
+  ['color-success', 'color-bg', 4.5],
+  ['color-warning', 'color-bg', 4.5],
+  ['color-border-strong', 'color-bg', 3],
+  ['color-focus', 'color-bg', 3],
+];
+
+/** Theme-independent tokens. `space-*` scale with `--t-density` (1 comfortable, 0.75 compact). */
+export const base = {
+  density: '1',
+  'space-1': 'calc(0.25rem * var(--t-density))',
+  'space-2': 'calc(0.5rem * var(--t-density))',
+  'space-3': 'calc(0.75rem * var(--t-density))',
+  'space-4': 'calc(1rem * var(--t-density))',
+  'space-6': 'calc(1.5rem * var(--t-density))',
+  'space-8': 'calc(2rem * var(--t-density))',
+  'radius-1': '0.25rem',
+  'radius-2': '0.375rem',
+  'radius-3': '0.5rem',
+  'font-sans': 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  'font-mono': 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace',
+  'text-xs': '0.75rem',
+  'text-sm': '0.875rem',
+  'text-md': '1rem',
+  'text-lg': '1.125rem',
+  'text-xl': '1.375rem',
+  leading: '1.5',
+  'weight-medium': '500',
+  'weight-bold': '650',
+  'control-height': 'calc(2.25rem * var(--t-density))',
+  'shadow-1': '0 1px 2px rgb(0 0 0 / 0.08)',
+  'shadow-3': '0 12px 32px rgb(0 0 0 / 0.18)',
+  'duration-fast': '120ms',
+  'duration-normal': '200ms',
+  ease: 'cubic-bezier(0.2, 0, 0, 1)',
+  'z-dialog': '100',
+  'z-toast': '200',
+};

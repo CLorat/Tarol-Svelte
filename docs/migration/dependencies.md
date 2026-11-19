@@ -10,6 +10,17 @@ Runtime dependencies are rare and enforced by `eng/check-deps.mjs`; dev dependen
 | `svelte` | peer of `tarol-svelte`, `tarol-design`, `tarol-components` | ^5.58.0 | MIT | app baseline 15.8 KB | Svelte core team, weekly releases | SV-3 |
 | `oauth4webapi` | `tarol-oidc` | 3.8.8 | MIT | 6.9 KB | single maintainer (panva), certified OpenID implementation, zero dependencies | SV-7 |
 
+## Development only (not shipped)
+
+| Package | Version | Licence | Why |
+|---|---|---|---|
+| `axe-core` | 4.14.1 | MPL-2.0 | accessibility rules in every component test (P6); test-only, never bundled into a package |
+| `@sveltejs/package` | 3.0.3 | MIT | builds the Svelte component packages (`svelte-package`); keeps `.svelte` sources for the app's compiler |
+| `@size-limit/file` | 14.3.0 | MIT | measures the compiled bundles that `eng/bundle-svelte.mjs` writes |
+
+The rest of the toolchain (TypeScript, ESLint, Prettier, Vitest, Playwright, size-limit, publint, attw, API Extractor,
+Vite, svelte-check) is listed with versions in `docs/migration/foundation.md`; all MIT or Apache-2.0.
+
 ## Measured and rejected
 
 | Package | Version | Licence | Size (gzip) | Why not |

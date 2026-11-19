@@ -5,3 +5,6 @@ docs/
 *.md
 packages/*/api/
 .size/
+.svelte-kit/
+.vitest/
+packages/*/test/__snapshots__/
