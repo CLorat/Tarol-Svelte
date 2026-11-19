@@ -18,7 +18,7 @@ Node 22, pnpm 10 (through corepack: `corepack enable`).
 
 ```bash
 pnpm install --frozen-lockfile      # install scripts never run (onlyBuiltDependencies: [])
-pnpm verify                         # format, lint, build, typecheck, test, size, package checks, API reports, eng tests
+pnpm verify                         # format, build, lint, typecheck, test, size, package checks, API reports, eng tests
 pnpm api:update                     # after a public API change: regenerates the API Extractor reports
 ```
 

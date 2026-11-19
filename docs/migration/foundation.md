@@ -33,6 +33,22 @@ Each check gets a deliberate violation once, and the failure is recorded:
 
 `pnpm verify` runs the whole list locally (not `pnpm ci`, which is pnpm's own command).
 
+## After the merge (2026-11-19)
+
+* **Build before lint.** On a fresh clone `pnpm verify` failed: type-aware lint resolves the `@clorat/*` workspace imports
+  through each package's `dist/`, which does not exist before `pnpm build`, so 302 `no-unsafe-*` errors in 20 files
+  [verified: `rm -rf packages/*/dist && pnpm verify` on `main@6d672da`, exit 1]. The previous session's checkouts had
+  stale `dist/` folders, which hid it. `verify` and `ci.yml` now run `build` before `lint`; the same clean run passes:
+  12 test files, 94 tests passed, 8 skipped (the contract tests without `TAROL_E2E`), size, package checks, API reports
+  and 9 eng tests [verified].
+* **GitHub CI has never run in this repository.** Every run of `ci.yml` and `codeql.yml` (28 runs, all PRs and pushes to
+  `main`) ends after 3-4 s as `failure` with no steps and no runner assigned (`runner_id: 0`, empty check output). The same
+  workflows' actions run in `CLorat/Tarol-Net`, which is public; this repository is private, where Actions spends the
+  account's minutes. A job refused before a runner is assigned on every run, CodeQL included, is what an exhausted Actions
+  allowance or a spending limit of 0 looks like [verified: run and job metadata; the cause is **unverified**, the
+  annotation is only visible in the web UI]. The owner checks *Settings → Billing → Actions* (or makes the repository
+  public); no commit can fix it. Until then every PR records its local `pnpm verify` run.
+
 ## Choices made while building it
 
 * **TypeScript 6.0.3, not 7.0.2.** TypeScript 7 is the latest release, but `typescript-eslint` 8.73.0 declares

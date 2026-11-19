@@ -16,12 +16,12 @@ The backend is `CLorat/Tarol-Net@main`, verified on 2026-11-19 at `73b35ff`:
 
 | # | Step | Packages | Evaluation | Waits for | Status |
 |---|---|---|---|---|---|
-| 0 | Design | — | this file, [philosophy](../architecture/philosophy.md), [overview](../architecture/overview.md), [backend changes](../backend/changes.md) | — | this PR |
-| 1 | Foundation | workspace, CI, release skeleton | [foundation.md](foundation.md) | — | built (PR 1): pnpm workspace, TS 6 strict, ESLint/Prettier, Vitest, check-deps (6 tests), CI, CodeQL, Dependabot |
-| 2 | Client core | `@clorat/tarol-client` (+ `/push`) | [client.md](client.md) | BC-2 for push against a real hub | built (PR 2): 36 unit + 6 contract tests against the sample, core 1.96 KB, push 1.35 KB gzip |
-| 3 | Svelte bindings | `@clorat/tarol-svelte` | [svelte.md](svelte.md) | — | built (PR 3): `query`, `list`, `changeForm`, `live`; 25 tests in Chromium; 2.62 KB gzip compiled; optimistic changes follow with step 4 |
-| 4 | Design system and first components | `@clorat/tarol-design`, `@clorat/tarol-components` (`DataTable`, form fields, `Dialog`, `Toaster`, `QueryState`, `AppShell`) | [design.md](design.md) | — | built (PR 4): tokens + 10 primitives + 5 components, 21 tests in Chromium with axe (0 violations), contrast and literal-text checks; visual regression moves to step 9 |
-| 5 | Typed client generator | `@clorat/tarol-codegen` | [codegen.md](codegen.md) | BC-3 for exact types, BC-4 for rules | built (PR 5): 12 unit + 2 contract tests; the live document generates the committed snapshot; 489 B gzip for 6 entries |
+| 0 | Design | — | this file, [philosophy](../architecture/philosophy.md), [overview](../architecture/overview.md), [backend changes](../backend/changes.md) | — | merged (#1) |
+| 1 | Foundation | workspace, CI, release skeleton | [foundation.md](foundation.md) | — | merged (#2): pnpm workspace, TS 6 strict, ESLint/Prettier, Vitest, check-deps (6 tests), CI, CodeQL, Dependabot |
+| 2 | Client core | `@clorat/tarol-client` (+ `/push`) | [client.md](client.md) | BC-2 for push against a real hub | merged (#3): 36 unit + 6 contract tests against the sample, core 1.96 KB, push 1.35 KB gzip |
+| 3 | Svelte bindings | `@clorat/tarol-svelte` | [svelte.md](svelte.md) | — | merged (#4): `query`, `list`, `changeForm`, `live`; 25 tests in Chromium; 2.62 KB gzip compiled; optimistic changes follow with step 4 |
+| 4 | Design system and first components | `@clorat/tarol-design`, `@clorat/tarol-components` (`DataTable`, form fields, `Dialog`, `Toaster`, `QueryState`, `AppShell`) | [design.md](design.md) | — | merged (#5): tokens + 10 primitives + 5 components, 21 tests in Chromium with axe (0 violations), contrast and literal-text checks; visual regression moves to step 9 |
+| 5 | Typed client generator | `@clorat/tarol-codegen` | [codegen.md](codegen.md) | BC-3 for exact types, BC-4 for rules | merged (#6): 12 unit + 2 contract tests; the live document generates the committed snapshot; 489 B gzip for 6 entries |
 | 6 | Auth | `@clorat/tarol-oidc` (+ `/zitadel`) | [oidc.md](oidc.md) | BC-9 (a PKCE app in the sample) for e2e | |
 | 7 | More components | combobox, menu, tabs, date field, search box, detail layout | [design.md](design.md) §7 | BC-8 for search | |
 | 8 | End-to-end | Playwright against `samples/Sagas`; INP, CLS; visual regression (SV-12) | [e2e.md](e2e.md) | BC-1, BC-2, BC-9 | |

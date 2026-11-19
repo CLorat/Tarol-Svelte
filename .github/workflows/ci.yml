@@ -39,8 +39,9 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - run: pnpm format:check
-      - run: pnpm lint
+      # Before lint: type-aware lint resolves the @clorat/* workspace imports through each package's dist/.
       - run: pnpm build
+      - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm size
