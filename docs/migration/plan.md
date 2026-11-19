@@ -26,7 +26,7 @@ The backend is `CLorat/Tarol-Net@main`, verified on 2026-11-19 at `73b35ff`:
 | 7 | More components | combobox, menu, tabs, date field, search box, detail layout | [design.md](design.md) §7 | BC-8 for search | part 1 built (PR 7a): `Combobox`, `MenuButton`, `Tabs`, `DateField`; 11 tests in Chromium, axe 0; Combobox budget 3 KB (2.99 KB). Part 2 built (PR 7b): `DataTable` grid keys, `DetailLayout`, `SearchBox` (titles only until BC-8), optimistic `changeForm`; 7 + 7 tests |
 | 8 | End-to-end | Playwright against `samples/Sagas`; INP, CLS; visual regression (SV-12) | [e2e.md](e2e.md) | BC-1, BC-2, BC-9 | built (PR 8): `apps/docs` example screens + Playwright against the sample: 7 scenarios pass, push is `fixme` (BC-2, BC-9); INP 16–24 ms, CLS 0; CI job `e2e` |
 | 9 | Docs app | own Svelte + Vite catalogue (SV-11), runnable examples, GitHub Pages | [docs-app.md](docs-app.md) | — | built (PR 9): 21 component pages (live example, source, props from the types, keys), tokens, 5 guides; 58 catalogue tests (axe, CLS) in both themes; visual job with 84 screenshots, baselines from the CI container (none yet: no runner) |
-| 10 | Admin UI | `@clorat/tarol-admin` | [admin.md](admin.md) | BC-10 | |
+| 10 | Admin UI | `@clorat/tarol-admin` | [admin.md](admin.md) | BC-10 | **blocked** (BC-10 not landed): the admin entry answers free text, empty 404s and a 500 on erase [verified]; admin.md "Status" |
 | 11 | Release | `release.yml`, first tag by the owner | [release.md](release.md) | — | |
 
 Order: each step only needs the ones before it. Steps 2–5 are the first build PRs (definition of done of the design
