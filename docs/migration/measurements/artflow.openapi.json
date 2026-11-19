@@ -1,0 +1,841 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "ArtFlow.Api | v1",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5080"
+    }
+  ],
+  "paths": {
+    "/auctions": {
+      "get": {
+        "tags": [
+          "GeneratedEndpoints"
+        ],
+        "operationId": "AuctionSearch",
+        "parameters": [
+          {
+            "name": "settled",
+            "in": "query",
+            "description": "Equal to the row's settled; absent: any",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "seller",
+            "in": "query",
+            "description": "Equal to the row's seller; absent: any",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "The order (default HighestBid); the id breaks ties",
+            "schema": {
+              "enum": [
+                "HighestBid",
+                "OpenedAt"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The cursor of the previous page (its next)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The page size (default and maximum: the endpoint options)",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Rows to skip, bounded; page deeper with after",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Also count every row of the filters (total)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Tarol-Read-After",
+            "in": "header",
+            "description": "Wait until the list contains the change that answered this Tarol-Position (bounded; then Tarol-Stale: true)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the list",
+            "headers": {
+              "ETag": {
+                "description": "A weak ETag of the page's rows, for If-None-Match",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Position": {
+                "description": "The projection's position: every change at or before it is in the list",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Stale": {
+                "description": "true when Tarol-Read-After timed out",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "items",
+                    "next"
+                  ],
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AuctionRow"
+                      }
+                    },
+                    "next": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "The cursor of the next page (after); null on the last"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "With count=true: the rows of the filters",
+                      "format": "int64"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match)"
+          },
+          "503": {
+            "description": "The projection is being built (a new version); Retry-After says when to ask again",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "400": {
+            "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "404": {
+            "description": "Not found (also another tenant's)",
+            "content": {
+              "application/problem+json": { }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "GeneratedEndpoints"
+        ],
+        "operationId": "CreateAuction",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The version the change expects (409 when stale)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry return the first outcome",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAuction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created (200 for a replayed Idempotency-Key); Location is the new aggregate",
+            "headers": {
+              "ETag": {
+                "description": "The aggregate's version, for If-Match / If-None-Match",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "id",
+                    "version"
+                  ],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "404": {
+            "description": "Not found (also another tenant's)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "409": {
+            "description": "A guard, a lifecycle step or a stale If-Match (Stream.VersionConflict)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "415": {
+            "description": "The body is not application/json",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "422": {
+            "description": "A read aggregate is missing, or the Idempotency-Key was used for another request",
+            "content": {
+              "application/problem+json": { }
+            }
+          }
+        }
+      }
+    },
+    "/auctions/{auction}": {
+      "get": {
+        "tags": [
+          "GeneratedEndpoints"
+        ],
+        "operationId": "AuctionView",
+        "parameters": [
+          {
+            "name": "auction",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "description": "The aggregate's version, for If-Match / If-None-Match",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuctionView"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match)"
+          },
+          "400": {
+            "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "404": {
+            "description": "Not found (also another tenant's)",
+            "content": {
+              "application/problem+json": { }
+            }
+          }
+        }
+      }
+    },
+    "/auctions/{auction}/bids": {
+      "post": {
+        "tags": [
+          "GeneratedEndpoints"
+        ],
+        "operationId": "PlaceBid",
+        "parameters": [
+          {
+            "name": "auction",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The version the change expects (409 when stale)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry return the first outcome",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceBid"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Committed",
+            "headers": {
+              "ETag": {
+                "description": "The aggregate's version, for If-Match / If-None-Match",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "404": {
+            "description": "Not found (also another tenant's)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "409": {
+            "description": "A guard, a lifecycle step or a stale If-Match (Stream.VersionConflict)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "415": {
+            "description": "The body is not application/json",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "422": {
+            "description": "A read aggregate is missing, or the Idempotency-Key was used for another request",
+            "content": {
+              "application/problem+json": { }
+            }
+          }
+        }
+      }
+    },
+    "/auctions/{auction}/settle": {
+      "post": {
+        "tags": [
+          "GeneratedEndpoints"
+        ],
+        "operationId": "SettleAuction",
+        "parameters": [
+          {
+            "name": "auction",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The version the change expects (409 when stale)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Makes a retry return the first outcome",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettleAuction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Committed",
+            "headers": {
+              "ETag": {
+                "description": "The aggregate's version, for If-Match / If-None-Match",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "404": {
+            "description": "Not found (also another tenant's)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "409": {
+            "description": "A guard, a lifecycle step or a stale If-Match (Stream.VersionConflict)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "415": {
+            "description": "The body is not application/json",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "422": {
+            "description": "A read aggregate is missing, or the Idempotency-Key was used for another request",
+            "content": {
+              "application/problem+json": { }
+            }
+          }
+        }
+      }
+    },
+    "/my/auctions": {
+      "get": {
+        "tags": [
+          "GeneratedEndpoints"
+        ],
+        "operationId": "MyAuctions",
+        "parameters": [
+          {
+            "name": "settled",
+            "in": "query",
+            "description": "Equal to the row's settled; absent: any",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The cursor of the previous page (its next)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The page size (default and maximum: the endpoint options)",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Rows to skip, bounded; page deeper with after",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Also count every row of the filters (total)",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Tarol-Read-After",
+            "in": "header",
+            "description": "Wait until the list contains the change that answered this Tarol-Position (bounded; then Tarol-Stale: true)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the list",
+            "headers": {
+              "ETag": {
+                "description": "A weak ETag of the page's rows, for If-None-Match",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Position": {
+                "description": "The projection's position: every change at or before it is in the list",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Stale": {
+                "description": "true when Tarol-Read-After timed out",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "items",
+                    "next"
+                  ],
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AuctionRow"
+                      }
+                    },
+                    "next": {
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "description": "The cursor of the next page (after); null on the last"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "With count=true: the rows of the filters",
+                      "format": "int64"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match)"
+          },
+          "503": {
+            "description": "The projection is being built (a new version); Retry-After says when to ask again",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "400": {
+            "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "content": {
+              "application/problem+json": { }
+            }
+          },
+          "404": {
+            "description": "Not found (also another tenant's)",
+            "content": {
+              "application/problem+json": { }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuctionRow": {
+        "required": [
+          "id",
+          "seller",
+          "reserve",
+          "highestBid",
+          "bids",
+          "settled",
+          "paid",
+          "openedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seller": {
+            "type": "string"
+          },
+          "reserve": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "highestBid": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "bids": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "settled": {
+            "type": "boolean"
+          },
+          "paid": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AuctionView": {
+        "required": [
+          "id",
+          "seller",
+          "reserve",
+          "bids",
+          "settled",
+          "paid"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "seller": {
+            "type": "string"
+          },
+          "reserve": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "bids": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "settled": {
+            "type": "boolean"
+          },
+          "paid": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "CreateAuction": {
+        "required": [
+          "reserve"
+        ],
+        "type": "object",
+        "properties": {
+          "reserve": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "PlaceBid": {
+        "required": [
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "SettleAuction": {
+        "type": "object"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "GeneratedEndpoints"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+m_Base.js          raw   54020 gzip  15787 br  14022
+m_BitsDialog.js    raw  153089 gzip  41309 br  36006
+m_List.js          raw   61905 gzip  18027 br  15969
+m_MeltDialog.js    raw  112363 gzip  32735 br  28821
+m_OwnDialog.js     raw   61779 gzip  18008 br  15935
+oauth4.js          raw   22708 gzip   6862 br   6040
+oidcclient.js      raw   96070 gzip  21868 br  18832
+openapifetch.js    raw   11401 gzip   3619 br   3124
+ownfetch.js        raw     661 gzip    409 br    350
+ownhub.js          raw    1795 gzip    888 br    783
+signalr.js         raw   88263 gzip  19879 br  17109
+tw/out.css         raw   13208 gzip   3406 br   2952
+tw/own.css         raw    2419 gzip    840 br    698
