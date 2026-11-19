@@ -1,0 +1,71 @@
+{
+  "name": "@clorat/tarol-client",
+  "version": "0.1.0",
+  "description": "Framework-free TypeScript client for Tarol backends: typed results, idempotent changes, ETag cache, UI push.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CLorat/Tarol-Svelte.git",
+    "directory": "packages/tarol-client"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./push": {
+      "types": "./dist/push.d.ts",
+      "default": "./dist/push.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/api-temp",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "size": "size-limit",
+    "check:package": "publint --strict && attw --pack . --profile esm-only",
+    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.push.json",
+    "api:check": "api-extractor run && api-extractor run -c api-extractor.push.json"
+  },
+  "size-limit": [
+    {
+      "name": "core",
+      "path": "dist/index.js",
+      "import": "{ createClient }",
+      "limit": "3 kB",
+      "gzip": true
+    },
+    {
+      "name": "core (brotli)",
+      "path": "dist/index.js",
+      "import": "{ createClient }",
+      "limit": "3 kB",
+      "brotli": true
+    },
+    {
+      "name": "push",
+      "path": "dist/push.js",
+      "import": "{ connectPush }",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "push (brotli)",
+      "path": "dist/push.js",
+      "import": "{ connectPush }",
+      "limit": "2 kB",
+      "brotli": true
+    }
+  ]
+}
