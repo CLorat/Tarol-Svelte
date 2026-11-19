@@ -11,6 +11,8 @@ export default ts.config(
       '**/dist/**',
       '**/coverage/**',
       '**/.size/**',
+      '**/.svelte-kit/**',
+      '**/.vitest/**',
       'docs/migration/measurements/**',
       '**/*.d.ts',
       'packages/*/test/fixtures/**',
@@ -53,7 +55,14 @@ export default ts.config(
   },
   {
     // build scripts and configs are plain JS run by Node
-    files: ['eng/**/*.mjs', '*.config.js', '*.config.ts', 'eng/**/*.js'],
+    files: [
+      'eng/**/*.mjs',
+      '*.config.js',
+      '*.config.ts',
+      'eng/**/*.js',
+      'packages/*/scripts/**',
+      'packages/*/svelte.config.js',
+    ],
     extends: [ts.configs.disableTypeChecked],
     rules: { 'no-console': 'off', '@typescript-eslint/explicit-module-boundary-types': 'off' },
   },

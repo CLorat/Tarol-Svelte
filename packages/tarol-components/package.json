@@ -1,0 +1,77 @@
+{
+  "name": "@clorat/tarol-components",
+  "version": "0.1.0",
+  "description": "Default Svelte 5 components bound to Tarol data: data table with keyset paging, change forms, query states, app shell.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CLorat/Tarol-Svelte.git",
+    "directory": "packages/tarol-components"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/api-temp",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "svelte-package -i src/lib -o dist && node ../../eng/doc-svelte-dts.mjs dist",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
+    "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/datatable.js DataTable && node ../../eng/bundle-svelte.mjs dist/index.js .size/form.js \"ChangeForm, FormField\" && node ../../eng/bundle-svelte.mjs dist/index.js .size/querystate.js QueryState && node ../../eng/bundle-svelte.mjs dist/index.js .size/appshell.js AppShell && size-limit",
+    "check:package": "publint --strict",
+    "api:update": "api-extractor run --local",
+    "api:check": "api-extractor run"
+  },
+  "dependencies": {
+    "@clorat/tarol-client": "workspace:*",
+    "@clorat/tarol-design": "workspace:*",
+    "@clorat/tarol-svelte": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": "^5.58.0"
+  },
+  "devDependencies": {
+    "@size-limit/file": "14.3.0"
+  },
+  "size-limit": [
+    {
+      "name": "DataTable (compiled, incl. CSS; without svelte and @clorat)",
+      "path": ".size/datatable.js",
+      "limit": "6 kB",
+      "gzip": true
+    },
+    {
+      "name": "ChangeForm + FormField",
+      "path": ".size/form.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "QueryState",
+      "path": ".size/querystate.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "AppShell",
+      "path": ".size/appshell.js",
+      "limit": "2 kB",
+      "gzip": true
+    }
+  ]
+}

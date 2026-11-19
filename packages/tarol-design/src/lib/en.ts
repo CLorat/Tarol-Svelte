@@ -1,0 +1,32 @@
+import type { Catalogue } from './messages.js';
+import { uiEn } from './ui-en.js';
+
+/** English: the primitives' texts and the backend codes (validation, auth, conflicts). The default of ThemeRoot. */
+export const en: Catalogue = {
+  ...uiEn,
+  Required: 'This field is required.',
+  Range: 'Enter a value between {min} and {max}.',
+  'Range.min': 'Enter a value of at least {min}.',
+  'Range.max': 'Enter a value of at most {max}.',
+  'Range.any': 'The value is out of range.',
+  Length: 'Enter between {min} and {max} characters.',
+  'Length.min': 'Enter at least {min} characters.',
+  'Length.max': 'Enter at most {max} characters.',
+  'Length.any': 'The length is not valid.',
+  Pattern: 'The format is not valid.',
+  Email: 'Enter a valid email address.',
+  Count: 'Choose between {min} and {max} items.',
+  'Count.any': 'The number of items is not valid.',
+  Json: 'The value has the wrong type.',
+  Format: 'The value has the wrong format.',
+  'Query.Cursor': 'The page is no longer available. Start again from the first page.',
+  'Auth.Required': 'Please sign in again.',
+  'Auth.Forbidden': 'You are not allowed to do this.',
+  NotFound: 'This item does not exist (any more).',
+  'Stream.VersionConflict': 'Someone else changed this in the meantime. Reload and try again.',
+  'Idempotency.KeyReused': 'This request was already sent with different content.',
+  'Projection.Building': 'The list is being rebuilt. Try again in a moment.',
+  'DataProtection.SubjectErased': 'This person’s data has been erased.',
+  Network: 'The server cannot be reached. Check your connection.',
+  'error.generic': 'Something went wrong.',
+};

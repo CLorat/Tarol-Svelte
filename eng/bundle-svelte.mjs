@@ -5,12 +5,12 @@
 // usage: node eng/bundle-svelte.mjs <entry> <out> [<exports, comma separated>]
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import { build } from 'vite';
 
 const [entry, out, names] = process.argv.slice(2);
 if (!entry || !out) throw new Error('usage: bundle-svelte.mjs <entry> <out> [exports]');
-const probe = resolve(dirname(out), 'probe.js');
+const probe = resolve(dirname(out), `${basename(out, '.js')}.probe.js`);
 mkdirSync(dirname(out), { recursive: true });
 // a consumer that uses the listed exports: tree-shaking keeps exactly what an app importing them gets
 writeFileSync(
@@ -22,9 +22,10 @@ writeFileSync(
 await build({
   configFile: false,
   logLevel: 'error',
-  plugins: [svelte({ configFile: false })],
+  // css: 'injected' puts each component's CSS into its JS, so the measured size includes the styles
+  plugins: [svelte({ configFile: false, compilerOptions: { css: 'injected' } })],
   build: {
-    lib: { entry: probe, formats: ['es'], fileName: () => 'bundle.js' },
+    lib: { entry: probe, formats: ['es'], fileName: () => basename(out) },
     outDir: dirname(out),
     emptyOutDir: false,
     minify: true, // Vite 8: the Oxc minifier

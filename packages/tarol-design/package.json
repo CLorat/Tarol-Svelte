@@ -1,0 +1,85 @@
+{
+  "name": "@clorat/tarol-design",
+  "version": "0.1.0",
+  "description": "Design tokens, themes, a de/en message catalogue and accessible Svelte 5 primitives on native elements.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CLorat/Tarol-Svelte.git",
+    "directory": "packages/tarol-design"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./tokens.css": "./dist/tokens.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/api-temp",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "svelte-package -i src/lib -o dist && node ../../eng/doc-svelte-dts.mjs dist && node scripts/build-css.mjs",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
+    "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/all.js && node ../../eng/bundle-svelte.mjs dist/index.js .size/dialog.js Dialog && node ../../eng/bundle-svelte.mjs dist/index.js .size/button.js Button && node ../../eng/bundle-svelte.mjs dist/index.js .size/textfield.js TextField && node ../../eng/bundle-svelte.mjs dist/index.js .size/themeroot.js ThemeRoot && size-limit",
+    "check:package": "publint --strict",
+    "api:update": "api-extractor run --local",
+    "api:check": "api-extractor run"
+  },
+  "peerDependencies": {
+    "svelte": "^5.58.0"
+  },
+  "devDependencies": {
+    "@size-limit/file": "14.3.0"
+  },
+  "size-limit": [
+    {
+      "name": "tokens.css",
+      "path": "dist/tokens.css",
+      "limit": "6 kB",
+      "gzip": true
+    },
+    {
+      "name": "Dialog (compiled, incl. its CSS)",
+      "path": ".size/dialog.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "Button (with Spinner)",
+      "path": ".size/button.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "TextField (with Field)",
+      "path": ".size/textfield.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "ThemeRoot (with Toaster, messages de+en)",
+      "path": ".size/themeroot.js",
+      "limit": "3 kB",
+      "gzip": true
+    },
+    {
+      "name": "everything",
+      "path": ".size/all.js",
+      "limit": "8 kB",
+      "gzip": true
+    }
+  ]
+}
