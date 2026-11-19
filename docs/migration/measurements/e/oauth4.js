@@ -1,0 +1,10 @@
+import * as o from 'oauth4webapi';
+const issuer = new URL('https://id');
+const as = await o.processDiscoveryResponse(issuer, await o.discoveryRequest(issuer));
+const client = { client_id: 'c' };
+const v = o.generateRandomCodeVerifier(); const ch = await o.calculatePKCECodeChallenge(v);
+const params = o.validateAuthResponse(as, client, new URL(location.href), o.expectNoState);
+const r = await o.authorizationCodeGrantRequest(as, client, o.None(), params, '/cb', v);
+const res = await o.processAuthorizationCodeResponse(as, client, r);
+const rr = await o.refreshTokenGrantRequest(as, client, o.None(), res.refresh_token);
+console.log(ch, await o.processRefreshTokenResponse(as, client, rr));

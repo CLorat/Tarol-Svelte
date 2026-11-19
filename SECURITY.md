@@ -1,0 +1,17 @@
+# Security policy
+
+## Reporting a vulnerability
+
+Please do not open a public issue. Use GitHub's private vulnerability reporting for this repository
+(**Security → Report a vulnerability**). You will get an answer within a week.
+
+## Supported versions
+
+tarol-svelte is licensed under the AGPL-3.0-only (see LICENSE and NOTICE). Releases are published as npm packages on
+GitHub Packages only.
+
+## Agent skills in packages
+
+The packages ship agent skills (`skills/**/SKILL.md`) that coding agents read and act on. A skill never asks an agent to
+download or run anything, to change credentials or settings, or to disable lint rules or checks. Report any skill that does
+as a vulnerability.

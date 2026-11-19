@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+test-results/
+playwright-report/
+docs/migration/measurements/dist/
+docs/migration/measurements/tw/out.css
+docs/migration/measurements/e/m_*.js
