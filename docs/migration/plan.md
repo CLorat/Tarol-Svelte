@@ -27,7 +27,7 @@ The backend is `CLorat/Tarol-Net@main`, verified on 2026-11-19 at `73b35ff`:
 | 8 | End-to-end | Playwright against `samples/Sagas`; INP, CLS; visual regression (SV-12) | [e2e.md](e2e.md) | BC-1, BC-2, BC-9 | built (PR 8): `apps/docs` example screens + Playwright against the sample: 7 scenarios pass, push is `fixme` (BC-2, BC-9); INP 16–24 ms, CLS 0; CI job `e2e` |
 | 9 | Docs app | own Svelte + Vite catalogue (SV-11), runnable examples, GitHub Pages | [docs-app.md](docs-app.md) | — | built (PR 9): 21 component pages (live example, source, props from the types, keys), tokens, 5 guides; 58 catalogue tests (axe, CLS) in both themes; visual job with 84 screenshots, baselines from the CI container (none yet: no runner) |
 | 10 | Admin UI | `@clorat/tarol-admin` | [admin.md](admin.md) | BC-10 | **blocked** (BC-10 not landed): the admin entry answers free text, empty 404s and a 500 on erase [verified]; admin.md "Status" |
-| 11 | Release | `release.yml`, first tag by the owner | [release.md](release.md) | — | |
+| 11 | Release | `release.yml`, first tag by the owner | [release.md](release.md) | — | built (PR 11): `release.yml` (ci → pack → publish behind `release`, dry runs otherwise), `eng/release.mjs` with 6 tests; the first tag is the owner's |
 
 Order: each step only needs the ones before it. Steps 2–5 are the first build PRs (definition of done of the design
 session). The docs app starts small in step 4 (a page per component, used by the axe and screenshot tests) and becomes
