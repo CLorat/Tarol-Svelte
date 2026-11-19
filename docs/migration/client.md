@@ -102,6 +102,41 @@ SV-4 (own runtime), SV-6 (data layer), SV-8 (own push client), SV-15 (budgets). 
 | "Read a list after my own change" | nothing: Read-After is automatic | sleeping or polling |
 | "Listen to bids" | `connectPush(...).subscribe('artflow.bid-placed', h)` | `@microsoft/signalr`; resubscribing by hand after reconnect |
 
-## 7. Verification
+## 7. Public API (new)
 
-Recorded in the step-2 PR.
+Everything is new in this step; the generated reports are `packages/tarol-client/api/tarol-client.api.md` and
+`tarol-client-push.api.md`.
+
+* `createClient(options)` → `TarolClient` (`change`, `read`, `url`, `invalidate`, `onChange`, `position`);
+  `ClientOptions`, `TokenProvider`, `ChangeRequest`, `ChangeOptions`, `ReadOptions`, `QueryValue`, `Created`, `Page`,
+  `ChangeEvent`.
+* `Result`, `Ok`, `Failed`, `Violation`, `Invalid`, `Problem`; `toViolation(status, body)`, `fallbackCode(status)`.
+* `Id<Of>`, `isId`, `asId`; `comparePositions`.
+* `/push`: `connectPush(options)` → `PushClient` (`subscribe`, `publish`, `onReconnect`, `onState`, `state`, `close`);
+  `PushOptions` (incl. `onRefused` and `onError`: a throwing handler is reported there, default the browser's
+  `reportError`, and the other handlers still run), `PushedMessage`, `PushState`, `isTopic`.
+
+Behaviour decided while building (not in §3): the fallback codes for answers without a problem body are `Auth.Required`
+(401), `Auth.Forbidden` (403), `NotFound` (404), `Conflict` (409), `Request.TooLarge` (413), `Request.UnsupportedMediaType`
+(415), `Unprocessable` (422), `TooManyRequests` (429), `Unavailable` (503), else `Http.<status>`; `Network` for status 0.
+
+## 8. Verification
+
+* `pnpm verify` green: format, lint (0 warnings), build, typecheck, tests, size, publint + attw + check-deps, API reports,
+  eng tests [verified].
+* Unit tests: **36** (client 24, push 12), run 5 times in a row, all green; the push tests run on Vitest's fake clock.
+  Found while writing them: the fake clock fires a 0 ms timer scheduled inside a tick only after 1 ms, so the #71 test
+  steps 1 ms for zero delays (a test detail, not a client behaviour).
+* Contract tests against the running sample (`TAROL_E2E=1`, `samples/Sagas` at Tarol-Net `73b35ff`): **6 passed**
+  (create 201 / replay 200 `replayed` / 422 `Idempotency.KeyReused`; bid 204 version 2 / stale 409
+  `Stream.VersionConflict`; 400 `{reserve:["Json"]}`; 403 on settle by the bidder; view 200 version 1 then 304; list 200
+  then 304; 400 `limit:["Range"]`; 401 `Auth.Required`) [verified].
+* Size (size-limit 14.3.0, esbuild/rolldown, minified): core **1.96 KB gzip / 1.79 KB brotli** (budget 3 KB); `/push`
+  **1.35 KB gzip / 1.23 KB brotli** (budget 2 KB) [verified].
+* Checks proven with a deliberate violation (foundation.md): a 1-byte budget → `Package size limit has exceeded by
+  1.96 kB`, exit 1; an `exports` target that does not exist → publint `does not exist`, exit 1; a changed public signature
+  without `api:update` → API Extractor `You have changed the API signature`, exit 1 [verified].
+* API Extractor's `ae-undocumented` is an error (eng/api-extractor.base.json), so every public member is documented.
+* Push against a real hub: **not possible yet** (BC-2: the hub ignores `access_token`; BC-9: the sample maps no hub).
+* Tarball: 27 files, 19.1 KB, includes `README.md` and `skills/tarol-client/SKILL.md` (3.8 KB) [verified, `npm pack
+  --dry-run`].

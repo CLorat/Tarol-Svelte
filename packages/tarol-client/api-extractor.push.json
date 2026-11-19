@@ -1,0 +1,11 @@
+{
+  "extends": "../../eng/api-extractor.base.json",
+  "projectFolder": ".",
+  "mainEntryPointFilePath": "<projectFolder>/dist/push.d.ts",
+  "apiReport": {
+    "enabled": true,
+    "reportFileName": "tarol-client-push.api.md",
+    "reportFolder": "<projectFolder>/api/",
+    "reportTempFolder": "<projectFolder>/dist/api-temp/"
+  }
+}

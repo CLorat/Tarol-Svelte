@@ -27,9 +27,9 @@ Each check gets a deliberate violation once, and the failure is recorded:
 | ESLint | `export function f(x: any): any` | 2 errors `@typescript-eslint/no-explicit-any` [verified] | this PR |
 | Prettier | `const  x =1` | `Code style issues found` [verified] | this PR |
 | `eng/check-deps.mjs` | undecided dependency, an edge outside the graph, CommonJS, no `sideEffects`, another licence, an unknown package | 6 tests in `eng/tests/check-deps.test.mjs`, all pass [verified] | this PR |
-| size-limit | a budget of 1 byte | | step 2 (the first package) |
-| publint / attw | a missing `exports` target | | step 2 |
-| API Extractor | a changed public function without `api:update` | | step 2 |
+| size-limit | a budget of 1 byte | `Package size limit has exceeded by 1.96 kB`, exit 1 [verified] | step 2 |
+| publint | an `exports` target that does not exist | `pkg.exports["./push"].default is ./dist/missing.js but the file does not exist`, exit 1 [verified] | step 2 |
+| API Extractor | a changed public function without `api:update` | `You have changed the API signature for this project`, exit 1 [verified] | step 2 |
 
 `pnpm verify` runs the whole list locally (not `pnpm ci`, which is pnpm's own command).
 
