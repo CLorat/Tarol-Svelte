@@ -4,6 +4,8 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* Release: `release.yml` publishes a tag `v*` to GitHub Packages behind the environment `release`; `eng/release.mjs`
+  (version, checks, notes).
 * `apps/docs`: the component catalogue (a page per component with a live example, its source, props from the types and
   the keyboard table), tokens, five guides; catalogue checks (axe, CLS) and the CI job `visual` (SV-12).
 * `@clorat/tarol-components`: `FormField` checks a field that shows an error while typing (**fix**: a corrected form

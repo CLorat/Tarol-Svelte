@@ -1,0 +1,155 @@
+name: Release
+
+# docs/migration/release.md (SV-14), the model of Tarol-Net's release.yml. A tag v<x.y.z>[-pre] publishes; every other
+# trigger is a dry run that stops before `publish`. The owner creates the tags. Packages go to GitHub Packages
+# (npm.pkg.github.com), never to the public npm registry.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch: # a dry run on any branch (the file must be on the default branch to be dispatched)
+  pull_request: # a dry run when the release files change
+    paths:
+      - .github/workflows/release.yml
+      - .github/workflows/ci.yml
+      - eng/release.mjs
+      - eng/tests/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false # never cancel a half-done release
+
+jobs:
+  ci:
+    # the whole CI on the exact commit: format, build, lint, types, tests, budgets, package checks, API reports, e2e
+    uses: ./.github/workflows/ci.yml
+
+  pack:
+    name: pack
+    needs: ci
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false # no token on disk while the build runs
+          fetch-depth: 0 # the tag-on-main check needs origin/main
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # a tag publishes only what is on main (a tag on another branch or a fork's commit is refused)
+      - name: The tag is on main
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME ($GITHUB_SHA) is not on main"; exit 1
+          fi
+
+      # a tag sets the version of every package; a dry run keeps the versions in package.json
+      - name: Version
+        id: version
+        env:
+          TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+        run: |
+          if [ -n "$TAG" ]; then
+            version=$(node eng/release.mjs version "$TAG")
+            node eng/release.mjs set-version "$version"
+          else
+            version=$(node -p "require('./packages/tarol-client/package.json').version")
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          [[ "$version" == *-* ]] && echo "prerelease=true" >> "$GITHUB_OUTPUT" || echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          echo "tarol-svelte $version"
+
+      - name: Install and build
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # the same checks as CI, on the versioned packages: budgets (SV-15), API reports, publint/attw and the dependency rules
+      - name: Budgets, API reports, package shape
+        run: |
+          pnpm size
+          pnpm api:check
+          pnpm check:packages
+
+      # values reach the scripts through env, not spliced into the script text
+      - name: Check that every package ships its README, skill, licence, registry and CHANGELOG section
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DRY_RUN: ${{ startsWith(github.ref, 'refs/tags/v') && ' ' || '--dry-run' }} # ' ': an empty string is falsy here
+        run: node eng/release.mjs check "$VERSION" $DRY_RUN
+
+      - name: Pack
+        run: |
+          mkdir -p artifacts/packages
+          pnpm -r --filter "./packages/**" exec pnpm pack --pack-destination "$GITHUB_WORKSPACE/artifacts/packages"
+          ls -l artifacts/packages
+
+      - name: Release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DRY_RUN: ${{ startsWith(github.ref, 'refs/tags/v') && ' ' || '--dry-run' }}
+        run: |
+          node eng/release.mjs notes "$VERSION" $DRY_RUN > artifacts/release-notes.md
+          cat artifacts/release-notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release
+          path: |
+            artifacts/packages/*.tgz
+            artifacts/release-notes.md
+          retention-days: 30
+
+  publish:
+    name: publish
+    needs: pack
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: release # the owner requires a reviewer here (Settings → Environments)
+    permissions:
+      contents: write # the GitHub release
+      packages: write # GitHub Packages, with GITHUB_TOKEN only
+    steps:
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: release
+          path: release
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@clorat'
+
+      # the bytes `pack` verified; a version already on the feed is skipped, so a re-run after a later failure is safe
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.pack.outputs.version }}
+          TAG: ${{ needs.pack.outputs.prerelease == 'true' && 'next' || 'latest' }}
+        run: |
+          for tgz in release/packages/*.tgz; do
+            name=$(tar -xOzf "$tgz" package/package.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).name")
+            if npm view "$name@$VERSION" version > /dev/null 2>&1; then echo "$name@$VERSION is published already"; continue; fi
+            npm publish "$tgz" --tag "$TAG"
+          done
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.pack.outputs.version }}
+          PRERELEASE: ${{ needs.pack.outputs.prerelease == 'true' && '--prerelease' || '' }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag
+          --title "tarol-svelte $VERSION"
+          --notes-file release/release-notes.md
+          $PRERELEASE
