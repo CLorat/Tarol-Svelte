@@ -55,7 +55,49 @@ SV-4, SV-5; answered. Backend changes BC-3 and BC-4 are proposed ([backend/chang
 CLI and library; snapshot tests on the sample fixture and on synthetic documents (every schema construct); a type-check
 test that compiles the generated output with `tsc --strict`; README; skill `tarol-codegen`.
 
-## 6. Skill evaluation checklist
+## 6. Built: public API, choices and verification
+
+**Public API (new)**, report `packages/tarol-codegen/api/tarol-codegen.api.md`: `generate(document, options)`,
+`GenerateError` (with `pointer`), `GenerateOptions`, and the input types `OpenApiDocument`, `Operation`, `Parameter`,
+`Schema`, `GeneratedRule`; the CLI `tarol-codegen <input> -o <out> [--check]` (exit 0, 1 on a stale file or a
+`GenerateError`, 2 on usage).
+
+**The generated module** (`packages/tarol-codegen/test/__snapshots__/artflow.ts` for the sample): schema types, `<Op>Query`
+and `<Op>Input` types, `requests` (descriptors for the runes), `rules` (per change and field path) and `tarol(client)`
+(`changes`, `queries`). It imports only types from `@clorat/tarol-client`.
+
+**Choices made while building**
+
+* Branded ids only from `x-tarol-id` (BC-3). Branding by heuristics (path parameter names) would make a created id
+  (`string`) unusable as the next call's `Id<'Auction'>`; one rule for every id is better than a half-branded client.
+* `["number","string"]` with a pattern → `number`; that pattern is ASP.NET's number format, so it is not a `Pattern` rule.
+* Rules from JSON Schema keywords until BC-4: required members → `Required`; `minLength: 1` without a maximum → `NotEmpty`
+  (code `Required`, as `[NotEmpty]` emits it); `minimum`/`maximum` (strings in Tarol's emitter) → `Range`;
+  `minItems`/`maxItems` → `Count`; `format: email` → `Email`; a `pattern` only when it compiles as an ECMAScript `u` pattern
+  (a .NET-only one, e.g. an atomic group, is left to the server).
+* `offset` is not generated (philosophy P1, keyset only); webhooks are skipped (server to server).
+* Path parameters must be identifiers and must not collide with body members (else `GenerateError`).
+* An object schema without members becomes `object` (any JSON object; the backend ignores unknown members).
+  `Record<string, never>` (the first version) made `{ auction } & SettleAuction` unsatisfiable, so
+  `settleAuction({ auction })` did not compile: the type-check of the contract test found it, and the strict usage test
+  now calls a change with an empty body schema. `Record<never, never>` compiles but is `{}`, which the lint of the generated
+  file rejects (`no-generated-empty-object-type`).
+* The generated file is linted with the repository's strict ESLint config: two findings fixed in the generator
+  (`String()` around string path members; default type arguments).
+
+**Verification**
+
+* Tests: **12** unit (snapshot of the sample; strict type-check of the generated module together with a usage file that
+  calls the runes and has three `@ts-expect-error` lines for a missing member, an unknown sort and `offset`; every schema
+  construct; ids; nested rules; `x-tarol-rules`; 7 error cases with their JSON pointers; CLI write/`--check`/usage) and
+  **2** contract tests against the running sample: the live `/openapi/v1.json` generates exactly the committed snapshot,
+  and the generated calls create, bid (version 2), are refused (403 settle by the bidder), settle, read the view and page
+  the list [verified].
+* Generated runtime for the sample's 6 entries: **489 B gzip / 426 B brotli** (1,410 B minified; `requests` alone 281 B)
+  [verified, `eng/bundle-svelte.mjs` + zlib].
+* ESLint (generator and generated file), tsc, publint, attw clean; API report with 0 undocumented members.
+
+## 7. Skill evaluation checklist
 
 | Task | Expected API | Mistakes to avoid |
 |---|---|---|

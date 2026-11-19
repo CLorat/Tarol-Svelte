@@ -86,6 +86,15 @@ importers:
 
   packages/tarol-client: {}
 
+  packages/tarol-codegen:
+    devDependencies:
+      '@clorat/tarol-client':
+        specifier: workspace:*
+        version: link:../tarol-client
+      '@clorat/tarol-svelte':
+        specifier: workspace:*
+        version: link:../tarol-svelte
+
   packages/tarol-components:
     dependencies:
       '@clorat/tarol-client':
