@@ -17,7 +17,7 @@ The backend is `CLorat/Tarol-Net@main`, verified on 2026-11-19 at `73b35ff`:
 | # | Step | Packages | Evaluation | Waits for | Status |
 |---|---|---|---|---|---|
 | 0 | Design | — | this file, [philosophy](../architecture/philosophy.md), [overview](../architecture/overview.md), [backend changes](../backend/changes.md) | — | this PR |
-| 1 | Foundation | workspace, CI, release skeleton | [foundation.md](foundation.md) | — | |
+| 1 | Foundation | workspace, CI, release skeleton | [foundation.md](foundation.md) | — | built (PR 1): pnpm workspace, TS 6 strict, ESLint/Prettier, Vitest, check-deps (6 tests), CI, CodeQL, Dependabot |
 | 2 | Client core | `@clorat/tarol-client` (+ `/push`) | [client.md](client.md) | BC-2 for push against a real hub | |
 | 3 | Svelte bindings | `@clorat/tarol-svelte` | [svelte.md](svelte.md) | — | |
 | 4 | Design system and first components | `@clorat/tarol-design`, `@clorat/tarol-components` (`DataTable`, form fields, `Dialog`, `Toaster`, `QueryState`, `AppShell`) | [design.md](design.md) | — | |

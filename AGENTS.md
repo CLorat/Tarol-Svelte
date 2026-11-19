@@ -14,11 +14,11 @@ The plan and the owner's decisions (SV-*): [docs/migration/plan.md](docs/migrati
 
 ## Build, test, format
 
-Node 22, pnpm 10 (workspace and scripts arrive with plan step 1; until then the repository holds the design only).
+Node 22, pnpm 10 (through corepack: `corepack enable`).
 
 ```bash
 pnpm install --frozen-lockfile      # install scripts never run (onlyBuiltDependencies: [])
-pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm size
+pnpm verify                         # format, lint, build, typecheck, test, size, package checks, API reports, eng tests
 pnpm api:update                     # after a public API change: regenerates the API Extractor reports
 ```
 
