@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+  - apps/*
+# No dependency may run an install script (SV-13). A package that needs one is a decision in docs/migration/dependencies.md.
+onlyBuiltDependencies: []
+strictPeerDependencies: true

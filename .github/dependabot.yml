@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      lint:
+        patterns: ['eslint*', '@eslint/*', 'typescript-eslint', 'globals', 'prettier*', 'svelte-eslint-parser']
+      test:
+        patterns: ['vitest', '@vitest/*', 'playwright', 'axe-core']
+      build:
+        patterns: ['vite', '@sveltejs/*', 'svelte', 'svelte-check', 'typescript', 'size-limit', '@size-limit/*']
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']

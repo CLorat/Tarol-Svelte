@@ -1,0 +1,50 @@
+{
+  "name": "tarol-svelte",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "build": "pnpm -r --if-present build",
+    "test": "vitest run",
+    "size": "pnpm -r --if-present size",
+    "check:packages": "pnpm -r --if-present check:package && node eng/check-deps.mjs",
+    "api:update": "pnpm -r --if-present api:update",
+    "api:check": "pnpm -r --if-present api:check",
+    "eng:test": "node --test \"eng/tests/*.test.mjs\"",
+    "verify": "pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm size && pnpm check:packages && pnpm api:check && pnpm eng:test"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.5",
+    "@eslint/js": "10.0.1",
+    "@microsoft/api-extractor": "7.60.1",
+    "@size-limit/preset-small-lib": "14.3.0",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@types/node": "22.19.1",
+    "@vitest/browser": "5.1.1",
+    "@vitest/browser-playwright": "5.1.1",
+    "axe-core": "4.14.1",
+    "eslint": "10.15.0",
+    "eslint-plugin-svelte": "3.24.1",
+    "globals": "17.14.0",
+    "playwright": "1.63.0",
+    "prettier": "3.10.1",
+    "prettier-plugin-svelte": "4.2.0",
+    "publint": "0.3.25",
+    "size-limit": "14.3.0",
+    "svelte": "5.58.0",
+    "svelte-check": "4.7.8",
+    "svelte-eslint-parser": "1.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.73.0",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  }
+}

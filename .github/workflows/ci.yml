@@ -1,0 +1,49 @@
+name: CI
+
+# Every PR and push runs the whole check list (docs/migration/plan.md, "How a step is done"). Reused by release.yml (step 11).
+on:
+  push:
+    branches: [main, 'ccr-**']
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # pnpm comes from Node's corepack at the version in package.json "packageManager"; no third-party action.
+      - name: Install
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      # Playwright's browser for the component tests (Vitest browser mode); the version is the one in the lockfile.
+      - name: Browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm size
+      - run: pnpm check:packages
+      - run: pnpm api:check
+      - run: pnpm eng:test

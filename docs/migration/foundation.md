@@ -20,9 +20,30 @@
 
 ## Proving the checks work
 
-Each check gets a deliberate violation once, in a throw-away commit or a test, and the failure is recorded in the PR:
-an `any` in a public type (lint), a budget of 1 byte (size-limit), a missing `exports` entry (publint), an unlisted
-dependency (check-deps), a changed public function without `api:update` (API Extractor).
+Each check gets a deliberate violation once, and the failure is recorded:
+
+| Check | Violation | Result | Where |
+|---|---|---|---|
+| ESLint | `export function f(x: any): any` | 2 errors `@typescript-eslint/no-explicit-any` [verified] | this PR |
+| Prettier | `const  x =1` | `Code style issues found` [verified] | this PR |
+| `eng/check-deps.mjs` | undecided dependency, an edge outside the graph, CommonJS, no `sideEffects`, another licence, an unknown package | 6 tests in `eng/tests/check-deps.test.mjs`, all pass [verified] | this PR |
+| size-limit | a budget of 1 byte | | step 2 (the first package) |
+| publint / attw | a missing `exports` target | | step 2 |
+| API Extractor | a changed public function without `api:update` | | step 2 |
+
+`pnpm verify` runs the whole list locally (not `pnpm ci`, which is pnpm's own command).
+
+## Choices made while building it
+
+* **TypeScript 6.0.3, not 7.0.2.** TypeScript 7 is the latest release, but `typescript-eslint` 8.73.0 declares
+  `typescript >=4.8.4 <6.1.0`, `svelte-check` 4.7.8 `^5 || ^6`, and API Extractor 7.60.1 bundles 6.0.3 [verified by
+  `npm view … peerDependencies`]. Revisit when they support 7.
+* **Playwright 1.63.0**, the version whose Chromium (build 1243) is preinstalled in the cloud sessions; CI installs the
+  browser of the locked version. Dependabot updates it.
+* **No third-party action**: pnpm comes from Node's corepack (`packageManager` in `package.json`), so only `actions/*` and
+  `github/*` actions are used, pinned to full SHAs (same pins as Tarol-Net; `actions/setup-node` v7.1.0 =
+  `949feb2413d6458794dcd2491c4babbbce0c15c1`, resolved with `git ls-remote`).
+* `vitest.config.ts` lists only packages that have a `vitest.config.ts`, so the workspace runs with no package.
 
 ## Dev dependencies (all dev only; decided with SV-13)
 
