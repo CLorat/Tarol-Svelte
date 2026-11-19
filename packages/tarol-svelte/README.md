@@ -42,7 +42,8 @@ views and keyset lists, forms bound to backend changes with field errors on the 
 |---|---|
 | `query(() => request, options)` | a view: `value`, `version`, `loading`, `violation`, `stale`, `refresh()` |
 | `list(() => request, options)` | a keyset list: `items`, `total`, `hasMore`, `more()`, `refresh()`; a filter change starts at page 1 |
-| `changeForm(change, initial, options)` | `values` (bindable), `errors` by backend field path, `formError`, `pending`, `touch()`, `submit()` |
+| `changeForm(change, initial, options)` | `values` (bindable), `errors` by backend field path, `formError`, `pending`, `touch()`, `submit()`; `optimistic: (input) => view.patch(…)` shows the result at once and rolls back on a failure (409 included) |
+| `query(…).patch(update)`, `list(…).patch(update)` | show a value before the backend answers; return the rollback |
 | `live(() => topic)` | the latest push `message` on a topic and a `count` |
 
 Queries revalidate on window focus, after every change this client commits, and on their `live` topics (and after a push

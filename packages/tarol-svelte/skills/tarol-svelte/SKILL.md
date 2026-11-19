@@ -25,6 +25,10 @@ description: >-
    `form.touch('x')` on blur, show `form.error('x')`. Server 400 errors land on the field with the same path
    (`lines[1].quantity`); errors no field shows, and coded errors (403, 409), are in `form.formError`. A retry of an
    unchanged input reuses the idempotency key, so double clicks and network retries are safe.
+6a. Optimistic changes are opt-in per form: `changeForm(bid, initial, { expectedVersion: () => view.version,
+   optimistic: (input) => view.patch((a) => ({ ...a, highest: input.amount })) })`. The patch shows at once; any failure
+   (409 `Stream.VersionConflict`, 400, 403, a throw) rolls it back and reads again; success keeps it until the own-change
+   revalidation replaces it. Return the rollback from `optimistic`, i.e. the result of `patch`.
 7. Codes are not messages: map `form.error(path)` and `violation.code` to text through the message catalogue
    (`@clorat/tarol-design`), never hard-code user text.
 
@@ -59,6 +63,8 @@ description: >-
 | `live()` without a push connection | `Error: tarol-svelte: live() needs a push connection` |
 | refetching after `submit()` | unnecessary: queries revalidate after own changes (with `Tarol-Read-After`) |
 | `{@html}` of server text | never; render text |
+| changing `view.value` by hand for an optimistic UI | `value` is read-only; use `view.patch(update)` and return its rollback from `optimistic` |
+| `optimistic` without `expectedVersion` | a concurrent change is not detected (no 409), so the patch may show a value that never existed |
 
 ## Notes
 

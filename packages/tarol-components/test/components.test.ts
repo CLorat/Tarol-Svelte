@@ -22,11 +22,11 @@ describe('DataTable in QueryState and AppShell', () => {
   it('shows the first page, appends the next with the button, and passes axe', async () => {
     const f = fakeClient(3);
     render(Table, { client: f.client });
-    await expect.element(page.getByRole('cell', { name: 'Auction 1' })).toBeInTheDocument();
+    await expect.element(page.getByRole('gridcell', { name: 'Auction 1' })).toBeInTheDocument();
     expect(document.querySelectorAll('tbody tr')).toHaveLength(2);
     await expectAccessible();
     await page.getByRole('button', { name: 'Load more' }).click();
-    await expect.element(page.getByRole('cell', { name: 'Auction 2' })).toBeInTheDocument();
+    await expect.element(page.getByRole('gridcell', { name: 'Auction 2' })).toBeInTheDocument();
     await expect.poll(() => page.getByRole('button', { name: 'Load more' }).query()).toBeNull();
     // other reads may be revalidations (the click focuses the window); the page read is the one with the cursor
     expect(f.reads.filter((r) => r.query['after'] !== undefined).map((r) => r.query['after'])).toEqual(['c2']);
@@ -46,7 +46,7 @@ describe('DataTable in QueryState and AppShell', () => {
   it('renders at most a window of rows above 200 (virtualization)', async () => {
     const f = fakeClient(1000);
     render(Table, { client: f.client, limit: 1000 });
-    await expect.element(page.getByRole('cell', { name: 'Auction 0', exact: true })).toBeInTheDocument();
+    await expect.element(page.getByRole('gridcell', { name: 'Auction 0', exact: true })).toBeInTheDocument();
     const rendered = document.querySelectorAll('tbody tr:not([aria-hidden])').length;
     expect(rendered).toBeGreaterThan(0);
     expect(rendered).toBeLessThanOrEqual(60);
@@ -54,8 +54,50 @@ describe('DataTable in QueryState and AppShell', () => {
     const scroller = document.querySelector<HTMLElement>('.t-table-scroll')!;
     scroller.scrollTop = 500 * 40;
     scroller.dispatchEvent(new Event('scroll'));
-    await expect.element(page.getByRole('cell', { name: 'Auction 500', exact: true })).toBeInTheDocument();
-    expect(page.getByRole('cell', { name: 'Auction 0', exact: true }).query()).toBeNull();
+    await expect.element(page.getByRole('gridcell', { name: 'Auction 500', exact: true })).toBeInTheDocument();
+    expect(page.getByRole('gridcell', { name: 'Auction 0', exact: true }).query()).toBeNull();
+  });
+
+  it('is a grid with one tab stop: arrows, Home/End, Ctrl+End and Page Down move the focus', async () => {
+    render(Table, { client: fakeClient(25).client, limit: 50 });
+    await expect.element(page.getByRole('grid', { name: 'Auctions' })).toBeInTheDocument();
+    await expect.element(page.getByRole('gridcell', { name: 'Auction 24' })).toBeInTheDocument();
+    // the one tab stop is the first header's sort button
+    page.getByRole('link', { name: 'Skip to content' }).element().focus();
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(document.activeElement?.textContent).toContain('Title');
+    const focused = () => document.activeElement?.closest('td, th')?.textContent.trim();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(focused()).toBe('Auction 0');
+    await userEvent.keyboard('{ArrowRight}');
+    expect(focused()).toBe('0');
+    await userEvent.keyboard('{ArrowRight}'); // stays at the edge
+    expect(focused()).toBe('0');
+    await userEvent.keyboard('{PageDown}');
+    expect(focused()).toBe(String(10 % 7));
+    await userEvent.keyboard('{Home}');
+    expect(focused()).toBe('Auction 10');
+    await userEvent.keyboard('{Control>}{End}{/Control}');
+    expect(focused()).toBe(String(24 % 7));
+    await userEvent.keyboard('{Control>}{Home}{/Control}');
+    expect(focused()).toContain('Title');
+    // only one element of the grid is in the tab order
+    const tabbable = [...document.querySelectorAll<HTMLElement>('table *')].filter((e) => e.tabIndex >= 0);
+    expect(tabbable).toHaveLength(1);
+    await expectAccessible();
+  });
+
+  it('focuses the widget of a cell, and reaches virtual rows by scrolling', async () => {
+    render(Table, { client: fakeClient(1000).client, limit: 1000, links: true });
+    await expect.element(page.getByRole('link', { name: 'Auction 0', exact: true })).toBeInTheDocument();
+    page.getByRole('link', { name: 'Auction 0', exact: true }).element().focus();
+    expect(document.activeElement?.tagName).toBe('A');
+    for (let i = 0; i < 30; i++) await userEvent.keyboard('{PageDown}');
+    await expect.poll(() => document.activeElement?.textContent).toBe('Auction 300');
+    expect(document.activeElement?.tagName).toBe('A');
+    await userEvent.keyboard('{Control>}{End}{/Control}');
+    await expect.poll(() => document.activeElement?.closest('td')?.textContent.trim()).toBe(String(999 % 7));
   });
 
   it('has a skip link to the main landmark and a named navigation', async () => {

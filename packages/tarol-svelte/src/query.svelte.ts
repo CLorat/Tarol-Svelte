@@ -36,6 +36,12 @@ export interface Query<T> {
   readonly stale: boolean;
   /** Reads again now (a 304 keeps the value). */
   refresh(): Promise<void>;
+  /**
+   * Shows `update(value)` at once, before the backend answered (an optimistic change, SV-6). Returns the rollback: it
+   * restores the previous value unless a newer read replaced it meanwhile, then reads again. Without a value, nothing is
+   * shown and the rollback only reads again.
+   */
+  patch(update: (value: T) => T): () => void;
 }
 
 /** The reactive state of a keyset-paged list. */
@@ -54,6 +60,8 @@ export interface List<T> {
   readonly stale: boolean;
   /** Loads the next page (keyset: the previous page's `next` as `after`). */
   more(): Promise<void>;
+  /** Shows `update(items)` at once (an optimistic change); returns the rollback, as {@link Query.patch}. */
+  patch(update: (items: readonly T[]) => readonly T[]): () => void;
   /** Reads the first page again and drops the pages after it. */
   refresh(): Promise<void>;
 }
@@ -172,6 +180,16 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
       return stale;
     },
     refresh,
+    patch(update) {
+      const before = value;
+      if (before === undefined) return () => void refresh();
+      const shown = (value = update(before));
+      return () => {
+        // a read that arrived meanwhile is newer than both: keep it
+        if (value === shown) value = before;
+        void refresh();
+      };
+    },
   };
 }
 
@@ -231,6 +249,14 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
       return stale;
     },
     refresh,
+    patch(update) {
+      const before = items;
+      const shown = (items = update(before));
+      return () => {
+        if (items === shown) items = before;
+        void refresh();
+      };
+    },
     async more() {
       const r = last;
       const after = next;

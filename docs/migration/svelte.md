@@ -39,7 +39,7 @@ const last = live<BidPlaced>(() => 'artflow.bid-placed');  // last.message, last
 * The query rune re-runs when its argument function reads changed `$state` (filters, sort). Changing a filter resets
   the cursor; `more()` appends the `next` page (keyset only).
 * Revalidation on window focus and on push reconnect (SV-6) is set up with `$effect` and removed on destroy; nothing global.
-* Optimistic updates (opt-in, SV-6) are **not in this PR**: they need the components' local patches (step 4) to be useful;
+* Optimistic updates (opt-in, SV-6) were built in step 7 (design.md §10: `patch`, `optimistic`). They were **not in this PR**: they need the components' local patches (step 4) to be useful;
   the plan is `changeForm(…, { optimistic: (draft) => … })`, rolled back on `Failed` (including 409
   `Stream.VersionConflict`), then revalidated.
 * Forms: client rules come from the generated metadata (SV-5) and run on input and blur; server `Invalid` errors replace

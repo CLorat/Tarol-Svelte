@@ -16,7 +16,7 @@ import type { Violation } from '@clorat/tarol-client';
 export function at(root: unknown, path: string): unknown;
 
 // @public
-export function changeForm<I extends object, T = undefined>(change: (input: I) => ChangeRequest, initial: I, options?: FormOptions<T>): Form<I, T>;
+export function changeForm<I extends object, T = undefined>(change: (input: I) => ChangeRequest, initial: I, options?: FormOptions<T, I>): Form<I, T>;
 
 // @public
 export function check(value: unknown, rules: readonly Rule[]): string | null;
@@ -35,12 +35,13 @@ export interface Form<I, T> {
 }
 
 // @public
-export interface FormOptions<T> {
+export interface FormOptions<T, I = unknown> {
     readonly client?: TarolClient;
     readonly expectedVersion?: () => number | undefined;
     readonly onSuccess?: (result: Extract<Result<T>, {
         ok: true;
     }>) => void;
+    readonly optimistic?: (input: I) => (() => void) | undefined;
     readonly rules?: Rules;
 }
 
@@ -56,6 +57,7 @@ export interface List<T> {
     readonly items: readonly T[];
     readonly loading: boolean;
     more(): Promise<void>;
+    patch(update: (items: readonly T[]) => readonly T[]): () => void;
     refresh(): Promise<void>;
     readonly stale: boolean;
     readonly total: number | undefined;
@@ -77,6 +79,7 @@ export function live<T = unknown>(topic: () => string | null, push?: PushClient)
 // @public
 export interface Query<T> {
     readonly loading: boolean;
+    patch(update: (value: T) => T): () => void;
     refresh(): Promise<void>;
     readonly stale: boolean;
     readonly value: T | undefined;

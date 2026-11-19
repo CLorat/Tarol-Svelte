@@ -27,7 +27,9 @@ Default Svelte 5 components bound to Tarol data, built from `@clorat/tarol-desig
 
 | Component | What |
 |---|---|
-| `DataTable` | keyset paging ("load more"), headers that switch the backend `sort` (`aria-sort`), virtual scrolling above 200 rows |
+| `DataTable` | a WAI-ARIA data grid: one tab stop, arrow keys, Home/End, Ctrl+Home/End, Page Up/Down; keyset paging ("load more"), headers that switch the backend `sort` (`aria-sort`), virtual scrolling above 200 rows |
+| `DetailLayout` | the page of one aggregate over `query(...)`: `h1` from the value, `meta`, `actions` (e.g. a `MenuButton`), `aside`, with `QueryState`'s loading, error and stale states |
+| `SearchBox` | the global search over `MapTarolSearch` (`GET /search`): a server-side `Combobox`, debounced and aborting, titles as plain text, `onselect(hit)` |
 | `QueryState` | loading skeletons (fixed height), empty text, error with the code's message and retry, stale note |
 | `ChangeForm` + `FormField` | a form over `changeForm(...)`: fields bound by backend path, errors as messages with the rule's bounds, refusals announced |
 | `AppShell` | skip link, header, named navigation, main landmark |
