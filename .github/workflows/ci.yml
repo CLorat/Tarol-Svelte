@@ -48,3 +48,61 @@ jobs:
       - run: pnpm check:packages
       - run: pnpm api:check
       - run: pnpm eng:test
+
+  # End-to-end against the backend sample (docs/migration/e2e.md): Tarol-Net at a pinned commit, its Aspire AppHost with
+  # PostgreSQL, NATS and Zitadel in Docker, then the contract tests and the Playwright suite of apps/docs.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      TAROL_NET_COMMIT: 73b35ff79983b2401d6ade66260d409b898e5c04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          repository: CLorat/Tarol-Net
+          ref: ${{ env.TAROL_NET_COMMIT }}
+          path: tarol-net
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0, the pin of Tarol-Net's ci.yml
+        with:
+          global-json-file: tarol-net/global.json
+
+      - name: Install
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Build the packages and the sample
+        run: |
+          pnpm build
+          dotnet build tarol-net/samples/Sagas/AppHost
+
+      # one AppHost for both suites (locally, global-setup.ts starts it when TAROL_E2E_URL is not set)
+      - name: Start the sample
+        run: |
+          cd tarol-net/samples/Sagas/AppHost
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT=true DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true \
+            ASPNETCORE_URLS=http://localhost:18888 ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL=http://localhost:18890 \
+            nohup dotnet bin/Debug/net11.0/ArtFlow.AppHost.dll > "$RUNNER_TEMP/apphost.log" 2>&1 &
+          for i in $(seq 120); do curl -sf http://localhost:5080/health/ready > /dev/null && exit 0; sleep 2; done
+          tail -50 "$RUNNER_TEMP/apphost.log"; exit 1
+
+      - name: Contract tests (client, codegen, oidc)
+        env:
+          TAROL_E2E: '1'
+        run: npx vitest run packages/tarol-client/test/contract.test.ts packages/tarol-codegen/test/contract.test.ts packages/tarol-oidc/test/contract.test.ts
+
+      - name: End-to-end tests (Playwright)
+        env:
+          TAROL_E2E_URL: http://localhost:5080
+        run: pnpm --filter @clorat/tarol-docs e2e

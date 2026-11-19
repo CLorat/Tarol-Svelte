@@ -17,6 +17,8 @@ Runtime dependencies are rare and enforced by `eng/check-deps.mjs`; dev dependen
 | `axe-core` | 4.14.1 | MPL-2.0 | accessibility rules in every component test (P6); test-only, never bundled into a package |
 | `@sveltejs/package` | 3.0.3 | MIT | builds the Svelte component packages (`svelte-package`); keeps `.svelte` sources for the app's compiler |
 | `@size-limit/file` | 14.3.0 | MIT | measures the compiled bundles that `eng/bundle-svelte.mjs` writes |
+| `@playwright/test` | 1.63.0 | Apache-2.0 | the e2e runner of `apps/docs` (SV-12); the same version as `playwright`, whose Chromium 1243 is installed |
+| `web-vitals` | 6.2.3 | Apache-2.0 | INP and CLS in the e2e suite (P1); injected into the test page only, never a dependency of a package or the app |
 
 The rest of the toolchain (TypeScript, ESLint, Prettier, Vitest, Playwright, size-limit, publint, attw, API Extractor,
 Vite, svelte-check) is listed with versions in `docs/migration/foundation.md`; all MIT or Apache-2.0.

@@ -42,6 +42,9 @@
       () => at(form.values, path) as number | null,
       (v) => {
         setAt(form.values, path, v);
+        // once a field shows an error it is checked while typing, so the error is gone before the blur: otherwise the
+        // blur of a click on submit removes the message, the button moves up and the click is lost
+        if (code !== undefined) form.touch(path);
       }
     }
     onblur={() => {
@@ -59,6 +62,9 @@
       () => (at(form.values, path) as string | null) ?? '',
       (v) => {
         setAt(form.values, path, v);
+        // once a field shows an error it is checked while typing, so the error is gone before the blur: otherwise the
+        // blur of a click on submit removes the message, the button moves up and the click is lost
+        if (code !== undefined) form.touch(path);
       }
     }
     onblur={() => {

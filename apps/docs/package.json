@@ -1,0 +1,33 @@
+{
+  "name": "@clorat/tarol-docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The docs app of tarol-svelte: example screens against the ArtFlow sample and (step 9) the component catalogue. Never published.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
+    "generate": "tarol-codegen ../../packages/tarol-codegen/test/fixtures/artflow.openapi.json -o src/artflow/api.ts",
+    "e2e": "playwright test --trace off",
+    "check:package": "tarol-codegen ../../packages/tarol-codegen/test/fixtures/artflow.openapi.json -o src/artflow/api.ts --check"
+  },
+  "dependencies": {
+    "@clorat/tarol-client": "workspace:*",
+    "@clorat/tarol-components": "workspace:*",
+    "@clorat/tarol-design": "workspace:*",
+    "@clorat/tarol-oidc": "workspace:*",
+    "@clorat/tarol-svelte": "workspace:*"
+  },
+  "devDependencies": {
+    "@clorat/tarol-codegen": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "axe-core": "4.14.1",
+    "svelte": "5.58.0",
+    "svelte-check": "4.7.8",
+    "vite": "8.3.8",
+    "web-vitals": "6.2.3"
+  }
+}

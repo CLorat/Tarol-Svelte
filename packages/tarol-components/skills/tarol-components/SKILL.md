@@ -59,6 +59,7 @@ description: >-
 | `FormField path="Reserve"` (C# casing) | no error shown: server paths are camelCase (`reserve`) |
 | no `rules` on a FormField | the message has no bounds ("The value is out of range.") |
 | `getByRole('cell')` in tests of a DataTable | the cells are `gridcell`s (the table is a grid) |
+| ESLint `no-unsafe-*` on `row` in a `cell` snippet | typescript-eslint cannot infer a generic component's snippet types: write `{#snippet cell(row: AuctionRow, c: Column)}` and `rowKey={(r: AuctionRow) => r.id}` (svelte-check infers them) |
 | two widgets in one DataTable cell | only the first gets the focus from the arrow keys; split the cell |
 | rendering a search snippet with `{@html}` | never: snippets are server HTML (BC-8); `SearchBox` shows titles as text |
 

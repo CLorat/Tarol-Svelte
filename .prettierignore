@@ -8,3 +8,4 @@ packages/*/api/
 .svelte-kit/
 .vitest/
 packages/*/test/__snapshots__/
+apps/docs/src/artflow/api.ts
