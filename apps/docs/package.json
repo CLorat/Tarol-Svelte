@@ -7,11 +7,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/props.mjs && vite build",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
     "generate": "tarol-codegen ../../packages/tarol-codegen/test/fixtures/artflow.openapi.json -o src/artflow/api.ts",
-    "e2e": "playwright test --trace off",
-    "check:package": "tarol-codegen ../../packages/tarol-codegen/test/fixtures/artflow.openapi.json -o src/artflow/api.ts --check"
+    "e2e": "playwright test --trace off --project artflow --project catalogue",
+    "check:package": "node scripts/props.mjs --check && tarol-codegen ../../packages/tarol-codegen/test/fixtures/artflow.openapi.json -o src/artflow/api.ts --check",
+    "props": "node scripts/props.mjs",
+    "visual": "playwright test --trace off --project visual"
   },
   "dependencies": {
     "@clorat/tarol-client": "workspace:*",

@@ -68,6 +68,7 @@ export default ts.config(
     // build scripts and configs are plain JS run by Node
     files: [
       'eng/**/*.mjs',
+      'apps/*/scripts/**/*.mjs',
       '*.config.js',
       '*.config.ts',
       'eng/**/*.js',

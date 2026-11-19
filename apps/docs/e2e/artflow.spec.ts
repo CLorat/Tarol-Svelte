@@ -130,7 +130,7 @@ test('the search box finds an auction and opens it', async ({ page }) => {
   const seller = (await api<{ items: { seller: string }[] }>('alice', 'GET', '/auctions?limit=1')).items[0]?.seller ?? '';
   const box = page.getByRole('combobox', { name: 'Search' });
   await box.fill(seller);
-  const option = page.getByRole('option').first();
+  const option = page.getByRole('listbox', { name: 'Search' }).getByRole('option').first();
   await expect(option).toBeVisible();
   await box.press('ArrowDown');
   await box.press('Enter');

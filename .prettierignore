@@ -9,3 +9,4 @@ packages/*/api/
 .vitest/
 packages/*/test/__snapshots__/
 apps/docs/src/artflow/api.ts
+apps/docs/src/catalogue/props.json

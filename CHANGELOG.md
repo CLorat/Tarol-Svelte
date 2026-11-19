@@ -4,6 +4,8 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `apps/docs`: the component catalogue (a page per component with a live example, its source, props from the types and
+  the keyboard table), tokens, five guides; catalogue checks (axe, CLS) and the CI job `visual` (SV-12).
 * `@clorat/tarol-components`: `FormField` checks a field that shows an error while typing (**fix**: a corrected form
   needed two clicks, because the blur removed the error line under the pointer).
 * `apps/docs`: ArtFlow example screens and the end-to-end suite against `samples/Sagas` (INP, CLS, axe); CI job `e2e`.

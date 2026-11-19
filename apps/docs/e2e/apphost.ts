@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { sample } from './sample.js';
 
@@ -18,7 +18,7 @@ const ready = async (): Promise<boolean> => {
  * TAROL_E2E_URL names a running backend or one is already up, then waits for /health/ready (at most 240 s) and for
  * the Zitadel setup's client list.
  */
-export default async function globalSetup(): Promise<void> {
+export async function startSample(): Promise<void> {
   let started = 0;
   if (!process.env['TAROL_E2E_URL'] && !(await ready())) {
     const net = resolve(process.env['TAROL_NET'] ?? join(import.meta.dirname, '../../../../Tarol-Net'));
@@ -47,5 +47,17 @@ export default async function globalSetup(): Promise<void> {
   while (!(await ready()) || !fresh()) {
     if (Date.now() > until) throw new Error(`e2e: ${sample.api}/health/ready did not answer 200 within 240 s`);
     await new Promise((r) => setTimeout(r, 2_000));
+  }
+}
+
+/** Stops the AppHost {@link startSample} started (its process group: API, worker, billing, the containers' orchestrator). */
+export function stopSample(): void {
+  if (!existsSync(pidFile)) return;
+  const pid = Number(readFileSync(pidFile, 'utf8'));
+  rmSync(pidFile);
+  try {
+    process.kill(-pid, 'SIGTERM');
+  } catch {
+    // already gone
   }
 }

@@ -106,3 +106,37 @@ jobs:
         env:
           TAROL_E2E_URL: http://localhost:5080
         run: pnpm --filter @clorat/tarol-docs e2e
+
+  # Visual regression (SV-12): every catalogue component × theme × density, in the official Playwright container so the
+  # rendering (fonts, anti-aliasing) is the same in every run. Baselines live in apps/docs/e2e/__screenshots__ and are
+  # made here only: a missing baseline is written and uploaded as an artifact for the PR to commit; a changed one fails.
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: mcr.microsoft.com/playwright:v1.63.0-noble
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Screenshots
+        env:
+          TAROL_VISUAL: '1'
+        run: |
+          pnpm --filter "./packages/**" build
+          pnpm --filter @clorat/tarol-docs visual --update-snapshots=missing
+
+      - name: Upload new baselines and differences
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: visual
+          path: |
+            apps/docs/e2e/__screenshots__
+            apps/docs/test-results
+          if-no-files-found: ignore
