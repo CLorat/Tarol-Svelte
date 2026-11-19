@@ -1,0 +1,74 @@
+{
+  "name": "@clorat/tarol-oidc",
+  "version": "0.1.0",
+  "description": "OIDC login for Tarol SPAs: authorization code with PKCE, tokens in memory, refresh, logout, and a Zitadel preset.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CLorat/Tarol-Svelte.git",
+    "directory": "packages/tarol-oidc"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./zitadel": {
+      "types": "./dist/zitadel.d.ts",
+      "default": "./dist/zitadel.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/api-temp",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "size": "size-limit",
+    "check:package": "publint --strict && attw --pack . --profile esm-only",
+    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.zitadel.json",
+    "api:check": "api-extractor run && api-extractor run -c api-extractor.zitadel.json"
+  },
+  "dependencies": {
+    "@clorat/tarol-client": "workspace:*",
+    "oauth4webapi": "3.8.8"
+  },
+  "size-limit": [
+    {
+      "name": "login + refresh",
+      "path": "dist/index.js",
+      "import": "{ createOidc }",
+      "limit": "9 kB",
+      "gzip": true
+    },
+    {
+      "name": "login + refresh (brotli)",
+      "path": "dist/index.js",
+      "import": "{ createOidc }",
+      "limit": "9 kB",
+      "brotli": true
+    },
+    {
+      "name": "with the Zitadel preset",
+      "path": [
+        "dist/index.js",
+        "dist/zitadel.js"
+      ],
+      "import": {
+        "dist/index.js": "{ createOidc }",
+        "dist/zitadel.js": "{ zitadel }"
+      },
+      "limit": "9 kB",
+      "gzip": true
+    }
+  ]
+}

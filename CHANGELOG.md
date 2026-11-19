@@ -4,6 +4,9 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-oidc` 0.1.0: `createOidc` (authorization code + PKCE on oauth4webapi, tokens in memory, refresh at 80 %
+  and on a 401 with coalescing, `restore()` by `prompt=none`, logout through the end-session endpoint) and `/zitadel`
+  (`zitadel`, the four scopes, roles of the project, the backend's tenant id).
 * `@clorat/tarol-codegen` 0.1.0: `tarol-codegen <openapi> -o <file> [--check]`; generates types, `requests`, `rules` and
   `tarol(client)` from a Tarol backend's OpenAPI document.
 * `@clorat/tarol-design` 0.1.0: tokens (light, dark, compact density, reduced motion), `ThemeRoot`, `Button`, `Field`,
