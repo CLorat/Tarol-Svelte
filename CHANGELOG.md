@@ -4,6 +4,8 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-svelte` 0.1.0: `setTarol`, `query`, `list` (keyset), `changeForm` (server field errors by path, client
+  rules, idempotent retries), `live`; revalidation on focus, own changes and push topics.
 * `@clorat/tarol-client` 0.1.0: `createClient` (changes with idempotency keys and `If-Match`, reads with the ETag cache
   and `Tarol-Read-After`, `Result`/`Violation`, `Id`, `Page`, `TokenProvider`) and `/push` (`connectPush`, the SignalR
   JSON client that never stops reconnecting).

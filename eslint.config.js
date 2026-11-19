@@ -10,6 +10,7 @@ export default ts.config(
     ignores: [
       '**/dist/**',
       '**/coverage/**',
+      '**/.size/**',
       'docs/migration/measurements/**',
       '**/*.d.ts',
       'packages/*/test/fixtures/**',
@@ -40,6 +41,15 @@ export default ts.config(
   {
     files: ['**/*.svelte', '**/*.svelte.ts'],
     languageOptions: { parserOptions: { parser: ts.parser } },
+  },
+  {
+    // Tests are not public API (no boundary types needed), and with noUncheckedIndexedAccess an index into a fixture the
+    // test just built is known to exist: `!` there is an assertion of the test, not a hidden null.
+    files: ['packages/*/test/**'],
+    rules: {
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+    },
   },
   {
     // build scripts and configs are plain JS run by Node
