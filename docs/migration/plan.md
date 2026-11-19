@@ -23,7 +23,7 @@ The backend is `CLorat/Tarol-Net@main`, verified on 2026-11-19 at `73b35ff`:
 | 4 | Design system and first components | `@clorat/tarol-design`, `@clorat/tarol-components` (`DataTable`, form fields, `Dialog`, `Toaster`, `QueryState`, `AppShell`) | [design.md](design.md) | — | merged (#5): tokens + 10 primitives + 5 components, 21 tests in Chromium with axe (0 violations), contrast and literal-text checks; visual regression moves to step 9 |
 | 5 | Typed client generator | `@clorat/tarol-codegen` | [codegen.md](codegen.md) | BC-3 for exact types, BC-4 for rules | merged (#6): 12 unit + 2 contract tests; the live document generates the committed snapshot; 489 B gzip for 6 entries |
 | 6 | Auth | `@clorat/tarol-oidc` (+ `/zitadel`) | [oidc.md](oidc.md) | BC-9 (a PKCE app in the sample) for e2e | built (PR 6): `createOidc` + `/zitadel`; 29 unit + 3 contract tests; 7.77 KB gzip (8.19 KB with the preset); browser login against Zitadel waits for BC-9 |
-| 7 | More components | combobox, menu, tabs, date field, search box, detail layout | [design.md](design.md) §7 | BC-8 for search | |
+| 7 | More components | combobox, menu, tabs, date field, search box, detail layout | [design.md](design.md) §7 | BC-8 for search | part 1 built (PR 7a): `Combobox`, `MenuButton`, `Tabs`, `DateField`; 11 tests in Chromium, axe 0; Combobox budget 3 KB (2.99 KB). Part 2 (components) next |
 | 8 | End-to-end | Playwright against `samples/Sagas`; INP, CLS; visual regression (SV-12) | [e2e.md](e2e.md) | BC-1, BC-2, BC-9 | |
 | 9 | Docs app | own Svelte + Vite catalogue (SV-11), runnable examples, GitHub Pages | [docs-app.md](docs-app.md) | — | |
 | 10 | Admin UI | `@clorat/tarol-admin` | [admin.md](admin.md) | BC-10 | |

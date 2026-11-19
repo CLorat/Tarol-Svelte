@@ -23,13 +23,14 @@ depend on any Tarol package, and nothing applies outside `ThemeRoot` (no global 
 |---|---|
 | `tokens.css` | `--t-color-*`, `--t-space-*` (× density), `--t-radius-*`, `--t-text-*`, `--t-shadow-*`, `--t-duration-*` (0 under reduced motion); scoped to `.t-root` |
 | `ThemeRoot` | `theme` (`auto`/`light`/`dark`), `density`, `locale`, `messages` (catalogues, tried in order), the toast region |
-| Primitives | `Button`, `Field`, `TextField`, `NumberField`, `Dialog` (native `<dialog>`), `Toaster`/`getToasts`, `Spinner`, `Skeleton`, `VisuallyHidden` |
+| Primitives | `Button`, `Field`, `TextField`, `NumberField`, `DateField` (native date input, ISO value), `Dialog` (native `<dialog>`), `Toaster`/`getToasts`, `Spinner`, `Skeleton`, `VisuallyHidden` |
+| Widgets (WAI-ARIA APG, on `popover`) | `Combobox` (list autocomplete; `filter={false}` + `onquery` for a server search), `MenuButton` (actions), `Tabs` (automatic activation) |
 | Messages | `en` (default), `de`; `getMessages()` → `t(id, params)`; backend codes (`Range`, `Auth.Forbidden` …) are message ids |
 
 Theme an app by overriding tokens: `.t-root { --t-color-accent: #0f766e; }`. Every text and UI token pair meets WCAG 2.2
 AA contrast in both themes (checked in CI).
 
-Size (gzip, compiled with their CSS): tokens.css 0.93 KB, Dialog 1.75 KB, Button 1.26 KB, TextField 1.73 KB, ThemeRoot
-with Toaster and the English catalogue 2.57 KB.
+Size (gzip, compiled with their CSS): tokens.css 0.93 KB, Dialog 1.76 KB, Button 1.26 KB, TextField 1.74 KB, DateField
+1.79 KB, Combobox 2.99 KB, MenuButton 1.7 KB, Tabs 1.2 KB, ThemeRoot with Toaster and the English catalogue 2.58 KB.
 
 Licence: AGPL-3.0-only, or a commercial licence from the copyright holder.

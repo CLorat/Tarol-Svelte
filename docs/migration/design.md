@@ -122,3 +122,66 @@ generated in the CI container. The docs app gets one page per component.
 
 Combobox (APG pattern, popover), menu button, tabs, date field (native `input type=date` first), search box (needs BC-8:
 escaped snippets), detail layout. Each with the same tests as step 4.
+
+## 9. Built in step 7, part 1: widgets in tarol-design
+
+Step 7 is split into two PRs: this one (the widgets, in `@clorat/tarol-design`) and part 2 (in `@clorat/tarol-components`
+and `@clorat/tarol-svelte`: `DataTable` arrow keys, the detail layout, the search box, optimistic changes).
+
+**Public API (new)**, report `packages/tarol-design/api/tarol-design.api.md`:
+* `Combobox` (`label`, `options: { value, label }[]`, bindable `value: string | null`, `filter` (function or `false`),
+  `onquery`, `onchange`, `loading`, `hint`, `error`, `required`, `placeholder`);
+* `MenuButton` (`items: { id, label, disabled? }[]`, `onselect(id)`, `variant`, the button content as children);
+* `Tabs` (`tabs: { id, label }[]`, bindable `selected`, `label`, `onchange`, the panel as a snippet receiving the id);
+* `DateField` (bindable `value: 'YYYY-MM-DD' | null`, `min`, `max`, `hint`, `error`, `required`);
+* message id `ui.noResults` (en "No matches.", de "Keine Treffer.").
+
+**Choices made while building**
+
+* All three popups use the native `popover` (top layer, no z-index, no portal) and CSS anchor positioning. The menu is
+  `popover="auto"` with the button as `popovertarget` invoker (light dismiss; a click on the button while open closes it
+  instead of reopening, which a hand-written toggle got wrong: pointerdown dismisses, then click reopens). The combobox
+  list is `popover="manual"`: focus stays in the input and it is shown and hidden by the input's state.
+* Combobox follows the APG "list autocomplete" pattern: `aria-activedescendant`, the list never takes focus; pointerdown on
+  an option is prevented so a click keeps the focus in the input. Leaving the field resets a half-typed text to the chosen
+  option's label (a typed text is never a value). The "no results" / "loading" text is a `role=status` **next to** the
+  listbox: inside it, axe reports `aria-required-children` (found by the test, fixed).
+* Tabs use automatic activation (selection follows focus): panels here are cheap to render (the app's own snippet).
+* DateField is the native `input type=date` (localized format and picker from the browser), as §8 planned. Its value is
+  the ISO date string, which is how a backend `DateOnly` is serialized; no `Date` objects (time-zone shifts).
+* Anchor positioning is supported by Chromium; browsers without it show the popup at the start of the top layer
+  (usable, not aligned). The flip fallback (`position-try-fallbacks`) was left out of the combobox to fit its budget.
+
+**Budget raise (SV-15: a raise needs a note entry with the measurement).** Combobox measures **2.99 KB gzip / 2.64 KB
+brotli** compiled with its CSS, including `Field` and the message lookup (TextField with Field alone is 1.74 KB); its
+budget is **3 KB** like ThemeRoot, another composite, instead of 2 KB. The first build measured 3.05 KB; it was trimmed by
+deriving the "typed" state, dropping one style rule, the flip fallback and a no-op key handler. "Everything" in
+tarol-design rises from 8 KB to **10 KB** (measured **9.16 KB gzip / 8.04 KB brotli** with the four widgets). The other
+widgets fit the 2 KB primitive budget: MenuButton 1.70 / 1.47, Tabs 1.20 / 1.03, DateField 1.79 / 1.56 (gzip / brotli)
+[verified, `pnpm size` and zlib].
+
+**Suppressions:** one, `Combobox.svelte`: `svelte-ignore a11y_click_events_have_key_events` on the option element. The
+options are never focused; the input handles the keys for them (APG combobox, `aria-activedescendant`), so a key handler
+on the option would be dead code (it was, as a no-op, in the first build).
+
+**Verification**
+
+* Tests in Chromium: tarol-design **25** (14 before + 11): combobox 4 (filter, arrows, Enter, focus stays in the input;
+  wrap, Escape twice; click keeps focus and blur restores the label; server-side mode with `onquery` and the German
+  no-results text), date field 1, menu button 3 (Enter opens at the first item, disabled skipped, wrap, End, Enter
+  chooses and focus returns; Arrow Up opens at the last, Escape; click toggles and light dismiss), tabs 1 (one tab stop,
+  arrows with wrap, Home/End, the panel labelled by its tab and reachable by Tab), themes 2 (light and dark with the list
+  open). axe 0 violations in every state; 3 runs in a row green [verified].
+* Deliberate violation: `tabindex={0}` on every tab fails the tabs test [verified].
+* `eng/check-text.mjs`: 19 components, 0 literal texts; svelte-check 0 errors, 0 warnings; ESLint 0; API report
+  regenerated with 0 undocumented members.
+
+### Skill evaluation checklist (additions)
+
+| Task | Expected API | Mistakes to avoid |
+|---|---|---|
+| "Pick an artist from a list" | `<Combobox label options bind:value>` | a custom dropdown of `div`s; reading the typed text as the value |
+| "Search the server as the user types" | `filter={false}`, `onquery`, `options`, `loading` | filtering server results again |
+| "Row actions: edit, delete" | `<MenuButton items onselect>` | `<select>` for actions; own key handlers |
+| "Details, bids and history sections" | `<Tabs label tabs bind:selected>` with a `children(id)` snippet | rendering all panels and hiding them with CSS |
+| "End date of the auction" | `<DateField bind:value min>` (ISO string) | `Date` objects and `toISOString()` |

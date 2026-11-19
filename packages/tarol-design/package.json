@@ -33,7 +33,7 @@
   "scripts": {
     "build": "svelte-package -i src/lib -o dist && node ../../eng/doc-svelte-dts.mjs dist && node scripts/build-css.mjs",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
-    "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/all.js && node ../../eng/bundle-svelte.mjs dist/index.js .size/dialog.js Dialog && node ../../eng/bundle-svelte.mjs dist/index.js .size/button.js Button && node ../../eng/bundle-svelte.mjs dist/index.js .size/textfield.js TextField && node ../../eng/bundle-svelte.mjs dist/index.js .size/themeroot.js ThemeRoot && size-limit",
+    "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/all.js && node ../../eng/bundle-svelte.mjs dist/index.js .size/dialog.js Dialog && node ../../eng/bundle-svelte.mjs dist/index.js .size/button.js Button && node ../../eng/bundle-svelte.mjs dist/index.js .size/textfield.js TextField && node ../../eng/bundle-svelte.mjs dist/index.js .size/themeroot.js ThemeRoot && node ../../eng/bundle-svelte.mjs dist/index.js .size/combobox.js Combobox && node ../../eng/bundle-svelte.mjs dist/index.js .size/menubutton.js MenuButton && node ../../eng/bundle-svelte.mjs dist/index.js .size/tabs.js Tabs && node ../../eng/bundle-svelte.mjs dist/index.js .size/datefield.js DateField && size-limit",
     "check:package": "publint --strict",
     "api:update": "api-extractor run --local",
     "api:check": "api-extractor run"
@@ -76,9 +76,33 @@
       "gzip": true
     },
     {
+      "name": "Combobox (with Field)",
+      "path": ".size/combobox.js",
+      "limit": "3 kB",
+      "gzip": true
+    },
+    {
+      "name": "MenuButton",
+      "path": ".size/menubutton.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "Tabs",
+      "path": ".size/tabs.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
+      "name": "DateField (with Field)",
+      "path": ".size/datefield.js",
+      "limit": "2 kB",
+      "gzip": true
+    },
+    {
       "name": "everything",
       "path": ".size/all.js",
-      "limit": "8 kB",
+      "limit": "10 kB",
       "gzip": true
     }
   ]
