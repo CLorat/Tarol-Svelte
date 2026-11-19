@@ -1,0 +1,61 @@
+{
+  "name": "@clorat/tarol-svelte",
+  "version": "0.1.0",
+  "description": "Svelte 5 runes for Tarol backends: reactive queries and keyset lists, forms bound to changes, live push topics.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CLorat/Tarol-Svelte.git",
+    "directory": "packages/tarol-svelte"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/api-temp",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
+    "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/bundle.js \"query, list, changeForm, live, setTarol\" && size-limit",
+    "check:package": "publint --strict && attw --pack . --profile esm-only",
+    "api:update": "api-extractor run --local",
+    "api:check": "api-extractor run"
+  },
+  "dependencies": {
+    "@clorat/tarol-client": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": "^5.58.0"
+  },
+  "size-limit": [
+    {
+      "name": "svelte bindings (compiled, without svelte and tarol-client)",
+      "path": ".size/bundle.js",
+      "limit": "3 kB",
+      "gzip": true
+    },
+    {
+      "name": "svelte bindings (brotli)",
+      "path": ".size/bundle.js",
+      "limit": "3 kB",
+      "brotli": true
+    }
+  ],
+  "devDependencies": {
+    "@size-limit/file": "14.3.0"
+  }
+}

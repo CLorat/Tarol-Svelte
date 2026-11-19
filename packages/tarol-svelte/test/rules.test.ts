@@ -1,0 +1,51 @@
+import { describe, expect, it } from 'vitest';
+import { check, isEmail, rulePath } from '../src/rules.js';
+
+describe('rules', () => {
+  it('returns the code of the first failing rule, one per value', () => {
+    const rules = [
+      { rule: 'NotEmpty', code: 'Required' },
+      { rule: 'Length', code: 'Length', min: 3, max: 5 },
+      { rule: 'Pattern', code: 'Pattern', pattern: '^[a-z]+$' },
+    ] as const;
+    expect(check('', rules)).toBe('Required');
+    expect(check('ab', rules)).toBe('Length');
+    expect(check('abc1', rules)).toBe('Pattern');
+    expect(check('abcd', rules)).toBeNull();
+  });
+
+  it('lets an empty optional value pass every rule but Required', () => {
+    expect(check(null, [{ rule: 'Range', code: 'Range', min: 1 }])).toBeNull();
+    expect(check(undefined, [{ rule: 'Required', code: 'Required' }])).toBe('Required');
+  });
+
+  it('checks Range, Length in UTF-16 units, Count and Pattern with the u flag', () => {
+    expect(check(0, [{ rule: 'Range', code: 'Range', min: 1, max: 10 }])).toBe('Range');
+    expect(check(10, [{ rule: 'Range', code: 'Range', min: 1, max: 10 }])).toBeNull();
+    expect(check('😀😀', [{ rule: 'Length', code: 'Length', max: 3 }])).toBe('Length'); // 4 UTF-16 units, as .NET counts
+    expect(check([1, 2, 3], [{ rule: 'Count', code: 'Count', min: 1, max: 2 }])).toBe('Count');
+    expect(check('😀', [{ rule: 'Pattern', code: 'Pattern', pattern: '^.$' }])).toBeNull();
+    expect(check('ABC', [{ rule: 'Pattern', code: 'Pattern', pattern: '^[a-z]+$', flags: 'i' }])).toBeNull();
+  });
+
+  it('applies the backend email rule exactly', () => {
+    expect(isEmail('ada@example.org')).toBe(true);
+    for (const bad of [
+      '@example.org',
+      'ada@@example.org',
+      'ada@example',
+      'ada@.example.org',
+      'ada@example.org.',
+      'ada@ex..org',
+      'a da@example.org',
+      `${'a'.repeat(65)}@example.org`,
+      `a@${'b'.repeat(250)}.org`,
+    ])
+      expect(isEmail(bad), bad).toBe(false);
+  });
+
+  it('maps concrete paths to rule keys', () => {
+    expect(rulePath('lines[12].quantity')).toBe('lines[].quantity');
+    expect(rulePath('customer')).toBe('customer');
+  });
+});

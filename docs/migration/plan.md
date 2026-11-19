@@ -19,7 +19,7 @@ The backend is `CLorat/Tarol-Net@main`, verified on 2026-11-19 at `73b35ff`:
 | 0 | Design | — | this file, [philosophy](../architecture/philosophy.md), [overview](../architecture/overview.md), [backend changes](../backend/changes.md) | — | this PR |
 | 1 | Foundation | workspace, CI, release skeleton | [foundation.md](foundation.md) | — | built (PR 1): pnpm workspace, TS 6 strict, ESLint/Prettier, Vitest, check-deps (6 tests), CI, CodeQL, Dependabot |
 | 2 | Client core | `@clorat/tarol-client` (+ `/push`) | [client.md](client.md) | BC-2 for push against a real hub | built (PR 2): 36 unit + 6 contract tests against the sample, core 1.96 KB, push 1.35 KB gzip |
-| 3 | Svelte bindings | `@clorat/tarol-svelte` | [svelte.md](svelte.md) | — | |
+| 3 | Svelte bindings | `@clorat/tarol-svelte` | [svelte.md](svelte.md) | — | built (PR 3): `query`, `list`, `changeForm`, `live`; 25 tests in Chromium; 2.62 KB gzip compiled; optimistic changes follow with step 4 |
 | 4 | Design system and first components | `@clorat/tarol-design`, `@clorat/tarol-components` (`DataTable`, form fields, `Dialog`, `Toaster`, `QueryState`, `AppShell`) | [design.md](design.md) | — | |
 | 5 | Typed client generator | `@clorat/tarol-codegen` | [codegen.md](codegen.md) | BC-3 for exact types, BC-4 for rules | |
 | 6 | Auth | `@clorat/tarol-oidc` (+ `/zitadel`) | [oidc.md](oidc.md) | BC-9 (a PKCE app in the sample) for e2e | |

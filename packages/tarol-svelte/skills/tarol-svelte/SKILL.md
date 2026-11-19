@@ -1,0 +1,67 @@
+---
+name: tarol-svelte
+description: >-
+  Use when building Svelte 5 screens on a Tarol backend: lists with keyset paging and filters, detail views, forms that
+  send a change and show the server's field errors, or live updates from push topics. Covers setTarol, query, list,
+  changeForm, live and Rule from @clorat/tarol-svelte. Do not write fetch/$effect loading code by hand, use Svelte 4
+  stores or $: statements, or poll with setInterval.
+---
+
+# Tarol Svelte bindings (`@clorat/tarol-svelte`)
+
+## Rules
+
+1. Once, in the root component: `setTarol(createClient({ baseUrl, tokens }), connectPush({ url, tokens }))` (the push
+   connection is optional). Every rune below takes the client from that context; call the runes during component
+   initialisation (top level of `<script>`), not in event handlers.
+2. Pass a **function** that returns the request: `list(() => ({ path: '/auctions', query: { settled, sort } }))`. It may
+   read `$state`; when that changes the rune reads again (a list restarts at page 1). Return `null` to read nothing.
+3. Lists are keyset-paged: `items`, `hasMore`, `more()`. Never compute offsets.
+4. A read failure does not throw: check `violation` (`{ kind: 'error', code }` or `{ kind: 'invalid', errors }`). The last
+   good `value`/`items` stay visible while revalidating.
+5. Live data: `list(…, { live: 'artflow.bid-placed' })` revalidates on each message and after a push reconnect. Queries also
+   revalidate on window focus and after this client's own changes; you never refresh by hand after a submit.
+6. Forms: `changeForm(change, initial, { rules, expectedVersion })`. Bind inputs to `form.values.x`, call
+   `form.touch('x')` on blur, show `form.error('x')`. Server 400 errors land on the field with the same path
+   (`lines[1].quantity`); errors no field shows, and coded errors (403, 409), are in `form.formError`. A retry of an
+   unchanged input reuses the idempotency key, so double clicks and network retries are safe.
+7. Codes are not messages: map `form.error(path)` and `violation.code` to text through the message catalogue
+   (`@clorat/tarol-design`), never hard-code user text.
+
+## Example
+
+```svelte
+<script lang="ts">
+  import { changeForm, query } from '@clorat/tarol-svelte';
+
+  let { id }: { id: string } = $props();
+  const auction = query<AuctionView>(() => ({ path: `/auctions/${id}` }), { live: 'artflow.bid-placed' });
+  const bid = changeForm(
+    (i: { amount: number }) => ({ method: 'POST', path: `/auctions/${id}/bids`, body: i }),
+    { amount: 0 },
+    { rules: { amount: [{ rule: 'Range', code: 'Range', min: 1 }] }, expectedVersion: () => auction.version },
+  );
+</script>
+
+{#if auction.value}<p>{auction.value.bids}</p>{/if}
+<input type="number" bind:value={bid.values.amount} onblur={() => bid.touch('amount')} aria-invalid={!!bid.error('amount')} />
+{#if bid.formError?.kind === 'error'}<p role="alert">{bid.formError.code}</p>{/if}
+<button disabled={bid.pending} onclick={() => bid.submit()}>Bid</button>
+```
+
+## Common mistakes
+
+| Mistake | What happens |
+|---|---|
+| `list({ path })` (an object, not a function) | TypeScript error: the argument must be `() => ReadRequest \| null` |
+| calling `query()` inside an `onclick` | Svelte throws `lifecycle_outside_component` (context and runes need component initialisation) |
+| no `setTarol` above the component | `Error: tarol-svelte: call setTarol(client) in a parent component first` |
+| `live()` without a push connection | `Error: tarol-svelte: live() needs a push connection` |
+| refetching after `submit()` | unnecessary: queries revalidate after own changes (with `Tarol-Read-After`) |
+| `{@html}` of server text | never; render text |
+
+## Notes
+
+* Plain Svelte 5 (Vite SPA). The runes are compiled by your app's Svelte plugin; nothing global runs at import.
+* `Rule` kinds: `Required`, `NotEmpty`, `Range`, `Length` (UTF-16 units), `Pattern` (ECMAScript, `u` flag), `Email` (the
+  backend's rule), `Count`; one code per value, as on the server. The generator (`@clorat/tarol-codegen`) writes them.

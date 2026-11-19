@@ -1,0 +1,252 @@
+import type { Page, QueryValue, Result, TarolClient, Violation } from '@clorat/tarol-client';
+import type { PushClient } from '@clorat/tarol-client/push';
+import { getTarol } from './context.js';
+
+/** A read as the generated client describes it: a path and its query-string parameters. */
+export interface ReadRequest {
+  /** The path below the client's base URL. */
+  readonly path: string;
+  /** Filters, `sort`, `limit` and the other query-string parameters. */
+  readonly query?: Readonly<Record<string, QueryValue>>;
+}
+
+/** Settings of {@link query} and {@link list}. */
+export interface QueryOptions {
+  /** Push topics that make this query stale: it revalidates on every message and after every push reconnect. */
+  readonly live?: string | readonly string[];
+  /** Revalidate when the window gets focus again. Default `true`. */
+  readonly revalidateOnFocus?: boolean;
+  /** Revalidate after every change this client commits (cheap: ETag 304, `Tarol-Read-After`). Default `true`. */
+  readonly revalidateOnChange?: boolean;
+  /** The client and push connection, when not taken from {@link setTarol}'s context. */
+  readonly tarol?: { readonly client: TarolClient; readonly push?: PushClient };
+}
+
+/** The reactive state of a view or any single read. */
+export interface Query<T> {
+  /** The last value read, kept while revalidating. */
+  readonly value: T | undefined;
+  /** `true` while a read is in flight. */
+  readonly loading: boolean;
+  /** The violation of the last read, if it failed. */
+  readonly violation: Violation | undefined;
+  /** The aggregate version from the view's ETag. */
+  readonly version: number | undefined;
+  /** `true` when a list answered before catching up with this client's own write (`Tarol-Stale`). */
+  readonly stale: boolean;
+  /** Reads again now (a 304 keeps the value). */
+  refresh(): Promise<void>;
+}
+
+/** The reactive state of a keyset-paged list. */
+export interface List<T> {
+  /** The rows of every page loaded so far. */
+  readonly items: readonly T[];
+  /** The number of all matching rows, when the request asked for it (`count: true`). */
+  readonly total: number | undefined;
+  /** `true` when there is a next page. */
+  readonly hasMore: boolean;
+  /** `true` while a page is being read. */
+  readonly loading: boolean;
+  /** The violation of the last read, if it failed. */
+  readonly violation: Violation | undefined;
+  /** `true` when the first page answered before catching up with this client's own write. */
+  readonly stale: boolean;
+  /** Loads the next page (keyset: the previous page's `next` as `after`). */
+  more(): Promise<void>;
+  /** Reads the first page again and drops the pages after it. */
+  refresh(): Promise<void>;
+}
+
+interface Source<T> {
+  load(signal: AbortSignal): Promise<Result<T>>;
+}
+
+/** Runs the shared loop: re-read on argument change, focus, own change and push topic; abort the previous read. */
+function track<T>(
+  tarol: { readonly client: TarolClient; readonly push?: PushClient },
+  source: () => Source<T> | null,
+  options: QueryOptions,
+  apply: (r: Result<T>) => void,
+  setLoading: (v: boolean) => void,
+): () => Promise<void> {
+  let current: Source<T> | null = null;
+  let controller: AbortController | undefined;
+
+  const run = async (): Promise<void> => {
+    const s = current;
+    if (!s) return;
+    controller?.abort();
+    const c = (controller = new AbortController());
+    setLoading(true);
+    try {
+      const r = await s.load(c.signal);
+      if (!c.signal.aborted) apply(r);
+    } catch (error) {
+      if (!c.signal.aborted) throw error;
+    } finally {
+      if (controller === c) setLoading(false);
+    }
+  };
+
+  $effect(() => {
+    current = source(); // reads the caller's $state: a filter change re-runs this effect
+    void run();
+    return () => controller?.abort();
+  });
+
+  $effect(() => {
+    const offs: (() => void)[] = [];
+    if (options.revalidateOnChange !== false) offs.push(tarol.client.onChange(() => void run()));
+    if (options.revalidateOnFocus !== false) {
+      const onFocus = (): void => void run();
+      const onVisible = (): void => {
+        if (document.visibilityState === 'visible') void run();
+      };
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onVisible);
+      offs.push(() => {
+        window.removeEventListener('focus', onFocus);
+        document.removeEventListener('visibilitychange', onVisible);
+      });
+    }
+    const topics = typeof options.live === 'string' ? [options.live] : (options.live ?? []);
+    if (tarol.push && topics.length > 0) {
+      for (const t of topics) offs.push(tarol.push.subscribe(t, () => void run()));
+      offs.push(tarol.push.onReconnect(() => void run()));
+    }
+    return () => {
+      for (const off of offs) off();
+    };
+  });
+
+  return run;
+}
+
+/**
+ * A reactive read of a view (or any single resource). Call it during component initialisation. `request` may read
+ * `$state`; when it changes, the query reads again. Return `null` to read nothing (e.g. no id selected yet).
+ */
+export function query<T>(request: () => ReadRequest | null, options: QueryOptions = {}): Query<T> {
+  const tarol = options.tarol ?? getTarol();
+  let value = $state<T | undefined>();
+  let loading = $state(false);
+  let violation = $state<Violation | undefined>();
+  let version = $state<number | undefined>();
+  let stale = $state(false);
+
+  const refresh = track<T>(
+    tarol,
+    () => {
+      const r = request();
+      return r
+        ? { load: (signal) => tarol.client.read<T>(r.path, r.query ? { query: r.query, signal } : { signal }) }
+        : null;
+    },
+    options,
+    (r) => {
+      if (r.ok) {
+        value = r.value;
+        version = r.version;
+        stale = r.stale;
+        violation = undefined;
+      } else violation = r.violation;
+    },
+    (v) => (loading = v),
+  );
+
+  return {
+    get value() {
+      return value;
+    },
+    get loading() {
+      return loading;
+    },
+    get violation() {
+      return violation;
+    },
+    get version() {
+      return version;
+    },
+    get stale() {
+      return stale;
+    },
+    refresh,
+  };
+}
+
+/**
+ * A reactive keyset-paged list. `request` may read `$state` (filters, sort); a change reads the first page again.
+ * `more()` appends the next page.
+ */
+export function list<T>(request: () => ReadRequest | null, options: QueryOptions = {}): List<T> {
+  const tarol = options.tarol ?? getTarol();
+  let items = $state.raw<readonly T[]>([]);
+  let next = $state<string | null>(null);
+  let total = $state<number | undefined>();
+  let loading = $state(false);
+  let violation = $state<Violation | undefined>();
+  let stale = $state(false);
+  let last: ReadRequest | null = null;
+
+  const read = (r: ReadRequest, signal: AbortSignal, after?: string) =>
+    tarol.client.read<Page<T>>(r.path, { query: after === undefined ? { ...r.query } : { ...r.query, after }, signal });
+
+  const refresh = track<Page<T>>(
+    tarol,
+    () => {
+      const r = (last = request());
+      return r ? { load: (signal) => read(r, signal) } : null;
+    },
+    options,
+    (r) => {
+      if (r.ok) {
+        items = r.value.items;
+        next = r.value.next;
+        total = r.value.total;
+        stale = r.stale;
+        violation = undefined;
+      } else violation = r.violation;
+    },
+    (v) => (loading = v),
+  );
+
+  return {
+    get items() {
+      return items;
+    },
+    get total() {
+      return total;
+    },
+    get hasMore() {
+      return next !== null;
+    },
+    get loading() {
+      return loading;
+    },
+    get violation() {
+      return violation;
+    },
+    get stale() {
+      return stale;
+    },
+    refresh,
+    async more() {
+      const r = last;
+      const after = next;
+      if (!r || after === null || loading) return;
+      loading = true;
+      try {
+        const page = await read(r, new AbortController().signal, after);
+        if (r !== last) return; // the filters changed meanwhile
+        if (page.ok) {
+          items = [...items, ...page.value.items];
+          next = page.value.next;
+          violation = undefined;
+        } else violation = page.violation;
+      } finally {
+        loading = false;
+      }
+    },
+  };
+}
