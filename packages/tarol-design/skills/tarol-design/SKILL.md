@@ -2,8 +2,9 @@
 name: tarol-design
 description: >-
   Use when styling or building UI with the tarol-svelte design system: tokens and themes (dark mode, density), buttons,
-  form fields with errors, modal dialogs, toasts, loading skeletons, or German/English texts. Covers tokens.css,
-  ThemeRoot, Button, Field, TextField, NumberField, Dialog, getToasts, Skeleton, Spinner, en, de and getMessages from
+  form fields with errors, dates, comboboxes, menus, tabs, modal dialogs, toasts, loading skeletons, or German/English
+  texts. Covers tokens.css, ThemeRoot, Button, Field, TextField, NumberField, DateField, Combobox, MenuButton, Tabs,
+  Dialog, getToasts, Skeleton, Spinner, en, de and getMessages from
   @clorat/tarol-design. Do not add Tailwind or a global CSS reset, hand-write focus traps, or hard-code user-visible text.
 ---
 
@@ -25,6 +26,12 @@ description: >-
 6. Toasts: `getToasts().show(text, { kind: 'success' | 'info' | 'error' })` inside a ThemeRoot; errors stay until dismissed
    and are announced assertively.
 7. Buttons are `type="button"` unless you say `type="submit"`; `loading` disables and sets `aria-busy`.
+8. Choosing one value from many: `<Combobox label options={[{ value, label }]} bind:value>` (`value` is `string | null`).
+   For a server search pass `filter={false}`, fetch in `onquery(text)` and set `options`; `loading` shows the loading
+   text. Dates: `<DateField bind:value>` binds `'YYYY-MM-DD' | null` (a backend `DateOnly`).
+9. Actions in a menu: `<MenuButton items={[{ id, label, disabled? }]} onselect={(id) => …}>Actions</MenuButton>`; never a
+   `<select>` for actions. Sections: `<Tabs label tabs={[{ id, label }]} bind:selected>{#snippet children(id)}…{/snippet}</Tabs>`.
+   Keyboard (arrows, Home/End, Escape, focus return) is built in; do not add your own key handlers.
 
 ## Example
 
@@ -61,6 +68,10 @@ description: >-
 | `<ThemeRoot locale="de">` without `messages={de}` | the `lang` attribute is German but the built-in texts stay English |
 | literal text in a shipped component | `eng/check-text.mjs` fails CI (philosophy P7) |
 | Tailwind's preflight in the app | resets elements globally; tarol-design needs none |
+| `<Combobox bind:value>` read as the typed text | `value` is the chosen option's `value` or `null`; a half-typed text is reset on blur |
+| `Combobox` with server results but without `filter={false}` | the server's results are filtered again by label and may vanish |
+| `<select>` or `Combobox` for actions | use `MenuButton`; a menu runs commands, a combobox chooses a value |
+| `DateField` value as a `Date` | it is the ISO string `YYYY-MM-DD`; convert at the edge, never through `toISOString()` (time zones) |
 
 ## Notes
 

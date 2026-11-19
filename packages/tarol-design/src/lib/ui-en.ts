@@ -15,4 +15,5 @@ export const uiEn: Catalogue = {
   'ui.sortAscending': 'sorted ascending',
   'ui.sortDescending': 'sorted descending',
   'ui.erased': 'erased',
+  'ui.noResults': 'No matches.',
 };

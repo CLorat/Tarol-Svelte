@@ -1,9 +1,13 @@
 export { default as Button } from './Button.svelte';
+export { default as Combobox } from './Combobox.svelte';
+export { default as DateField } from './DateField.svelte';
 export { default as Dialog } from './Dialog.svelte';
 export { default as Field } from './Field.svelte';
+export { default as MenuButton } from './MenuButton.svelte';
 export { default as NumberField } from './NumberField.svelte';
 export { default as Skeleton } from './Skeleton.svelte';
 export { default as Spinner } from './Spinner.svelte';
+export { default as Tabs } from './Tabs.svelte';
 export { default as TextField } from './TextField.svelte';
 export { default as ThemeRoot } from './ThemeRoot.svelte';
 export { default as Toaster } from './Toaster.svelte';
