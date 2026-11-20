@@ -62,7 +62,11 @@ describe('changeForm', () => {
     f.answerChanges(() => ({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { 'lines[1].sku': ['Sku.Unknown'] } },
+      violation: {
+        kind: 'invalid',
+        errors: { 'lines[1].sku': ['Sku.Unknown'] },
+        details: { 'lines[1].sku': [{ code: 'Sku.Unknown' }] },
+      },
     }));
     const form = root(() => changeForm(placeOrder, initial, { client: f.client, rules }));
     await form.submit();
@@ -96,10 +100,14 @@ describe('changeForm', () => {
     f.answerChanges(() => ({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { '': ['Json'], customer: ['Length'] } },
+      violation: {
+        kind: 'invalid',
+        errors: { '': ['Json'], customer: ['Length'] },
+        details: { '': [{ code: 'Json' }], customer: [{ code: 'Length' }] },
+      },
     }));
     await form.submit();
-    expect(form.formError).toEqual({ kind: 'invalid', errors: { '': ['Json'] } });
+    expect(form.formError).toEqual({ kind: 'invalid', errors: { '': ['Json'] }, details: { '': [{ code: 'Json' }] } });
     expect(form.error('customer')).toBe('Length');
   });
 
@@ -120,7 +128,7 @@ describe('changeForm', () => {
     f.answerChanges(() => ({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { customer: ['Length'] } },
+      violation: { kind: 'invalid', errors: { customer: ['Length'] }, details: { customer: [{ code: 'Length' }] } },
     }));
     const form = root(() => changeForm(placeOrder, initial, { client: f.client }));
     form.values.customer = 'X';

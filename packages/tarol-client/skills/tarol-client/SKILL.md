@@ -15,8 +15,9 @@ description: >-
    (`token()`, `tenant()`, optional `refresh()`); the tenant is part of every cache key.
 2. Every call returns `Result<T>`: check `r.ok`. Business failures are values: `r.violation.kind === 'invalid'`
    (`errors` maps backend field paths such as `lines[1].quantity` to codes such as `Range`) or `'error'` (`code` such as
-   `Auction.NotSeller`, `Stream.VersionConflict`, `Idempotency.KeyReused`, `Auth.Required`, `Network`). Only an aborted
-   request throws.
+   `Auction.NotSeller`, `Stream.VersionConflict`, `Idempotency.KeyReused`, `Auth.Required`, `Network`). `details` has the
+   same paths with each rule's `detail` (`{ reserve: [{ code: 'Range', detail: '1..1000000' }] }`). Only an aborted
+   request throws. Show `r.requestId` (the backend's `Tarol-Request-Id`) with an error so users can quote it.
 3. Changes get an idempotency key automatically. To retry **the same user intent**, pass the same `key`; a replay
    answers `ok` with `replayed: true`. Never reuse a key for a different body (422 `Idempotency.KeyReused`).
 4. Optimistic concurrency: pass `expectedVersion` (sends `If-Match`); the new version is `r.version`. A stale version is
@@ -25,7 +26,9 @@ description: >-
 6. Reads revalidate by ETag automatically (`notModified: true` on a 304). After your own change the next read sends
    `Tarol-Read-After`; do not sleep or poll to see your write.
 7. Push: `connectPush({ url, tokens })` from `@clorat/tarol-client/push`. Subscriptions survive reconnects. The hub has no
-   replay, so refetch in `onReconnect`. Topics are `<system>.<name>`.
+   replay, so refetch in `onReconnect`. Topics are `<system>.<name>`. A refused `Subscribe` or `publish` gives a
+   `HubRefusal` `{ code, detail, message }` with `Hub.Forbidden`, `Hub.Topic`, `Auth.Tenant`, `Hub.Disconnected` or
+   `Hub.Error`; translate the `code`, never show or parse `message`.
 
 ## Example
 
@@ -59,6 +62,8 @@ if (first.ok && first.value.next) await tarol.read<Page<AuctionRow>>('/auctions'
 | a new `key` per retry of the same submit | the backend may apply the intent twice |
 | `query: { offset: 40 }` | works on the backend, but breaks keyset paging and is capped at 1000; use `after` |
 | `limit: 500` | `{ kind: 'invalid', errors: { limit: ['Range'] } }` (1–200) |
+| a typo in a list key (`{ selller: 'x' }`) | 400 `{ kind: 'invalid', errors: { selller: ['Unknown'] } }`, not an unfiltered page |
+| `onRefused: (topic, reason) => reason.startsWith('Forbidden')` | the hub's text is wrapped by SignalR and the code is `Hub.Forbidden`: compare `refusal.code` |
 | a topic without a dot (`bids`) | `TypeError: not a topic` before anything is sent |
 | `{@html}` of server text | never do it; render text |
 

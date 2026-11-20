@@ -4,6 +4,10 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-client` (BC-5, BC-11, BC-12, BC-14, BC-16): `Invalid.details` (the backend's `errorDetails`),
+  `requestId` on every result; `/push` refusals are `HubRefusal` codes (`Hub.Forbidden`, `Hub.Topic`, `Auth.Tenant`,
+  `Hub.Disconnected`, `Hub.Error`) found inside SignalR's text (**breaking**: `onRefused` and `publish` gave the raw text).
+  Catalogue messages for `Unknown`, `Request.UnsupportedMediaType` and the hub codes.
 * Release: `release.yml` publishes a tag `v*` to GitHub Packages behind the environment `release`; `eng/release.mjs`
   (version, checks, notes).
 * `apps/docs`: the component catalogue (a page per component with a live example, its source, props from the types and

@@ -8,6 +8,16 @@
 export function connectPush(options: PushOptions): PushClient;
 
 // @public
+export interface HubRefusal {
+    readonly code: string;
+    readonly detail: string;
+    readonly message: string;
+}
+
+// @public
+export function hubRefusal(message: string): HubRefusal;
+
+// @public
 export function isTopic(topic: string): boolean;
 
 // @public
@@ -15,7 +25,7 @@ export interface PushClient {
     close(): void;
     onReconnect(listener: () => void): () => void;
     onState(listener: (state: PushState) => void): () => void;
-    publish(topic: string, data: unknown): Promise<string | null>;
+    publish(topic: string, data: unknown): Promise<HubRefusal | null>;
     readonly state: PushState;
     subscribe<T = unknown>(topic: string, handler: (message: PushedMessage<T>) => void): () => void;
 }
@@ -36,7 +46,7 @@ export interface PushOptions {
     readonly delays?: readonly number[];
     readonly fetch?: typeof fetch;
     readonly onError?: (error: unknown) => void;
-    readonly onRefused?: (topic: string, reason: string) => void;
+    readonly onRefused?: (topic: string, refusal: HubRefusal) => void;
     readonly random?: () => number;
     // Warning: (ae-forgotten-export) The symbol "TokenProvider" needs to be exported by the entry point push.d.ts
     readonly tokens?: TokenProvider;

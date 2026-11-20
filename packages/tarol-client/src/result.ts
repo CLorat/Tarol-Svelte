@@ -22,6 +22,8 @@ export interface Ok<T> {
   readonly stale: boolean;
   /** `true` when the value came from the client's cache after a 304. */
   readonly notModified: boolean;
+  /** The backend's `Tarol-Request-Id`, when the answer carried one (BC-11). */
+  readonly requestId?: string;
 }
 
 /** A refused or failed call. */
@@ -32,6 +34,11 @@ export interface Failed {
   readonly violation: Violation;
   /** The HTTP status, or 0 when the network failed. */
   readonly status: number;
+  /**
+   * The request's id: the `Tarol-Request-Id` header, else the problem's `traceId` (BC-11). Show it with the error so a user
+   * can quote it; the backend's traces are found by it.
+   */
+  readonly requestId?: string;
 }
 
 /** What went wrong: invalid fields, or one coded error. */
@@ -43,6 +50,19 @@ export interface Invalid {
   readonly kind: 'invalid';
   /** Field path → codes, e.g. `{ 'lines[1].quantity': ['Range'] }`; `''` is the whole body. */
   readonly errors: Readonly<Record<string, readonly string[]>>;
+  /**
+   * The same errors with the rule's detail where the backend gave one (`errorDetails`, BC-5), e.g.
+   * `{ reserve: [{ code: 'Range', detail: '1..1000000' }] }`. Same paths and codes as {@link Invalid.errors}.
+   */
+  readonly details: Readonly<Record<string, readonly FieldError[]>>;
+}
+
+/** One field error: the backend's code and, for a generated rule, its detail (the bounds, `3..60`). */
+export interface FieldError {
+  /** The rule's code (`Range`, `Length`, `Unknown` …). */
+  readonly code: string;
+  /** The rule's detail, e.g. `1..1000000`; for logs and for messages that show the bounds. */
+  readonly detail?: string;
 }
 
 /** Any other refusal, with the backend's code (`Auction.NotSeller`, `Stream.VersionConflict`, `Network`). */
@@ -84,10 +104,19 @@ export function toViolation(status: number, body: unknown): Violation {
     const errors = body['errors'];
     if (status === 400 && isRecord(errors)) {
       const out: Record<string, string[]> = {};
+      const details: Record<string, FieldError[]> = {};
+      const given = isRecord(body['errorDetails']) ? body['errorDetails'] : {};
       for (const [path, codes] of Object.entries(errors)) {
-        out[path] = Array.isArray(codes) ? codes.filter((c): c is string => typeof c === 'string') : [];
+        const list = Array.isArray(codes) ? codes.filter((c): c is string => typeof c === 'string') : [];
+        out[path] = list;
+        // the details of a path follow its codes; a detail is taken only for a code the errors list
+        const extra = Array.isArray(given[path]) ? (given[path] as unknown[]).filter(isRecord) : [];
+        details[path] = list.map((code) => {
+          const d = extra.find((e) => e['code'] === code)?.['detail'];
+          return typeof d === 'string' ? { code, detail: d } : { code };
+        });
       }
-      return { kind: 'invalid', errors: out };
+      return { kind: 'invalid', errors: out, details };
     }
     const code = typeof body['code'] === 'string' ? body['code'] : undefined;
     const title = typeof body['title'] === 'string' ? body['title'] : undefined;

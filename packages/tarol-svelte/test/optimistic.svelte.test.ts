@@ -91,7 +91,11 @@ describe('optimistic changes', () => {
   it('rolls back on a field error too', async () => {
     const { f, view, form } = setup({ highest: 100 });
     await settle();
-    f.answerChanges(() => ({ ok: false, status: 400, violation: { kind: 'invalid', errors: { amount: ['Range'] } } }));
+    f.answerChanges(() => ({
+      ok: false,
+      status: 400,
+      violation: { kind: 'invalid', errors: { amount: ['Range'] }, details: { amount: [{ code: 'Range' }] } },
+    }));
     await form.submit();
     expect(view.value?.highest).toBe(100);
     expect(form.error('amount')).toBe('Range');

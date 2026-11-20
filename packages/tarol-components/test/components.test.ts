@@ -149,7 +149,7 @@ describe('ChangeForm and FormField', () => {
     const f = fakeClient(0, () => ({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { reserve: ['Range'] } },
+      violation: { kind: 'invalid', errors: { reserve: ['Range'] }, details: { reserve: [{ code: 'Range' }] } },
     }));
     render(BidForm, { client: f.client });
     await userEvent.type(page.getByLabelText(/Title/), 'Irises');

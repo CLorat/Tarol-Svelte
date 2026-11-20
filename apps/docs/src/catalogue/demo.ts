@@ -88,7 +88,7 @@ export function demoClient(): TarolClient {
     change<T>(r: ChangeRequest): Promise<Result<T>> {
       const body = (r.body ?? {}) as Record<string, unknown>;
       if (typeof body['amount'] === 'number' && body['amount'] < 100)
-        return delay({ ok: false, status: 400, violation: { kind: 'invalid', errors: { amount: ['Range'] } } }, 300);
+        return delay({ ok: false, status: 400, violation: { kind: 'invalid', errors: { amount: ['Range'] }, details: { amount: [{ code: 'Range' }] } } }, 300);
       for (const l of listeners) l({ method: r.method, path: r.path });
       return delay(ok(undefined as T), 300);
     },

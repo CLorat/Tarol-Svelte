@@ -35,8 +35,8 @@ export interface PushOptions {
   readonly delays?: readonly number[];
   /** Random source for the jitter; tests pass a constant. */
   readonly random?: () => number;
-  /** A refused subscription (the hub's message, e.g. `Forbidden: Subscribe billing.secret`). */
-  readonly onRefused?: (topic: string, reason: string) => void;
+  /** A refused subscription, e.g. `{ code: 'Hub.Forbidden', detail: 'Subscribe billing.secret' }`. */
+  readonly onRefused?: (topic: string, refusal: HubRefusal) => void;
   /** A handler threw; the other handlers still run. Default: the browser's `reportError`, when there is one. */
   readonly onError?: (error: unknown) => void;
 }
@@ -45,8 +45,8 @@ export interface PushOptions {
 export interface PushClient {
   /** Subscribes a handler; the subscription survives reconnects. Returns the unsubscribe. */
   subscribe<T = unknown>(topic: string, handler: (message: PushedMessage<T>) => void): () => void;
-  /** Publishes to a client topic; resolves with the hub's refusal text, or `null` when accepted. */
-  publish(topic: string, data: unknown): Promise<string | null>;
+  /** Publishes to a client topic; resolves with the hub's refusal, or `null` when accepted. */
+  publish(topic: string, data: unknown): Promise<HubRefusal | null>;
   /** Called after every reconnect (not the first connect): the server has no replay, so refetch state over HTTP. */
   onReconnect(listener: () => void): () => void;
   /** Called on every state change. Returns the unsubscribe. */
@@ -57,6 +57,36 @@ export interface PushClient {
   close(): void;
 }
 
+/**
+ * A refusal of the hub (BC-12): `HubException` messages are `<code>: <detail>`, and SignalR may wrap them in its own text.
+ * Codes: `Hub.Forbidden` (the topic is not readable or writable for the user), `Hub.Topic` (not a topic name),
+ * `Auth.Tenant` (no usable tenant claim); the client adds `Hub.Disconnected` (not connected, the call was not sent) and
+ * `Hub.Error` (any other text). Codes are message ids like the HTTP codes (philosophy P7).
+ */
+export interface HubRefusal {
+  /** The code, e.g. `Hub.Forbidden`. */
+  readonly code: string;
+  /** The text after `<code>: `, e.g. `Subscribe billing.secret`; for logs. */
+  readonly detail: string;
+  /** The whole text as received, SignalR's wrapper included. */
+  readonly message: string;
+}
+
+const hubCodes = ['Hub.Forbidden', 'Hub.Topic', 'Auth.Tenant'];
+
+/** Reads a hub error message as a {@link HubRefusal}: the first known `<code>: ` inside it, else `Hub.Error`. */
+export function hubRefusal(message: string): HubRefusal {
+  let best: { code: string; at: number } | undefined;
+  for (const code of hubCodes) {
+    const at = message.indexOf(`${code}: `);
+    if (at >= 0 && (best === undefined || at < best.at)) best = { code, at };
+  }
+  if (!best) return { code: 'Hub.Error', detail: message, message };
+  return { code: best.code, detail: message.slice(best.at + best.code.length + 2), message };
+}
+
+const disconnected: HubRefusal = { code: 'Hub.Disconnected', detail: '', message: '' };
+
 const RS = '\u001e';
 const topicRule = /^[^.\s/]+\.[^\s/]+$/;
 
@@ -65,7 +95,7 @@ export function isTopic(topic: string): boolean {
   return topic.length <= 200 && topicRule.test(topic);
 }
 
-type Pending = (error: string | null) => void;
+type Pending = (error: HubRefusal | null) => void;
 
 /**
  * Connects to the UI push hub with the SignalR JSON protocol over WebSocket. Rules from Tarol-Net's
@@ -101,10 +131,10 @@ export function connectPush(options: PushOptions): PushClient {
     socket?.send(JSON.stringify(frame) + RS);
   };
 
-  const invoke = (target: string, args: unknown[]): Promise<string | null> =>
+  const invoke = (target: string, args: unknown[]): Promise<HubRefusal | null> =>
     new Promise((resolve) => {
       if (state !== 'connected' || !socket) {
-        resolve('Disconnected');
+        resolve(disconnected);
         return;
       }
       const id = String(++nextId);
@@ -125,8 +155,8 @@ export function connectPush(options: PushOptions): PushClient {
 
   const subscribeOnServer = (topic: string): void => {
     void invoke('Subscribe', [topic]).then((error) => {
-      // 'Disconnected' is retried by the replay after the next connect; a hub refusal drops the handlers
-      if (error !== null && error !== 'Disconnected') {
+      // Hub.Disconnected is retried by the replay after the next connect; a hub refusal drops the handlers
+      if (error !== null && error !== disconnected) {
         handlers.delete(topic);
         options.onRefused?.(topic, error);
       }
@@ -144,7 +174,7 @@ export function connectPush(options: PushOptions): PushClient {
   const drop = (): void => {
     clearInterval(ping);
     clearTimeout(idle);
-    for (const p of pending.values()) p('Disconnected');
+    for (const p of pending.values()) p(disconnected);
     pending.clear();
     const s = socket;
     socket = null;
@@ -218,7 +248,7 @@ export function connectPush(options: PushOptions): PushClient {
             const msg = m.arguments?.[0] as PushedMessage | undefined;
             if (msg) deliver(msg);
           } else if (m.type === 3 && m.invocationId) {
-            pending.get(m.invocationId)?.(m.error ?? null);
+            pending.get(m.invocationId)?.(m.error === undefined ? null : hubRefusal(m.error));
             pending.delete(m.invocationId);
           } else if (m.type === 7) {
             drop();

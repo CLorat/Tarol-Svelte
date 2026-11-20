@@ -53,6 +53,7 @@ export interface Created<I extends string = string> {
 // @public
 export interface Failed {
     readonly ok: false;
+    readonly requestId?: string;
     readonly status: number;
     readonly violation: Violation;
 }
@@ -61,12 +62,19 @@ export interface Failed {
 export function fallbackCode(status: number): string;
 
 // @public
+export interface FieldError {
+    readonly code: string;
+    readonly detail?: string;
+}
+
+// @public
 export type Id<Of extends string> = string & {
     readonly [brand]: Of;
 };
 
 // @public
 export interface Invalid {
+    readonly details: Readonly<Record<string, readonly FieldError[]>>;
     readonly errors: Readonly<Record<string, readonly string[]>>;
     readonly kind: 'invalid';
 }
@@ -80,6 +88,7 @@ export interface Ok<T> {
     readonly ok: true;
     readonly position?: string;
     readonly replayed: boolean;
+    readonly requestId?: string;
     readonly stale: boolean;
     readonly status: number;
     readonly value: T;

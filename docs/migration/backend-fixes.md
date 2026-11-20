@@ -67,7 +67,7 @@ is `ccr-b40caadf-18fp3u-<id>`; PR 0 is `ccr-b40caadf-18fp3u` itself.
 | BC-3 OpenAPI | `tarol-codegen` guesses the kind from the shape, ignores `x-tarol-errors` and `TarolProblem`, fails on `x-tarol-kind: admin` | kinds from `x-tarol-kind` only (an operation without one is an error); error-code unions per operation; `TarolProblem` mapped to the client's `Violation`; admin operations generated | B5 |
 | BC-4 rules | `x-tarol-rules` preferred over keywords already; `check()` builds `new RegExp(p, 'u' + flags)`: `flags: "u"` gives `uu`, a `SyntaxError` | flags merged without duplicates; `x-tarol-email` read; keyword fallback dropped when `x-tarol-rules` exists on the field | B5 |
 | BC-5 details | `toViolation` drops `errorDetails`; `FormField` fills `{min}`/`{max}` from the client rule only | `Invalid.details`; the form exposes the server detail; `FormField` shows it ("1..1000000") on the field | A1 (client), B6 (form, field) |
-| BC-6 list ETag | nothing to change: the cache now gets a 200 when `next` or `total` changed | a contract test: a grown last page answers 200 with `next` | A1 |
+| BC-6 list ETag | nothing to change: the cache now gets a 200 when `next` or `total` changed | — (no client limitation; Tarol-Net's `QueryEndpointTests` pin it) | — |
 | BC-7 weak match | nothing to change (the client sends the stored tag verbatim) | — | — |
 | BC-8 snippets | `SearchBox` shows titles only and never requests snippets | `snippets=true`; the snippet rendered as text nodes, `<mark>` around each range; never `{@html}`; a test with `<script>` in title and snippet | A2 |
 | BC-9 sample | e2e: machine tokens through a test-only `TokenProvider`; push `fixme`; the 400 only by `page.route`; a rejected token stands in for an expired one | human users, real push, real `Range` 400, real expiry | B2, B3, B4, B6 |
@@ -96,6 +96,37 @@ Defaults taken without a question (pre-release, nothing published; the owner may
   idempotency key requirement; the client still sends one, which the admin entry ignores). An answer without a schema
   (the export, BC-20) is typed `unknown`: the only place the generator emits it, documented in the README.
 
-## 4. Verification
+## 4. Verification and changes per PR
 
-Recorded per PR below as each lands.
+### A1: `@clorat/tarol-client` adopts the new contract
+
+**Public API and behaviour changes** (generated reports `tarol-client.api.md`, `tarol-client-push.api.md`):
+* `Invalid.details: Record<path, FieldError[]>` (new, required): the same paths and codes as `errors`, with the backend's
+  `errorDetails` detail where given; `FieldError` exported. A detail for a code that `errors` does not list is dropped.
+  **Breaking for code that builds an `Invalid` by hand** (tests, fakes): add `details`.
+* `Ok.requestId`, `Failed.requestId` (new): `Tarol-Request-Id`, else the problem's `traceId` (BC-11).
+* `/push`: `HubRefusal { code, detail, message }` and `hubRefusal(message)` (new); `PushOptions.onRefused(topic,
+  refusal: HubRefusal)` and `PushClient.publish(…): Promise<HubRefusal | null>` (**breaking**: were the raw text and
+  `'Disconnected'`). The code is the first `Hub.Forbidden: `, `Hub.Topic: ` or `Auth.Tenant: ` inside the text (SignalR
+  wraps it, [verified] §1), else `Hub.Error`; not connected is `Hub.Disconnected`.
+* `@clorat/tarol-design` catalogues `en`/`de`: `Unknown`, `Request.UnsupportedMediaType`, `Auth.Tenant`, `Hub.Forbidden`,
+  `Hub.Topic`, `Hub.Disconnected`, `Hub.Error`.
+* `@clorat/tarol-svelte`: a form's `formError` for orphan paths carries their `details` too.
+
+**Found**: the `detail` is free text, not always bounds: the generated rules write `1..1000000`, the paging check writes
+`between 1 and 200` (`GET /auctions?limit=500` [verified]). The client passes it through; B6 shows bounds only when the
+detail has the `<min>..<max>` form.
+
+**Tests** (failing before, passing after [verified]: 10 of 41 unit tests failed before the change):
+`carries the error details, the request id and the trace id of a 400 (BC-5, BC-11)`, `takes the request id from the problem
+when the header is not readable`, `maps a 415 without a body (BC-16) and reports the request id of a success`, `maps an
+unknown list key as a field error Unknown (BC-14)`, the helper test (details, a detail for another code dropped), and push:
+`drops the handlers of a refused subscription and reports the reason` (SignalR's wrapped text), `publishes and resolves
+with the hub refusal, or null`, `finds the hub codes inside any text, and falls back to Hub.Error` (the pre-BC-12
+`Forbidden:` prefix is no code). Contract tests against the sample (`TAROL_E2E=1`): **8 passed** (new: the `Range` 400 on
+`reserve` with detail `1..1000000`, `Unknown` on `selller`, the request id equal to the problem's `traceId`, 415 for a body
+without `Content-Type` while the client's own request is 201).
+
+**Verification**: `pnpm verify` green (format, build, lint 0 warnings, typecheck, **154 passed / 13 skipped** tests, size,
+package checks, API reports, eng tests). Size: core **2.09 KB gzip / 1.93 KB brotli** (was 1.96 / 1.79; budget 3 KB),
+`/push` **1.51 KB / 1.37 KB** (was 1.35 / 1.23; budget 2 KB).

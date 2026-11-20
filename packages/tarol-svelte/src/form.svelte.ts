@@ -153,7 +153,15 @@ export function changeForm<I extends object, T = undefined>(
           const orphans = Object.entries(r.violation.errors).filter(
             ([p]) => p === '' || (at(input, p) === undefined && !(rulePath(p) in rules)),
           );
-          formError = orphans.length > 0 ? { kind: 'invalid', errors: Object.fromEntries(orphans) } : undefined;
+          const details = r.violation.details;
+          formError =
+            orphans.length > 0
+              ? {
+                  kind: 'invalid',
+                  errors: Object.fromEntries(orphans),
+                  details: Object.fromEntries(orphans.map(([p]) => [p, details[p] ?? []])),
+                }
+              : undefined;
         } else formError = r.violation;
         return r;
       } finally {
