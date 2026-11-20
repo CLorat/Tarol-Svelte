@@ -124,6 +124,57 @@ test('a reload signs in again without the login page (prompt=none)', async ({ pa
   expect(new URL(page.url()).hash).toBe('#/auctions');
 });
 
+test('an expired token: 401, one refresh, the read repeated; the hub closes and reconnects (BC-9, BC-15)', async ({
+  page,
+}) => {
+  test.setTimeout(150_000); // waits (by polling) for the server to see the 30-second token expire
+  const { id } = await createAuction('alice');
+  const bearers: string[] = [];
+  const refreshes: string[] = [];
+  const statuses: number[] = [];
+  const hub = `${sample.api.replace(/^http/, 'ws')}/tarol/messages`;
+  const sockets: { url: string; closed: boolean }[] = [];
+  page.on('request', (r) => {
+    const auth = r.headers()['authorization'];
+    if (r.url().startsWith(sample.api) && auth) bearers.push(auth.slice('Bearer '.length));
+    if (r.url() === `${sample.issuer}/oauth/v2/token` && (r.postData() ?? '').includes('grant_type=refresh_token'))
+      refreshes.push(r.url());
+  });
+  page.on('response', (r) => {
+    if (new URL(r.url()).pathname === `/auctions/${id}`) statuses.push(r.status());
+  });
+  page.on('websocket', (ws) => {
+    if (!ws.url().startsWith(hub)) return;
+    const socket = { url: ws.url(), closed: false };
+    sockets.push(socket);
+    ws.on('close', () => (socket.closed = true));
+  });
+  await page.clock.install(); // the page's own clock, so it can be stopped below
+  await signIn(page, 'ada', '/#/auctions');
+  const token = bearers.at(-1) ?? '';
+  const claims = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8')) as Record<string, number>;
+  const lifetime = (claims['exp'] ?? 0) - (claims['iat'] ?? 0);
+  test.skip(lifetime > 120, `needs the sample started with ARTFLOW_TOKEN_LIFETIME=30s (tokens live ${String(lifetime)} s)`);
+  await expect.poll(() => sockets.length).toBe(1);
+  // the page's time stops, as in a throttled background tab: its early refresh (at 80 % of the lifetime) does not run, and
+  // the client still believes in its token when the server no longer does
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1_000);
+  const status = async (): Promise<number> =>
+    (await fetch(`${sample.api}/auctions?limit=1`, { headers: { authorization: `Bearer ${token}` } })).status;
+  await expect.poll(status, { timeout: 120_000, intervals: [1_000] }).toBe(401); // the server's own expiry
+  await expect.poll(() => sockets[0]?.closed, { timeout: 30_000 }).toBe(true); // BC-15: the hub closed it
+  await page.goto(`/#/auctions/${id}`);
+  await expect(page.getByTestId('bids')).toHaveText('0 bids');
+  expect(statuses.slice(0, 2)).toEqual([401, 200]); // the expired token, then the refreshed one
+  expect(refreshes).toHaveLength(1);
+  // time runs again: the push client's reconnect (a timer) asks for the token and gets the refreshed one
+  await page.clock.resume();
+  await expect.poll(() => sockets.length, { timeout: 30_000 }).toBe(2);
+  expect(new URL(sockets[1]?.url ?? '').searchParams.get('access_token')).not.toBe(token);
+  await api('bob', 'POST', `/auctions/${id}/bids`, { amount: 150 });
+  await expect(page.getByTestId('bids')).toHaveText('1 bid'); // pushed over the new connection
+});
+
 test('a rejected token: the 401 is answered by a refresh and the read repeated once', async ({ page }) => {
   await signIn(page, 'ada');
   // the real 30-second expiry is B4 (ARTFLOW_TOKEN_LIFETIME); here the first list read carries a token the API rejects

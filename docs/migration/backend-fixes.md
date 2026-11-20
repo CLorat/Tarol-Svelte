@@ -214,3 +214,24 @@ until #109 is merged.
   token` replaces the test-only rejected first token by a token spoiled in transit (`page.route`), and checks that the
   refresh is one real refresh-token grant at Zitadel.
 
+### B4: a real token expiry, and the hub's close at expiry (BC-9, BC-15)
+
+**Changes** (tests and CI only; no package change): CI starts the sample with `ARTFLOW_TOKEN_LIFETIME=30s`, so every
+scenario runs with 30-second tokens (the oidc client refreshes at 80 %), and the new scenario sees a real expiry.
+
+**Test** `an expired token: 401, one refresh, the read repeated; the hub closes and reconnects (BC-9, BC-15)`:
+* ada signs in on a page whose clock Playwright controls (`page.clock.install()`); after the sign-in the page's time
+  stops (`pauseAt`), as in a throttled background tab, so `@clorat/tarol-oidc`'s early refresh does not run and the
+  client still trusts a token the server will reject;
+* the test polls the API with that token until the **server** answers 401 (`invalid_token`; an event, not a fixed wait)
+  and until the hub has **closed** the page's WebSocket (BC-15);
+* the page reads an auction: **401 with the expired token, one refresh-token grant at Zitadel, the read repeated, 200**;
+* the clock runs again: the push client's reconnect takes the refreshed token (a new `access_token` in the WebSocket URL)
+  and bob's bid arrives over the new connection.
+
+It skips itself with a reason when the sample's tokens live longer than 120 s. Before, the scenario used a token the API
+rejects as a stand-in (still there as `a rejected token`, which works with any lifetime). Runs [verified]: 31.6 s alone;
+the artflow project **13 passed** twice in a row against the sample started with `ARTFLOW_TOKEN_LIFETIME=30s` (`access token
+lifetime: 30 s`), all scenarios with 30-second tokens; the client and oidc contract tests pass with them too (the codegen
+contract test fails on the drift of the live document, which B5 regenerates).
+

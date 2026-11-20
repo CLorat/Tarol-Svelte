@@ -92,7 +92,8 @@ jobs:
       - name: Start the sample
         run: |
           cd tarol-net/samples/Sagas/AppHost
-          ASPIRE_ALLOW_UNSECURED_TRANSPORT=true DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true \
+          # 30-second access tokens (clock skew 0): the e2e's expiry scenario runs; every other one refreshes as it goes
+          ARTFLOW_TOKEN_LIFETIME=30s ASPIRE_ALLOW_UNSECURED_TRANSPORT=true DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true \
             ASPNETCORE_URLS=http://localhost:18888 ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL=http://localhost:18890 \
             nohup dotnet bin/Debug/net11.0/ArtFlow.AppHost.dll > "$RUNNER_TEMP/apphost.log" 2>&1 &
           for i in $(seq 120); do curl -sf http://localhost:5080/health/ready > /dev/null && exit 0; sleep 2; done

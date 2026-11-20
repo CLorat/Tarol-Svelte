@@ -60,7 +60,7 @@ The Playwright project (`apps/docs/playwright.config.ts`, `@playwright/test` 1.6
 | a paged list: 5 rows of `count=true`, the total, "Load more" sends one `after` cursor; grid keys | passes |
 | a validation error on the right field: the generated `Required` rule blocks the send; the real API's 400 `{"reserve":["Required"]}` (the body without the member, by `page.route`) lands on the Reserve field | passes; the domain rule `Range` on the reserve: step 12 B6 |
 | a coded refusal: alice bids, 403 `Auth.Forbidden` in the form's alert, the optimistic bid rolled back | passes |
-| an expired token: a token the API rejects, 401, one refresh, the read repeated, 200 | passes (since B3 the first read's token is spoiled in transit and the refresh is a real refresh-token grant); a really expiring token: step 12 B4 |
+| an expired token: a token the API rejects, 401, one refresh, the read repeated, 200 | passes (since B3 the first read's token is spoiled in transit and the refresh is a real refresh-token grant); since B4 also a real expiry with `ARTFLOW_TOKEN_LIFETIME=30s` (CI starts the sample so) |
 | an erased subject: alice exports bob's profile, erases it, name and email show "erased" | passes; the erase answers **500 without a body** although the key is erased (**BC-10**, recorded as an annotation) |
 | the search box finds an auction by its seller and opens it | passes |
 | a push update | passes since B2 of [backend-fixes.md](backend-fixes.md): bob's bid reaches alice's open auction over the hub |
