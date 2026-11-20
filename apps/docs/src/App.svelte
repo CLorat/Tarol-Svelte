@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { TarolClient } from '@clorat/tarol-client';
+  import type { PushClient } from '@clorat/tarol-client/push';
   import { AppShell, SearchBox } from '@clorat/tarol-components';
   import { ThemeRoot } from '@clorat/tarol-design';
   import { setTarol } from '@clorat/tarol-svelte';
@@ -18,8 +19,11 @@
   import Theming from './guides/Theming.svelte';
   import { router } from './router.svelte.js';
 
-  const props: { client: TarolClient } = $props();
-  setTarol(untrack(() => props.client));
+  const props: { client: TarolClient; push?: PushClient } = $props();
+  setTarol(
+    untrack(() => props.client),
+    untrack(() => props.push),
+  );
   const guides = [
     { slug: 'first-screen', title: 'A first screen', page: FirstScreen },
     { slug: 'forms', title: 'Forms', page: Forms },

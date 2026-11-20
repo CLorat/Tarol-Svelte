@@ -11,7 +11,8 @@
   const t = getMessages();
   const toasts = getToasts();
   const api = tarol(getTarol().client);
-  const view = query<AuctionView>(() => requests.auctionView({ auction: id }));
+  // every bid, by anyone, revalidates the open auction (an ETag read: a 304 when it was another auction's bid)
+  const view = query<AuctionView>(() => requests.auctionView({ auction: id }), { live: 'artflow.bid-placed' });
   const bid = changeForm<{ auction: string; amount: number | null }>(
     (i) => requests.placeBid({ auction: i.auction, amount: i.amount ?? 0 }),
     { auction: id, amount: null },

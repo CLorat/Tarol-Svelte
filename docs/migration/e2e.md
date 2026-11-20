@@ -63,7 +63,7 @@ The Playwright project (`apps/docs/playwright.config.ts`, `@playwright/test` 1.6
 | an expired token: a token the API rejects, 401, one refresh, the read repeated, 200 | passes; a really **expiring** token waits for **BC-9** (a short-lived token option) |
 | an erased subject: alice exports bob's profile, erases it, name and email show "erased" | passes; the erase answers **500 without a body** although the key is erased (**BC-10**, recorded as an annotation) |
 | the search box finds an auction by its seller and opens it | passes |
-| a push update | **`test.fixme`**: the sample maps no hub (**BC-9**) and the hub ignores `access_token` (**BC-2**) |
+| a push update | passes since B2 of [backend-fixes.md](backend-fixes.md): bob's bid reaches alice's open auction over the hub |
 | a browser login | not written: no PKCE app, no human users (**BC-9**) |
 
 **Measured** [verified, 3 runs in a row, 7 passed / 1 fixme each, 6.2–6.4 s]: INP **16–24 ms** in the tests with

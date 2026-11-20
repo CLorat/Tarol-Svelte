@@ -171,6 +171,27 @@ test('the search box finds an auction and opens it', async ({ page }) => {
   await expect(page).toHaveURL(/#\/auctions\/[0-9a-f-]{36}$/);
 });
 
-test.fixme('a push update: a bid by bob updates alice’s open auction', () => {
-  // waits for BC-2 (access_token on the hub) and BC-9 (the sample maps no hub, no bid topic): docs/migration/e2e.md
+test('a push update: a bid by bob updates alice’s open auction (BC-2, BC-9)', async ({ page }) => {
+  const { id } = await createAuction('alice');
+  await signIn(page, 'alice');
+  // the hub connection: a WebSocket to the API with the token in the query (browsers cannot set headers on it); its
+  // frames are recorded from the start, so a frame that arrives before an assertion is not missed
+  const hub = `${sample.api.replace(/^http/, 'ws')}/tarol/messages`;
+  const sockets: string[] = [];
+  const frames: string[] = [];
+  page.on('websocket', (ws) => {
+    if (!ws.url().startsWith(hub)) return;
+    sockets.push(ws.url());
+    ws.on('framereceived', (f) => frames.push(String(f.payload)));
+  });
+  await page.goto(`/#/auctions/${id}`);
+  await expect(page.getByTestId('bids')).toHaveText('0 bids');
+  await expect.poll(() => sockets.length).toBe(1);
+  expect(new URL(sockets[0] ?? '').searchParams.get('access_token')).toMatch(/^ey/);
+  // subscribed once the hub has answered the Subscribe invocation (a completion frame)
+  await expect.poll(() => frames.some((f) => f.includes('"type":3'))).toBe(true);
+  await api('bob', 'POST', `/auctions/${id}/bids`, { amount: 150 }); // another user, outside this page
+  await expect.poll(() => frames.some((f) => f.includes('artflow.bid-placed') && f.includes(id))).toBe(true);
+  await expect(page.getByTestId('bids')).toHaveText('1 bid'); // revalidated by the push, no reload
 });
+

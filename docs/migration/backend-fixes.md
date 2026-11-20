@@ -169,3 +169,18 @@ http://localhost:5173` and the exposed headers; a page script's preflighted `GET
 the cross-origin response). After: the artflow project **10 passed, 1 skipped** (push still `fixme`, B2) against the
 sample in stay-up mode.
 
+### B2: push in the browser against the real hub (BC-2, BC-9)
+
+**Changes** (`apps/docs` only): signed in, `main.ts` connects `connectPush({ url: <api>/tarol/messages, tokens })` and
+passes it to `setTarol`; the auction page's view query is `live: 'artflow.bid-placed'`. The push guide drops "waits for
+BC-2/BC-9" and says how the token travels and what happens at expiry. `@clorat/tarol-client/push` needed no change: it
+has sent `?access_token=` since step 2 [verified by reading `push.ts`, and against the hub, §1].
+
+**Tests**: the `fixme` scenario is now `a push update: a bid by bob updates alice's open auction (BC-2, BC-9)`: alice's
+page opens a WebSocket to `ws://localhost:5080/tarol/messages?…access_token=ey…`, waits for the hub's completion frame of
+`Subscribe`, bob bids through the API outside the page, the frame with `artflow.bid-placed` and the auction's id arrives
+and the page shows "1 bid" without a reload (events only, no wall clock). Failed before [verified]: no WebSocket was opened
+(the app had no push connection; timeout). **Found**: the first version waited for the completion frame after the socket
+event and failed twice in a row in the full suite (the frame came first); the test now records every frame from the start
+and polls the record. After: the artflow project **11 passed** in three runs in a row, no `fixme` left.
+
