@@ -144,8 +144,7 @@ package checks, API reports, eng tests). Size: core **2.09 KB gzip / 1.93 KB bro
 * Every server text is a text node: no `{@html}` anywhere (the snippet's `<b>` is the document's own text).
 
 **Budget raise (SV-15: a note entry with the measurement)**: `Combobox (with Field)` measured **3.07 KB gzip / 2.70 KB
-brotli** with the `item` snippet (2.99 KB before), 68 B over its 3 KB budget; folding the two arrow-key branches made it
-larger (3.07 → 3.07 KB, +3 B), so the budget is **3.1 KB**. `SearchBox` is **1.69 KB gzip / 1.49 KB brotli** (0.87 /
+brotli** with the `item` snippet (2.99 KB before), 68 B over its 3 KB budget; folding the two arrow-key branches into one made it 3 B larger, so the budget is **3.1 KB**. `SearchBox` is **1.69 KB gzip / 1.49 KB brotli** (0.87 /
 0.77 KB before; budget 2 KB): the snippet line, the highlight splitting and its CSS.
 
 **Tests** (failing before [verified]: the new test failed on `snippets` not being requested): `shows the snippet as text with
