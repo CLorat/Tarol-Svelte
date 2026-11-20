@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createClient } from '@clorat/tarol-client';
+import { asId, createClient } from '@clorat/tarol-client';
 import { describe, expect, it } from 'vitest';
 import { generate, type OpenApiDocument } from '../src/generate.js';
 import { tarol } from './__snapshots__/artflow.js';
@@ -49,14 +49,16 @@ describe.runIf(run)('generated client against samples/Sagas', () => {
     const bob = tarol(createClient({ baseUrl: api, tokens: { token: () => b, tenant: () => 's' } }));
     const created = await alice.changes.createAuction({ reserve: 100 });
     if (!created.ok) throw new Error(JSON.stringify(created.violation));
-    expect(
-      await bob.changes.placeBid({ auction: created.value.id, amount: 150 }, { expectedVersion: 1 }),
-    ).toMatchObject({ ok: true, version: 2 });
-    expect(await bob.changes.settleAuction({ auction: created.value.id })).toMatchObject({ ok: false, status: 403 });
-    expect(await alice.changes.settleAuction({ auction: created.value.id })).toMatchObject({ ok: true, status: 204 });
-    expect(await alice.queries.auctionView({ auction: created.value.id })).toMatchObject({
+    const auction = asId<'Auction'>(created.value.id); // the 201 id has no x-tarol-id yet (BC-19)
+    expect(await bob.changes.placeBid({ auction, amount: 150 }, { expectedVersion: 1 })).toMatchObject({
       ok: true,
-      value: { id: created.value.id, settled: true },
+      version: 2,
+    });
+    expect(await bob.changes.settleAuction({ auction })).toMatchObject({ ok: false, status: 403 });
+    expect(await alice.changes.settleAuction({ auction })).toMatchObject({ ok: true, status: 204 });
+    expect(await alice.queries.auctionView({ auction })).toMatchObject({
+      ok: true,
+      value: { id: auction, settled: true },
     });
     const page = await bob.queries.auctionSearch({ limit: 2, count: true });
     expect(page).toMatchObject({ ok: true });

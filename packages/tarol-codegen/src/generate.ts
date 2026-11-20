@@ -1,6 +1,7 @@
 /**
  * The OpenAPI subset the generator reads: what Tarol-Net's `AddTarolEndpoints()` emits (OpenAPI 3.1/3.2, JSON Schema
- * 2020-12 types), plus the proposed `x-tarol-*` extensions (docs/backend/changes.md BC-3, BC-4).
+ * 2020-12 types) with its `x-tarol-*` extensions: `x-tarol-kind`, `x-tarol-errors`, `x-tarol-id`, `x-tarol-rules`,
+ * `x-tarol-email`, and the `TarolProblem` schema of every problem answer.
  */
 export interface OpenApiDocument {
   /** The OpenAPI version; 3.1 or later. */
@@ -27,8 +28,10 @@ export interface Operation {
   readonly responses?: Readonly<
     Record<string, { readonly content?: Readonly<Record<string, { readonly schema?: Schema }>> }>
   >;
-  /** BC-3: `creation`, `change`, `view`, `list` or `search`. */
+  /** The entry's kind: `creation`, `change`, `view`, `list`, `search`, `admin` or `me`. Required. */
   readonly 'x-tarol-kind'?: string;
+  /** The codes the operation can answer with, where the backend knows them statically. */
+  readonly 'x-tarol-errors'?: readonly string[];
 }
 
 /** A path, query or header parameter. */
@@ -43,6 +46,8 @@ export interface Parameter {
   readonly description?: string;
   /** Its JSON Schema. */
   readonly schema?: Schema;
+  /** The aggregate of an `Id<T>` route value (Tarol puts it on the parameter, next to its schema). */
+  readonly 'x-tarol-id'?: string;
 }
 
 /** The JSON Schema subset used by the backend. */
@@ -87,10 +92,12 @@ export interface Schema {
   readonly maxItems?: number;
   /** Rule `Pattern`, when it is an ECMAScript pattern. */
   readonly pattern?: string;
-  /** BC-3: the aggregate an `Id<T>` belongs to, e.g. `Auction`. */
+  /** The aggregate an `Id<T>` belongs to, e.g. `Auction`. */
   readonly 'x-tarol-id'?: string;
-  /** BC-4: the backend's rules with their codes. */
+  /** The backend's rules with their codes. */
   readonly 'x-tarol-rules'?: readonly GeneratedRule[];
+  /** The exact semantics of the backend's e-mail check, in words (it must be the one `isEmail` implements). */
+  readonly 'x-tarol-email'?: string;
 }
 
 /** A rule as written into the generated file (the shape of `Rule` in `@clorat/tarol-svelte`). */
@@ -126,7 +133,17 @@ export class GenerateError extends Error {
   }
 }
 
-type Kind = 'creation' | 'change' | 'view' | 'list' | 'search';
+type Kind = 'creation' | 'change' | 'view' | 'list' | 'search' | 'admin' | 'me';
+
+/** The e-mail check `@clorat/tarol-svelte`'s `isEmail` implements (Tarol.Validations `Rules.Email`), as the backend states it. */
+export const emailRule =
+  'one @ with 1 to 64 characters before it; a domain of at most 253 characters that contains a dot, does not start or end with one and has no empty label; no white space; at most 254 characters';
+
+/** The rule kinds `@clorat/tarol-svelte`'s `check` knows; another one cannot be checked in the browser. */
+const knownRules = new Set(['Required', 'NotEmpty', 'Range', 'Length', 'Pattern', 'Email', 'Count']);
+
+/** The schema of every problem answer: the client reads it as its `Violation`, so no type is generated for it. */
+const problemSchema = 'TarolProblem';
 
 interface Op {
   readonly name: string;
@@ -134,6 +151,10 @@ interface Op {
   readonly method: string;
   readonly path: string;
   readonly kind: Kind;
+  /** A read (`client.read`): views, lists, search, `me`, and the admin entry's GETs; everything else is a change. */
+  readonly read: boolean;
+  /** The codes of `x-tarol-errors`, or none. */
+  readonly errors: readonly string[];
   readonly op: Operation;
   readonly pointer: string;
 }
@@ -252,12 +273,23 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
       if (!op.operationId)
         throw new GenerateError(pointer, 'operationId is required (Tarol names it after the C# type)');
       if (path.startsWith('/webhooks/')) continue; // server to server, not a client interface
+      const kind = kindOf(op, pointer);
+      const errors = op['x-tarol-errors'] ?? [];
+      if (!Array.isArray(errors) || errors.some((e) => typeof e !== 'string'))
+        throw new GenerateError(`${pointer}/x-tarol-errors`, 'not a list of codes');
       ops.push({
         name: camel(op.operationId),
         type: pascal(op.operationId),
         method: method.toUpperCase(),
         path,
-        kind: kindOf(op, method, pointer),
+        kind,
+        read:
+          kind === 'view' ||
+          kind === 'list' ||
+          kind === 'search' ||
+          kind === 'me' ||
+          (kind === 'admin' && method === 'get'),
+        errors,
         op,
         pointer,
       });
@@ -280,8 +312,9 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     '',
   );
 
-  // schema types
+  // schema types (not the problem schema: the client maps problems to its Violation)
   for (const [name, s] of Object.entries(schemas)) {
+    if (name === problemSchema) continue;
     const pointer = `#/components/schemas/${pointerPart(name)}`;
     const t =
       s.properties || (types(s).includes('object') && !s.additionalProperties) ? objectType(s, pointer, '') : null;
@@ -296,7 +329,20 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
   const changes: string[] = [];
   const queries: string[] = [];
   const rules: string[] = [];
+  const errorLists: string[] = [];
+  let usesQs = false;
   for (const o of ops) {
+    // the operation's codes: a union for its results, and a list for checks (e.g. that a catalogue has every message)
+    const code = o.errors.length ? `${o.type}Code` : '';
+    if (code) {
+      out.push(
+        `/** The codes ${o.type} answers with, as the backend declares them (x-tarol-errors). */`,
+        `export type ${code} = ${o.errors.map((e) => JSON.stringify(e)).join(' | ')};`,
+        '',
+      );
+      errorLists.push(`  ${o.name}: [${o.errors.map((e) => JSON.stringify(e)).join(', ')}],`);
+    }
+    const codeArg = code ? `, ${code}` : '';
     const params = o.op.parameters ?? [];
     const pathParams = params.filter((p) => p.in === 'path');
     // offset is left out on purpose: keyset paging only (philosophy P1)
@@ -307,8 +353,12 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
       if (!ident.test(p.name))
         throw new GenerateError(`${o.pointer}/parameters`, `path parameter ${p.name} is not an identifier`);
     }
+    const paramSchema = (p: Parameter): Schema => {
+      const schema = p.schema ?? { type: 'string' };
+      return p['x-tarol-id'] ? { ...schema, 'x-tarol-id': p['x-tarol-id'] } : schema;
+    };
     const pathType = pathParams.length
-      ? `{ ${pathParams.map((p, i) => `readonly ${key(p.name)}: ${ts(p.schema ?? { type: 'string' }, `${o.pointer}/parameters/${String(i)}/schema`)}`).join('; ')} }`
+      ? `{ ${pathParams.map((p) => `readonly ${key(p.name)}: ${ts(paramSchema(p), `${o.pointer}/parameters/${String(params.indexOf(p))}/schema`)}`).join('; ')} }`
       : '';
     const isString = (n: string): boolean => {
       const t = types(pathParams.find((p) => p.name === n)?.schema ?? { type: 'string' });
@@ -323,34 +373,39 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
       : '';
     const summary = doc(o.op.summary ?? o.op.description ?? `${o.method} ${o.path}`, '  ');
 
-    if (o.kind === 'view' || o.kind === 'list' || o.kind === 'search') {
-      const queryType = `${o.type}Query`;
+    const queryRequired = queryParams.some((p) => p.required === true);
+    const queryType = `${o.type}Query`;
+    if (o.read) {
       if (queryParams.length)
         out.push(
           `/** The query-string parameters of ${o.type}. */`,
-          `export interface ${queryType} {\n${queryParams
+          // a type alias, not an interface: an object type alias is assignable to the client's Record of query values
+          `export type ${queryType} = {\n${queryParams
             .map(
-              (p, i) =>
-                `${doc(p.description, '  ')}  readonly ${key(p.name)}?: ${ts(p.schema ?? { type: 'string' }, `${o.pointer}/parameters/${String(params.includes(p) ? params.indexOf(p) : i)}/schema`)} | undefined;`,
+              (p) =>
+                `${doc(p.description, '  ')}  readonly ${key(p.name)}${p.required === true ? '' : '?'}: ${ts(p.schema ?? { type: 'string' }, `${o.pointer}/parameters/${String(params.indexOf(p))}/schema`)}${p.required === true ? '' : ' | undefined'};`,
             )
-            .join('\n')}\n}`,
+            .join('\n')}\n};`,
           '',
         );
-      const result = o.kind === 'view' ? viewType(o) : pageType(o);
+      const result = o.kind === 'list' ? pageType(o) : viewType(o);
       const args = [
         pathParams.length ? `${destructure}: ${pathType}` : '',
-        queryParams.length ? `query: ${queryType} = {}` : '',
+        queryParams.length ? `query: ${queryType}${queryRequired ? '' : ' = {}'}` : '',
       ]
         .filter(Boolean)
         .join(', ');
-      const q = queryParams.length ? ', query: query as Readonly<Record<string, QueryValue>>' : '';
+      const q = queryParams.length ? ', query' : '';
       requests.push(`${summary}  ${o.name}: (${args}): ReadRequest => ({ path: ${url}${q} }),`);
-      const callArgs = [pathParams.length ? `p: ${pathType}` : '', queryParams.length ? `query?: ${queryType}` : '']
+      const callArgs = [
+        pathParams.length ? `p: ${pathType}` : '',
+        queryParams.length ? `query${queryRequired ? '' : '?'}: ${queryType}` : '',
+      ]
         .filter(Boolean)
         .join(', ');
       const forward = [pathParams.length ? 'p' : '', queryParams.length ? 'query' : ''].filter(Boolean).join(', ');
       queries.push(
-        `${doc(o.op.summary ?? o.op.description ?? `${o.method} ${o.path}`, '      ')}      ${o.name}: (${callArgs}): Promise<Result<${result}>> => {\n        const r = requests.${o.name}(${forward});\n        return client.read<${result}>(r.path, r.query ? { query: r.query } : {});\n      },`,
+        `${doc(o.op.summary ?? o.op.description ?? `${o.method} ${o.path}`, '      ')}      ${o.name}: (${callArgs}): Promise<Result<${result}${codeArg}>> => {\n        const r = requests.${o.name}(${forward});\n        return client.read<${result}>(r.path, r.query ? { query: r.query } : {})${code ? ` as Promise<Result<${result}${codeArg}>>` : ''};\n      },`,
       );
     } else {
       const body = bodySchema(o);
@@ -361,18 +416,35 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
           if (bodyProps.includes(p.name))
             throw new GenerateError(o.pointer, `path parameter ${p.name} has the name of a body member`);
       }
-      const inputType = [pathType, bodyType].filter(Boolean).join(' & ') || 'object';
-      const input = pathParams.length ? destructure : body ? 'body' : '_';
+      // a change's query values (the admin entry's `tenant`) are part of its input, next to the path values
+      const queryInput = queryParams.length
+        ? `{ ${queryParams.map((p) => `readonly ${key(p.name)}${p.required === true ? '' : '?'}: ${ts(p.schema ?? { type: 'string' }, `${o.pointer}/parameters/${String(params.indexOf(p))}/schema`)}${p.required === true ? '' : ' | undefined'}`).join('; ')} }`
+        : '';
+      if (queryParams.length && body)
+        throw new GenerateError(o.pointer, 'a change with both a body and query values is not supported');
+      const inputType = [pathType, queryInput, bodyType].filter(Boolean).join(' & ') || 'object';
+      const names = [...pathParams, ...queryParams].map((p) => p.name);
+      const input = names.length ? `{ ${names.join(', ')}${body ? ', ...body' : ''} }` : body ? 'body' : '_';
       const bodyField = body ? ', body' : '';
+      const queryField = queryParams.length ? `, query: { ${queryParams.map((p) => p.name).join(', ')} }` : '';
       const id = createdId(o);
-      const result = o.kind === 'creation' ? (id === 'string' ? 'Created' : `Created<${id}>`) : 'undefined';
-      const typeArg = result === 'undefined' ? '' : `<${result}>`; // T defaults to undefined in client.change
+      const result =
+        o.kind === 'creation'
+          ? id === 'string'
+            ? 'Created'
+            : `Created<${id}>`
+          : o.kind === 'admin' && success(o)
+            ? viewType(o)
+            : 'undefined';
+      // T defaults to undefined; the codes narrow the result by an assertion (TarolClient stays code-agnostic)
+      const typeArg = result === 'undefined' ? '' : `<${result}>`;
       out.push(`/** The input of ${o.type}. */`, `export type ${o.type}Input = ${inputType};`, '');
+      if (queryParams.length) usesQs = true;
       requests.push(
-        `${summary}  ${o.name}: (${input}: ${o.type}Input): ChangeRequest => ({ method: '${o.method}', path: ${url}${bodyField} }),`,
+        `${summary}  ${o.name}: (${input}: ${o.type}Input): ChangeRequest => ({ method: '${o.method}', path: ${queryParams.length ? `${url} + qs(${queryField.slice(', query: '.length)})` : url}${bodyField} }),`,
       );
       changes.push(
-        `${doc(o.op.summary ?? o.op.description ?? `${o.method} ${o.path}`, '      ')}      ${o.name}: (input: ${o.type}Input, options?: ChangeOptions): Promise<Result<${result}>> =>\n        client.change${typeArg}(requests.${o.name}(input), options),`,
+        `${doc(o.op.summary ?? o.op.description ?? `${o.method} ${o.path}`, '      ')}      ${o.name}: (input: ${o.type}Input, options?: ChangeOptions): Promise<Result<${result}${codeArg}>> =>\n        client.change${typeArg}(requests.${o.name}(input), options)${code ? ` as Promise<Result<${result}${codeArg}>>` : ''},`,
       );
       const r = body ? rulesOf(resolve(body), `${o.pointer}/requestBody`, '', new Set()) : [];
       if (r.length) rules.push(`  ${o.name}: {\n${r.join('\n')}\n  },`);
@@ -385,6 +457,9 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     '',
     "/** Validation rules per change and field path (`lines[].quantity`), with the backend's codes: `changeForm(…, { rules })`. */",
     `export const rules = {\n${rules.join('\n')}\n} as const;`,
+    '',
+    '/** The codes each operation answers with (x-tarol-errors), e.g. to check that a message catalogue has them all. */',
+    `export const errors = {\n${errorLists.join('\n')}\n} as const;`,
     '',
     '/** Typed calls over a client: `const api = tarol(client); await api.changes.createAuction({ reserve: 100 })`. */',
     'export function tarol(client: TarolClient) {',
@@ -399,6 +474,20 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     .sort()
     .map((a) => `/** The id of a ${pascal(a)} (a UUID string). */\nexport type ${pascal(a)}Id = Id<'${pascal(a)}'>;`);
   let text = out.join('\n');
+  if (usesQs)
+    text = text.replace(
+      'const enc = encodeURIComponent;',
+      [
+        'const enc = encodeURIComponent;',
+        '/** The query string of a change (the admin entry takes `tenant` there). */',
+        'const qs = (q: Readonly<Record<string, QueryValue>>): string => {',
+        '  const p = new URLSearchParams();',
+        '  for (const [k, v] of Object.entries(q)) if (v !== undefined && v !== null) p.set(k, String(v));',
+        '  const s = p.toString();',
+        "  return s ? `?${s}` : '';",
+        '};',
+      ].join('\n'),
+    );
   text = text.replace('%IDS%', ids.size ? ', Id' : '');
   if (idTypes.length)
     text = text.replace('const enc = encodeURIComponent;', `${idTypes.join('\n')}\n\nconst enc = encodeURIComponent;`);
@@ -423,6 +512,8 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
 
   function viewType(o: Op): string {
     const s = success(o);
+    // the admin entry's subject export documents no schema (Tarol-Svelte BC-20): the only untyped answer
+    if (!s && o.kind === 'admin') return 'unknown';
     if (!s) throw new GenerateError(`${o.pointer}/responses/200`, 'a view needs a JSON schema for 200');
     return ts(s, `${o.pointer}/responses/200/content/application~1json/schema`);
   }
@@ -439,14 +530,18 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     return id ? ts(id, `${o.pointer}/responses/201/content/application~1json/schema/properties/id`) : 'string';
   }
 
-  /** The rules of a body schema per field path, from `x-tarol-rules` (BC-4) or from the JSON Schema keywords. */
+  /** The rules of a body schema per field path, from `x-tarol-rules` or from the JSON Schema keywords. */
   function rulesOf(s: Schema, pointer: string, prefix: string, seen: Set<string>): string[] {
     const out: string[] = [];
     const required = new Set(s.required ?? []);
     for (const [name, raw] of Object.entries(s.properties ?? {})) {
       const path = prefix + name;
       const p = resolve(raw);
-      const list = fieldRules(p, required.has(name) && !types(p).includes('null'));
+      const list = fieldRules(
+        p,
+        required.has(name) && !types(p).includes('null'),
+        `${pointer}/properties/${pointerPart(name)}`,
+      );
       if (list.length) out.push(`    ${JSON.stringify(path)}: [${list.map((r) => JSON.stringify(r)).join(', ')}],`);
       const refName = raw.$ref ?? p.items?.$ref ?? '';
       if (refName && seen.has(refName)) continue; // a recursive schema: one level is enough for the fields of a form
@@ -460,29 +555,38 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
   }
 }
 
-function kindOf(op: Operation, method: string, pointer: string): Kind {
+function kindOf(op: Operation, pointer: string): Kind {
   const declared = op['x-tarol-kind'];
-  if (
-    declared === 'creation' ||
-    declared === 'change' ||
-    declared === 'view' ||
-    declared === 'list' ||
-    declared === 'search'
-  )
-    return declared;
-  if (declared !== undefined) throw new GenerateError(`${pointer}/x-tarol-kind`, `unknown kind ${declared}`);
-  const responses = op.responses ?? {};
-  if (method === 'get') {
-    const props = responses['200']?.content?.['application/json']?.schema?.properties;
-    return props && 'items' in props && 'next' in props ? 'list' : 'view';
-  }
-  if ('201' in responses) return 'creation';
-  return 'change';
+  if (declared === undefined)
+    throw new GenerateError(
+      `${pointer}/x-tarol-kind`,
+      'x-tarol-kind is required (a Tarol backend emits it on every entry)',
+    );
+  const kinds: readonly string[] = ['creation', 'change', 'view', 'list', 'search', 'admin', 'me'];
+  if (!kinds.includes(declared)) throw new GenerateError(`${pointer}/x-tarol-kind`, `unknown kind ${declared}`);
+  return declared as Kind;
 }
 
-/** Rules of one field: `x-tarol-rules` when the backend emits them (BC-4), else the JSON Schema keywords. */
-function fieldRules(s: Schema, required: boolean): GeneratedRule[] {
-  if (s['x-tarol-rules']) return [...s['x-tarol-rules']];
+/**
+ * Rules of one field: `Required` for a required member, then `x-tarol-rules` when the backend emits them (the same codes
+ * as its 400s), else the JSON Schema keywords. A pattern that is no ECMAScript pattern is left to the server.
+ */
+function fieldRules(s: Schema, required: boolean, pointer: string): GeneratedRule[] {
+  const tarol = s['x-tarol-rules'];
+  const email = s['x-tarol-email'];
+  if (email !== undefined && email !== emailRule)
+    throw new GenerateError(
+      `${pointer}/x-tarol-email`,
+      `the backend's e-mail check is not the one the client implements (${emailRule}): ${email}`,
+    );
+  if (tarol) {
+    for (const [i, r] of tarol.entries())
+      if (!knownRules.has(r.rule))
+        throw new GenerateError(`${pointer}/x-tarol-rules/${String(i)}`, `rule ${r.rule} is not checked by the client`);
+    const head: GeneratedRule[] =
+      required && !tarol.some((r) => r.rule === 'Required') ? [{ rule: 'Required', code: 'Required' }] : [];
+    return [...head, ...tarol.filter((r) => r.rule !== 'Pattern' || compiles(r.pattern ?? '', r.flags))];
+  }
   const out: GeneratedRule[] = [];
   const t = types(s).filter((x) => x !== 'null');
   const isString = t.length === 1 && t[0] === 'string';
@@ -510,16 +614,16 @@ function fieldRules(s: Schema, required: boolean): GeneratedRule[] {
       ...(s.maxItems === undefined ? {} : { max: s.maxItems }),
     });
   // a pattern only on a pure string: the ["number","string"] patterns are ASP.NET's number format, not a rule; and only
-  // when it compiles as an ECMAScript pattern (the backend's are .NET regexes, BC-4)
+  // when it compiles as an ECMAScript pattern (a .NET pattern without x-tarol-rules may not)
   if (isString && s.pattern !== undefined && compiles(s.pattern))
     out.push({ rule: 'Pattern', code: 'Pattern', pattern: s.pattern });
   if (isString && s.format === 'email') out.push({ rule: 'Email', code: 'Email' });
   return out;
 }
 
-function compiles(pattern: string): boolean {
+function compiles(pattern: string, flags = ''): boolean {
   try {
-    new RegExp(pattern, 'u');
+    new RegExp(pattern, [...new Set(`u${flags}`)].join(''));
     return true;
   } catch {
     return false;

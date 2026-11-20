@@ -13,7 +13,7 @@ export interface Rule {
   readonly max?: number;
   /** An ECMAScript pattern (`Pattern`); matched with the `u` flag. */
   readonly pattern?: string;
-  /** Extra regular-expression flags, e.g. `i`. */
+  /** The backend's regular-expression flags (`i` for IgnoreCase, `u`); `u` is always used. */
   readonly flags?: string;
 }
 
@@ -51,7 +51,8 @@ function passes(r: Rule, v: unknown): boolean {
     case 'Count':
       return Array.isArray(v) && within(v.length, r);
     case 'Pattern':
-      return typeof v === 'string' && new RegExp(r.pattern ?? '', `u${r.flags ?? ''}`).test(v);
+      // always u (the backend's `\p{…}` and code points); the backend's flags (i, u) added once each
+      return typeof v === 'string' && new RegExp(r.pattern ?? '', [...new Set(`u${r.flags ?? ''}`)].join('')).test(v);
     case 'Email':
       return typeof v === 'string' && isEmail(v);
     default:

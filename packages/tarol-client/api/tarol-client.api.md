@@ -29,6 +29,9 @@ export interface ChangeRequest {
 }
 
 // @public
+export type ClientCode = 'Network' | 'Request.Invalid' | 'Auth.Required' | 'Auth.Forbidden' | 'NotFound' | 'Conflict' | 'Request.TooLarge' | 'Request.UnsupportedMediaType' | 'Unprocessable' | 'TooManyRequests' | 'Unavailable' | `Http.${number}`;
+
+// @public
 export interface ClientOptions {
     readonly baseUrl: string;
     readonly cacheSize?: number;
@@ -51,15 +54,15 @@ export interface Created<I extends string = string> {
 }
 
 // @public
-export interface Failed {
+export interface Failed<C extends string = string> {
     readonly ok: false;
     readonly requestId?: string;
     readonly status: number;
-    readonly violation: Violation;
+    readonly violation: Violation<C>;
 }
 
 // @public
-export function fallbackCode(status: number): string;
+export function fallbackCode(status: number): ClientCode;
 
 // @public
 export interface FieldError {
@@ -103,8 +106,8 @@ export interface Page<T> {
 }
 
 // @public
-export interface Problem {
-    readonly code: string;
+export interface Problem<C extends string = string> {
+    readonly code: C | ClientCode;
     readonly detail?: string;
     readonly kind: 'error';
 }
@@ -119,7 +122,7 @@ export interface ReadOptions {
 }
 
 // @public
-export type Result<T> = Ok<T> | Failed;
+export type Result<T, C extends string = string> = Ok<T> | Failed<C>;
 
 // @public
 export interface TarolClient {
@@ -142,7 +145,7 @@ export interface TokenProvider {
 export function toViolation(status: number, body: unknown): Violation;
 
 // @public
-export type Violation = Invalid | Problem;
+export type Violation<C extends string = string> = Invalid | Problem<C>;
 
 // (No @packageDocumentation comment for this package)
 

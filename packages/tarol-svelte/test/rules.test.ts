@@ -44,6 +44,15 @@ describe('rules', () => {
       expect(isEmail(bad), bad).toBe(false);
   });
 
+  it('takes the flags of x-tarol-rules: i, and u without doubling it (BC-4)', () => {
+    const letters = [{ rule: 'Pattern', code: 'Pattern', pattern: '^\\p{Lu}+$', flags: 'u' }] as const;
+    expect(check('ÄBC', letters)).toBeNull();
+    expect(check('abc', letters)).toBe('Pattern');
+    const code = [{ rule: 'Pattern', code: 'Currency', pattern: '^[a-z]{3}$', flags: 'i' }] as const;
+    expect(check('EUR', code)).toBeNull();
+    expect(check('EURO', code)).toBe('Currency');
+  });
+
   it('maps concrete paths to rule keys', () => {
     expect(rulePath('lines[12].quantity')).toBe('lines[].quantity');
     expect(rulePath('customer')).toBe('customer');

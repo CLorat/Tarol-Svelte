@@ -2,7 +2,7 @@
  * The outcome of a call: the value, or the backend's violation. Business failures are values, never exceptions
  * (philosophy P5); only programming errors and aborted requests throw.
  */
-export type Result<T> = Ok<T> | Failed;
+export type Result<T, C extends string = string> = Ok<T> | Failed<C>;
 
 /** A successful answer. */
 export interface Ok<T> {
@@ -26,12 +26,15 @@ export interface Ok<T> {
   readonly requestId?: string;
 }
 
-/** A refused or failed call. */
-export interface Failed {
+/**
+ * A refused or failed call. `C` narrows the backend's codes, e.g. to an operation's `x-tarol-errors` in a generated client;
+ * the client's own codes ({@link ClientCode}) can always occur.
+ */
+export interface Failed<C extends string = string> {
   /** Discriminates {@link Failed} from {@link Ok}. */
   readonly ok: false;
   /** What the backend refused, or `Network` when it could not be reached. */
-  readonly violation: Violation;
+  readonly violation: Violation<C>;
   /** The HTTP status, or 0 when the network failed. */
   readonly status: number;
   /**
@@ -42,7 +45,7 @@ export interface Failed {
 }
 
 /** What went wrong: invalid fields, or one coded error. */
-export type Violation = Invalid | Problem;
+export type Violation<C extends string = string> = Invalid | Problem<C>;
 
 /** A 400 with field errors: JSON paths as the backend writes them (`lines[1].quantity`) mapped to codes (`Range`). */
 export interface Invalid {
@@ -66,16 +69,34 @@ export interface FieldError {
 }
 
 /** Any other refusal, with the backend's code (`Auction.NotSeller`, `Stream.VersionConflict`, `Network`). */
-export interface Problem {
+export interface Problem<C extends string = string> {
   /** Discriminates {@link Problem} from {@link Invalid}. */
   readonly kind: 'error';
   /** The backend's code, or a fallback per status when the answer had no problem body ({@link fallbackCode}). */
-  readonly code: string;
+  readonly code: C | ClientCode;
   /** The backend's detail text, for logs; user messages come from the code. */
   readonly detail?: string;
 }
 
-const fallbackCodes: Readonly<Record<number, string>> = {
+/**
+ * The codes the client gives itself: `Network` (no answer), and one per status for an answer without a problem body
+ * ({@link fallbackCode}); `Http.<status>` for any other status.
+ */
+export type ClientCode =
+  | 'Network'
+  | 'Request.Invalid'
+  | 'Auth.Required'
+  | 'Auth.Forbidden'
+  | 'NotFound'
+  | 'Conflict'
+  | 'Request.TooLarge'
+  | 'Request.UnsupportedMediaType'
+  | 'Unprocessable'
+  | 'TooManyRequests'
+  | 'Unavailable'
+  | `Http.${number}`;
+
+const fallbackCodes: Readonly<Record<number, ClientCode>> = {
   0: 'Network',
   400: 'Request.Invalid',
   401: 'Auth.Required',
@@ -90,8 +111,8 @@ const fallbackCodes: Readonly<Record<number, string>> = {
 };
 
 /** The code used when an answer carries no problem body (a 401 never has one). */
-export function fallbackCode(status: number): string {
-  return fallbackCodes[status] ?? `Http.${String(status)}`;
+export function fallbackCode(status: number): ClientCode {
+  return fallbackCodes[status] ?? (`Http.${String(status)}` as `Http.${number}`);
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {

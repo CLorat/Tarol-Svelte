@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TarolClient } from '@clorat/tarol-client';
+  import { asId, isId, type TarolClient } from '@clorat/tarol-client';
   import type { PushClient } from '@clorat/tarol-client/push';
   import type { Oidc } from '@clorat/tarol-oidc';
   import { AppShell, SearchBox } from '@clorat/tarol-components';
@@ -104,7 +104,12 @@
     {:else if parts[0] === 'tokens'}
       <Tokens />
     {:else if parts[0] === 'auctions' && parts[1]}
-      {#key parts[1]}<Auction id={parts[1]} />{/key}
+      <!-- the route value becomes the branded id once, at the boundary; anything else is not an auction -->
+      {#if isId(parts[1])}
+        {#key parts[1]}<Auction id={asId<'Auction'>(parts[1])} />{/key}
+      {:else}
+        <h1>Not found</h1>
+      {/if}
     {:else if parts[0] === 'auctions'}
       <Auctions />
     {:else if parts[0] === 'subjects' && parts[1]}

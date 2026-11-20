@@ -23,16 +23,24 @@ description: >-
 4. Names are the backend's operation ids (its C# type names) in camelCase: `CreateAuction` → `createAuction`.
 5. Lists have no `offset`: page with `after` (keyset).
 6. Path members and body members go into one input object: `placeBid({ auction, amount })`.
+7. Ids are branded (`AuctionId = Id<'Auction'>`): brand a route value or a plain id once with `asId<'Auction'>(s)` from
+   `@clorat/tarol-client` (it throws on a non-UUID). The 201 of a creation is a plain `string` id for now (backend BC-19).
+8. Results carry the operation's codes: `Result<undefined, PlaceBidCode>`; `r.violation.code === 'Bid.TooLow'` is checked
+   by TypeScript. `errors.placeBid` lists them at run time.
 
 ## Example
 
 ```ts
-import { createClient } from '@clorat/tarol-client';
+import { asId, createClient } from '@clorat/tarol-client';
 import { tarol } from './api';
 
 const api = tarol(createClient({ baseUrl: '/api', tokens }));
 const created = await api.changes.createAuction({ reserve: 100 });
-if (created.ok) await api.changes.placeBid({ auction: created.value.id, amount: 150 }, { expectedVersion: created.value.version });
+if (created.ok) {
+  const auction = asId<'Auction'>(created.value.id);
+  const bid = await api.changes.placeBid({ auction, amount: 150 }, { expectedVersion: created.value.version });
+  if (!bid.ok && bid.violation.kind === 'error' && bid.violation.code === 'Bid.TooLow') showTooLow();
+}
 ```
 
 ## Common mistakes
@@ -43,8 +51,11 @@ if (created.ok) await api.changes.placeBid({ auction: created.value.id, amount: 
 | `auctionSearch({ sort: 'Price' })` | TypeScript error: only the backend's sort members are allowed |
 | an OpenAPI 3.0 document | `GenerateError: #/openapi: OpenAPI 3.0.x is not supported (3.1 or later)` |
 | a schema the generator cannot type exactly | `GenerateError` with its JSON pointer; fix the backend contract, do not patch the output |
-| expecting branded ids (`Id<'Auction'>`) | they appear once the backend emits `x-tarol-id` (proposed backend change BC-3); until then ids are `string` |
+| passing a row's or a URL's `string` where an `AuctionId` is expected | TypeScript error; brand it once with `asId<'Auction'>(s)` (a view row's `Guid Id` carries no `x-tarol-id`) |
+| an operation without `x-tarol-kind` | `GenerateError: …/x-tarol-kind: x-tarol-kind is required` (not a Tarol document, or a hand-made one) |
+| `bid.violation.code === 'Auction.NotSeller'` on a `PlaceBid` result | TypeScript error: not one of `PlaceBidCode` or the client's own codes |
 
 ## Notes
 
-The generated module imports only types from `@clorat/tarol-client`; its runtime is ≈ 80 B gzip per backend entry.
+The generated module imports only types from `@clorat/tarol-client`; its runtime is ≈ 85 B gzip per backend entry
+(1,340 B for the sample's 16 entries, admin and search included).

@@ -235,3 +235,46 @@ the artflow project **13 passed** twice in a row against the sample started with
 lifetime: 30 s`), all scenarios with 30-second tokens; the client and oidc contract tests pass with them too (the codegen
 contract test fails on the drift of the live document, which B5 regenerates).
 
+### B5: the generator reads Tarol's extensions (BC-3, BC-4)
+
+**Public API and behaviour changes**:
+* `@clorat/tarol-codegen` (generated reports): `x-tarol-kind` is **required** (no guessing from the responses; an
+  operation without it is a `GenerateError`); kinds `admin` (GET → read, others → change with the 200 type) and `me`;
+  `x-tarol-errors` → `<Op>Code` unions in the results and `errors.<op>` lists; `x-tarol-id` also on **path parameters**
+  (where Tarol puts it; the sample's `{auction}` becomes `AuctionId`); `TarolProblem` is not generated (the client's
+  `Violation`); required query values are required; a change's query values (`tenant`) are part of its input and sent by
+  a `qs()` helper; query types are type aliases (assignable to the client's query record without a cast); `Required` is
+  kept next to `x-tarol-rules` (before, a field with `x-tarol-rules` lost it: `reserve` would have lost `Required`); an
+  unknown rule kind is a `GenerateError`; `x-tarol-email` must be the check `isEmail` implements (`emailRule`, exported),
+  else a `GenerateError`; an admin answer without a schema (the export, BC-20) is `unknown`, the only one. New exports:
+  `emailRule`; `Operation['x-tarol-errors']`, `Schema['x-tarol-email']`, `Parameter['x-tarol-id']`.
+* `@clorat/tarol-client`: `Result<T, C>`, `Failed<C>`, `Violation<C>`, `Problem<C>` take the backend's codes as an optional
+  type parameter (default `string`, so nothing changes for existing code); `ClientCode` (exported) types the client's own
+  codes, `fallbackCode` returns it. `TarolClient` is unchanged (a first version made `change`/`read` generic in `C`, which
+  broke every hand-written client double, e.g. the docs app's demo client; the generated calls narrow by an assertion
+  instead).
+* `@clorat/tarol-svelte`: `check()` merges a rule's `flags` with its own `u` once (**fix**: `flags: "u"`, which the backend
+  emits for `\p{…}`, made `new RegExp(…, 'uu')` throw a `SyntaxError`).
+* `apps/docs`: regenerated client (16 operations: admin and search included); the auction page takes an `AuctionId`,
+  branded once from the route (`isId`/`asId`), "Not found" for anything else.
+
+**Lint configuration**: `@typescript-eslint/consistent-type-definitions` off for generated files (`apps/*/src/**/api.ts`,
+`packages/*/src/**/api.ts`, the codegen snapshot): the query types must be type aliases (an interface needs an index
+signature to be assignable to the client's query record, and an index signature would accept a misspelt key, BC-14).
+
+**Snapshot**: the fixture is the live document of the sample at `fe0a2bd` (+ #109, which changes no API), the snapshot
+regenerated from it and reviewed (`__snapshots__/artflow.ts`).
+
+**Tests** (failing before [verified]): the codegen contract test `the live document generates exactly the committed
+snapshot (no drift)` failed against `fe0a2bd`; the new suite `Tarol extensions (BC-3, BC-4)` failed to load (`unknown kind
+me`); `takes the flags of x-tarol-rules` failed with `Invalid flags supplied to RegExp constructor 'uu'`. After: codegen
+**17 passed** (5 new: error unions and lists, admin and `me` operations with required query values and the `unknown`
+export, `Required` with `x-tarol-rules`, flags, the e-mail check, no `TarolProblem`, `x-tarol-kind` required, and the
+compile check), the sample's usage compiles with `@ts-expect-error` on a foreign code and on a plain string id; contract
+**2 passed** against the sample.
+
+**Measured** (Vite 8 library build, minified, `@clorat/*` external, gzip 9 / brotli 11): the generated module for the
+sample is **5,297 B, 1,340 B gzip, 1,171 B brotli** for 16 operations (the step 5 document's 6 operations: 1,452 B, 540 B
+gzip, 476 B brotli with the same build); ≈ 84 B gzip per operation; `errors` is a separate export (tree-shaken when
+unused).
+

@@ -28,11 +28,15 @@ The backend opts in with `AddOpenApi(o => o.AddTarolEndpoints())` and `MapOpenAp
 | Backend | Generated |
 |---|---|
 | operation (`operationId` = C# type) | `requests.<name>`, `tarol(client).changes.<name>` or `.queries.<name>` |
+| `x-tarol-kind` (required: `creation`, `change`, `view`, `list`, `search`, `admin`, `me`) | the call's shape; nothing is guessed from the responses |
 | creation (201) / change (204) | `Result<Created>` / `Result<undefined>`; input = path members & body |
-| view / list (`{items, next}`) | `Result<View>` / `Result<Page<Row>>`; `<Op>Query` without `offset` (keyset only) |
+| view / list (`{items, next}`) / search / `me` | `Result<View>` / `Result<Page<Row>>` / the search page; `<Op>Query` without `offset` (keyset only); required query values are required |
+| admin (`TarolAdmin…`) | GETs are reads, the others changes with their 200 type; query values such as `tenant` are part of the input; the subject export has no schema (BC-20) and is `unknown` |
+| `x-tarol-errors` | `<Op>Code` (a union of the declared codes) in `Result<T, <Op>Code>`, and `errors.<op>` (the list, e.g. to check a message catalogue); a code the backend builds at run time is not declared |
+| `TarolProblem` | no type: the client reads problems as its `Violation` |
 | `["number","string"]` + pattern (ASP.NET Web defaults) | `number` |
-| `Id<T>` with `x-tarol-id` (proposed BC-3) | `Id<'Auction'>` branded types; plain `string` until the backend emits it |
-| `minLength`/`maxLength`/`minimum`/`maximum`/`minItems`/`maxItems`/`pattern`/`format: email`, required members, `x-tarol-rules` (BC-4) | `rules.<change>['path']` with the backend codes; .NET-only patterns are left to the server |
+| `Id<T>` with `x-tarol-id` (on schemas and on path parameters) | `Id<'Auction'>` branded types |
+| `x-tarol-rules` (the backend's codes, `flags` `i`/`u`), `x-tarol-email` (must be the e-mail check `isEmail` implements), required members; JSON Schema keywords where there are no `x-tarol-rules` | `rules.<change>['path']` with the backend codes; patterns `RegExp` cannot read are left to the server |
 
 A construct it cannot translate exactly stops generation with its JSON pointer (`GenerateError`), never `any`.
 

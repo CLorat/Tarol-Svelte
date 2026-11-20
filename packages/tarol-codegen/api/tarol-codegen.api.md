@@ -5,6 +5,9 @@
 ```ts
 
 // @public
+export const emailRule = "one @ with 1 to 64 characters before it; a domain of at most 253 characters that contains a dot, does not start or end with one and has no empty label; no white space; at most 254 characters";
+
+// @public
 export function generate(document: OpenApiDocument, options?: GenerateOptions): string;
 
 // @public
@@ -39,6 +42,7 @@ export interface OpenApiDocument {
 
 // @public
 export interface Operation {
+    readonly 'x-tarol-errors'?: readonly string[];
     readonly 'x-tarol-kind'?: string;
     readonly description?: string;
     readonly operationId?: string;
@@ -58,6 +62,7 @@ export interface Operation {
 
 // @public
 export interface Parameter {
+    readonly 'x-tarol-id'?: string;
     readonly description?: string;
     readonly in: string;
     readonly name: string;
@@ -67,6 +72,7 @@ export interface Parameter {
 
 // @public
 export interface Schema {
+    readonly 'x-tarol-email'?: string;
     readonly 'x-tarol-id'?: string;
     readonly 'x-tarol-rules'?: readonly GeneratedRule[];
     readonly $ref?: string;

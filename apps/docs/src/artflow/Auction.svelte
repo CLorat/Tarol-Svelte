@@ -3,17 +3,17 @@
   import { getMessages, getToasts, MenuButton } from '@clorat/tarol-design';
   import { changeForm, getTarol, query } from '@clorat/tarol-svelte';
   import { untrack } from 'svelte';
-  import { requests, rules, tarol, type AuctionView } from './api.js';
+  import { requests, rules, tarol, type AuctionId, type AuctionView } from './api.js';
   import { euros, short } from './format.js';
 
-  const props: { id: string } = $props();
+  const props: { id: AuctionId } = $props();
   const id = untrack(() => props.id);
   const t = getMessages();
   const toasts = getToasts();
   const api = tarol(getTarol().client);
   // every bid, by anyone, revalidates the open auction (an ETag read: a 304 when it was another auction's bid)
   const view = query<AuctionView>(() => requests.auctionView({ auction: id }), { live: 'artflow.bid-placed' });
-  const bid = changeForm<{ auction: string; amount: number | null }>(
+  const bid = changeForm<{ auction: AuctionId; amount: number | null }>(
     (i) => requests.placeBid({ auction: i.auction, amount: i.amount ?? 0 }),
     { auction: id, amount: null },
     {

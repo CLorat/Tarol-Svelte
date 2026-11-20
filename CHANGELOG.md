@@ -4,6 +4,9 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-codegen` (BC-3, BC-4): `x-tarol-kind` required, admin and `me` operations, `x-tarol-errors` as
+  `<Op>Code` unions and `errors`, `x-tarol-id` on path parameters, `x-tarol-email` checked, `Required` kept next to
+  `x-tarol-rules`. `@clorat/tarol-client`: `Result<T, C>` (codes), `ClientCode`. `@clorat/tarol-svelte`: **fix** `flags: "u"`.
 * `@clorat/tarol-components` (BC-8): `SearchBox` shows the backend's snippet under each title with the matched words in
   `<mark>`, all as text; `highlight()`, `Highlight`, `Segment`. `@clorat/tarol-design`: `Combobox` `item` snippet
   (budget 3.1 KB).
