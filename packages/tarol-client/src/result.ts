@@ -76,6 +76,11 @@ export interface Problem<C extends string = string> {
   readonly code: C | ClientCode;
   /** The backend's detail text, for logs; user messages come from the code. */
   readonly detail?: string;
+  /**
+   * The problem's other members (RFC 9457 extensions), e.g. `failed` of `DataProtection.ErasureIncomplete`; absent when
+   * there are none.
+   */
+  readonly extensions?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -142,8 +147,24 @@ export function toViolation(status: number, body: unknown): Violation {
     const code = typeof body['code'] === 'string' ? body['code'] : undefined;
     const title = typeof body['title'] === 'string' ? body['title'] : undefined;
     const detail = typeof body['detail'] === 'string' ? body['detail'] : undefined;
-    const problem: Problem = { kind: 'error', code: code ?? title ?? fallbackCode(status) };
-    return detail === undefined ? problem : { ...problem, detail };
+    const known = new Set([
+      'type',
+      'status',
+      'title',
+      'code',
+      'detail',
+      'traceId',
+      'instance',
+      'errors',
+      'errorDetails',
+    ]);
+    const extra = Object.entries(body).filter(([k]) => !known.has(k));
+    return {
+      kind: 'error',
+      code: code ?? title ?? fallbackCode(status),
+      ...(detail === undefined ? {} : { detail }),
+      ...(extra.length > 0 ? { extensions: Object.fromEntries(extra) } : {}),
+    };
   }
   return { kind: 'error', code: fallbackCode(status) };
 }

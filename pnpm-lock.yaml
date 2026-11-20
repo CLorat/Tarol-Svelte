@@ -86,6 +86,9 @@ importers:
 
   apps/docs:
     dependencies:
+      '@clorat/tarol-admin':
+        specifier: workspace:*
+        version: link:../../packages/tarol-admin
       '@clorat/tarol-client':
         specifier: workspace:*
         version: link:../../packages/tarol-client
@@ -126,6 +129,31 @@ importers:
       web-vitals:
         specifier: 6.2.3
         version: 6.2.3
+
+  packages/tarol-admin:
+    dependencies:
+      '@clorat/tarol-client':
+        specifier: workspace:*
+        version: link:../tarol-client
+      '@clorat/tarol-components':
+        specifier: workspace:*
+        version: link:../tarol-components
+      '@clorat/tarol-design':
+        specifier: workspace:*
+        version: link:../tarol-design
+      '@clorat/tarol-svelte':
+        specifier: workspace:*
+        version: link:../tarol-svelte
+      svelte:
+        specifier: ^5.58.0
+        version: 5.58.0(@typescript-eslint/types@8.73.0)
+    devDependencies:
+      '@clorat/tarol-codegen':
+        specifier: workspace:*
+        version: link:../tarol-codegen
+      '@size-limit/file':
+        specifier: 14.3.0
+        version: 14.3.0(size-limit@14.3.0)
 
   packages/tarol-client: {}
 

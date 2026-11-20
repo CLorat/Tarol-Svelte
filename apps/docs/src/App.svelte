@@ -2,13 +2,13 @@
   import { asId, isId, type TarolClient } from '@clorat/tarol-client';
   import type { PushClient } from '@clorat/tarol-client/push';
   import type { Oidc } from '@clorat/tarol-oidc';
+  import { AdminApp } from '@clorat/tarol-admin';
   import { AppShell, SearchBox } from '@clorat/tarol-components';
   import { Button, ThemeRoot } from '@clorat/tarol-design';
   import { setTarol } from '@clorat/tarol-svelte';
   import { untrack } from 'svelte';
   import Auction from './artflow/Auction.svelte';
   import Auctions from './artflow/Auctions.svelte';
-  import Subject from './artflow/Subject.svelte';
   import Demo from './catalogue/Demo.svelte';
   import Page from './catalogue/Page.svelte';
   import { pages } from './catalogue/pages.js';
@@ -63,6 +63,7 @@
             </li>{/each}
           <li><a href="#/tokens">Tokens</a></li>
           <li><a href="#/auctions">Example: ArtFlow (needs the sample)</a></li>
+          <li><a href="#/admin">Example: admin (needs the sample, tarol-admin)</a></li>
         </ul>
       </details>
     {/snippet}
@@ -112,8 +113,9 @@
       {/if}
     {:else if parts[0] === 'auctions'}
       <Auctions />
-    {:else if parts[0] === 'subjects' && parts[1]}
-      <Subject id={parts[1]} tenant={router.route.query.get('tenant') ?? '00000000-0000-0000-0000-000000000000'} />
+    {:else if parts[0] === 'admin'}
+      <h1>Administration</h1>
+      <AdminApp />
     {:else}
       <h1>tarol-svelte</h1>
       <p>

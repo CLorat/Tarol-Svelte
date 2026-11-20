@@ -4,6 +4,10 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-admin` 0.1.0 (step 10, BC-10): `AdminApp` (dead letters: re-drive, discard, re-drive all; projection
+  versions: drop a superseded one; a data subject: export, erase, an incomplete erasure repeated), `adminEn`, `adminDe`,
+  `adminErrors`. `@clorat/tarol-client`: `Problem.extensions`. `@clorat/tarol-codegen`: only the used client types are
+  imported. The docs app: `#/admin` replaces the data-subject example screen.
 * `@clorat/tarol-svelte` (BC-5, BC-11): `Form.detail(path)`, `Form.requestId`, `Query`/`List.requestId`.
   `@clorat/tarol-components`: `FormField` shows the bounds of the server's detail; `ChangeForm` and `QueryState` show the
   error's reference. `@clorat/tarol-design`: `ui.reference`.

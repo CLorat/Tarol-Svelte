@@ -10,3 +10,5 @@ packages/*/api/
 packages/*/test/__snapshots__/
 apps/docs/src/artflow/api.ts
 apps/docs/src/catalogue/props.json
+packages/tarol-admin/openapi.admin.json
+packages/tarol-admin/src/lib/api.ts

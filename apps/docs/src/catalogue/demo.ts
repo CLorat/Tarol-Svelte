@@ -43,7 +43,8 @@ const ok = <T>(value: T, version?: number): Result<T> => ({
 
 /**
  * An in-memory TarolClient for the catalogue (no backend): `GET /auctions` (keyset pages, `sort`), `GET /auctions/{id}`,
- * `GET /search?q=`, and changes that succeed after 300 ms, except a bid below the reserve (400 `amount: Range`).
+ * `GET /search?q=`, the admin entry below `/tarol/admin`, and changes that succeed after 300 ms, except a bid below the
+ * reserve (400 `amount: Range`).
  */
 export function demoClient(): TarolClient {
   const listeners = new Set<(e: { method: string; path: string }) => void>();
@@ -84,6 +85,23 @@ export function demoClient(): TarolClient {
           });
         return delay(ok({ items, next: null }) as Result<T>);
       }
+      // the admin entry (Tarol.Operations) as the sample answers it, with one dead reaction and a superseded projection
+      if (path === '/tarol/admin/dead') return delay(ok(['jobs', 'reactions']) as Result<T>);
+      if (path.startsWith('/tarol/admin/dead/')) {
+        const items = path.endsWith('/reactions')
+          ? [{ id: 7, kind: 'reactions', name: 'Reactions.MarkPayoutDue', tenant: null, subject: 'a1', attempts: 5, error: 'timeout', deadAt: '2026-11-20T09:30:00Z' }]
+          : [];
+        return delay(ok({ items, next: null }) as Result<T>);
+      }
+      if (path === '/tarol/admin/projections')
+        return delay(
+          ok([
+            { name: 'auction-list', version: 1, state: 'retired', rows: 12, bytes: 16384, superseded: true },
+            { name: 'auction-list', version: 2, state: 'current', rows: 12, bytes: 16384, superseded: false },
+          ]) as Result<T>,
+        );
+      if (path.startsWith('/tarol/admin/subjects/'))
+        return delay(ok({ subject: path.split('/')[4], tenant: q['tenant'], events: [], states: [] }) as Result<T>);
       const found = auctions.find((a) => path === `/auctions/${a.id}`);
       return delay(
         (found
@@ -96,6 +114,8 @@ export function demoClient(): TarolClient {
       if (typeof body['amount'] === 'number' && body['amount'] < 100)
         return delay({ ok: false, status: 400, violation: { kind: 'invalid', errors: { amount: ['Range'] }, details: { amount: [{ code: 'Range' }] } } }, 300);
       for (const l of listeners) l({ method: r.method, path: r.path });
+      if (r.path.includes('/erase')) return delay(ok({ tenant: '0', subject: 's', alreadyErased: false, streams: 1 } as T), 300);
+      if (/\/dead\/\w+\/redrive/.test(r.path)) return delay(ok({ redriven: 1 } as T), 300);
       return delay(ok(undefined as T), 300);
     },
     url: (p) => p,

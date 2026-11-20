@@ -109,6 +109,7 @@ export interface Page<T> {
 export interface Problem<C extends string = string> {
     readonly code: C | ClientCode;
     readonly detail?: string;
+    readonly extensions?: Readonly<Record<string, unknown>>;
     readonly kind: 'error';
 }
 

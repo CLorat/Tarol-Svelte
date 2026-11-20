@@ -302,3 +302,9 @@ stashed, the scenario failed]. The client-rule scenario also checks `Range` with
 `@clorat/tarol-svelte` **2.89 KB gzip / 2.54 KB brotli** (2.74 / 2.40 before; budget 3 KB); `ChangeForm + FormField`
 1.59 KB, `QueryState` 1.50 KB gzip (budget 2 KB each).
 
+### C: step 10, `@clorat/tarol-admin` (BC-10)
+
+Recorded in [admin.md](admin.md) "Built": the package, its generated client, sizes (5.98 KB gzip / 5.15 KB brotli,
+SV-18), the CLS fix, the tests (7 component, 1 client, 2 e2e), BC-21 and BC-22. `Problem.extensions` in the client and
+the codegen's used-imports are this PR's other public changes.
+

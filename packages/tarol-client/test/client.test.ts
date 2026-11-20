@@ -142,6 +142,34 @@ describe('changes', () => {
     });
   });
 
+  it('keeps a problem’s extension members, e.g. the failed participants of an erasure (BC-10)', async () => {
+    const b = backend(
+      problem(409, {
+        type: 'https://tools.ietf.org/html/rfc9110#section-15.5.10',
+        status: 409,
+        title: 'DataProtection.ErasureIncomplete',
+        code: 'DataProtection.ErasureIncomplete',
+        detail: 'search',
+        tenant: '00000000-0000-0000-0000-000000000000',
+        subject: id,
+        failed: ['search'],
+        traceId: 't-1',
+      }),
+    );
+    const r = await client(b).change({ method: 'POST', path: `/tarol/admin/subjects/${id}/erase` });
+    expect(r).toEqual({
+      ok: false,
+      status: 409,
+      requestId: 't-1',
+      violation: {
+        kind: 'error',
+        code: 'DataProtection.ErasureIncomplete',
+        detail: 'search',
+        extensions: { tenant: '00000000-0000-0000-0000-000000000000', subject: id, failed: ['search'] },
+      },
+    });
+  });
+
   it('takes the request id from the problem when the header is not readable', async () => {
     const b = backend(problem(404, { code: 'Auction.NotFound', traceId: 'abc' }));
     const r = await client(b).change({ method: 'POST', path: '/x', body: {} });

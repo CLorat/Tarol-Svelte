@@ -370,6 +370,10 @@ describe('Tarol extensions (BC-3, BC-4)', () => {
     expect(() => generate(doc(changed, paths))).toThrow(/x-tarol-email/);
   });
 
+  it('imports only the client types it uses (no list and no creation here: no Page, no Created)', () => {
+    expect(code).toMatch(/^import type \{ ChangeOptions, ChangeRequest, QueryValue, Result, TarolClient \} from/m);
+  });
+
   it('leaves TarolProblem to the client (its Violation) and requires x-tarol-kind', () => {
     expect(code).not.toContain('TarolProblem');
     const untyped: Record<string, unknown> = { ...post('Pay', 'Signup').post };

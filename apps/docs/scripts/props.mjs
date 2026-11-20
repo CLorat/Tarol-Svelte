@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generates src/catalogue/props.json: for every component of tarol-design and tarol-components, its `@component` doc and
+// Generates src/catalogue/props.json: for every component of tarol-design, tarol-components and tarol-admin, its `@component` doc and
 // its props (name, type, optional, default, doc), read with the TypeScript compiler from the component's own `Props`
 // interface (or `<Name>Props`). The docs app's props tables come from here, never from hand-written lists.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -8,7 +8,7 @@ import ts from 'typescript';
 
 const root = new URL('../../../packages/', import.meta.url).pathname;
 const out = new URL('../src/catalogue/props.json', import.meta.url).pathname;
-const packages = ['tarol-design', 'tarol-components'];
+const packages = ['tarol-design', 'tarol-components', 'tarol-admin'];
 
 function component(file) {
   const source = readFileSync(file, 'utf8');
@@ -42,7 +42,10 @@ function component(file) {
 const result = {};
 for (const pkg of packages) {
   const dir = join(root, pkg, 'src/lib');
-  for (const f of readdirSync(dir).filter((f) => f.endsWith('.svelte')).sort()) {
+  // the package's public components only (its index exports them); internal parts get no page
+  const index = readFileSync(join(dir, 'index.ts'), 'utf8');
+  const exported = (f) => index.includes(`from './${f}'`);
+  for (const f of readdirSync(dir).filter((f) => f.endsWith('.svelte') && exported(f)).sort()) {
     const c = component(join(dir, f));
     result[c.name] = { package: `@clorat/${pkg}`, ...c };
   }
