@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // End-to-end tests against the ArtFlow sample of Tarol-Net (docs/migration/e2e.md). The app is the production build,
-// served by `vite preview`, which proxies /api to the sample's API (same origin until BC-1).
+// served by `vite preview` on http://localhost:5173; it calls the sample's API on its own origin (CORS, BC-1).
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: false,
@@ -21,6 +21,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'pnpm build && pnpm exec vite preview',
+    env: { VITE_TAROL_API: process.env['TAROL_E2E_URL'] ?? 'http://localhost:5080' },
     url: 'http://localhost:5173',
     reuseExistingServer: true,
     timeout: 120_000,

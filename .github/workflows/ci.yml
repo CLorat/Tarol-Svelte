@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      TAROL_NET_COMMIT: 73b35ff79983b2401d6ade66260d409b898e5c04
+      TAROL_NET_COMMIT: fe0a2bd5cbdbf88b62797aa272cb2d66db83a5d1
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:

@@ -155,3 +155,17 @@ client answers snippets as the backend does; the catalogue suite passes (58, axe
 
 **Verification**: `pnpm verify` green (**158 passed / 13 skipped**).
 
+### B1: the docs app calls the API across origins (BC-1)
+
+**Changes**: `apps/docs` (private, not published): `vite.config.ts` has no proxy; `main.ts` takes the API's URL from
+`VITE_TAROL_API` (default `http://localhost:5080`, the sample); Playwright's web server builds with `VITE_TAROL_API` =
+`TAROL_E2E_URL`. The e2e filters requests by the API's origin instead of `/api`. CI's e2e job checks out Tarol-Net at
+`fe0a2bd`. No package changes.
+
+**Tests**: new scenario `the app calls the API on its origin (no proxy), and reads ETag and Tarol-Position across origins
+(BC-1)`: alice's create goes to `http://localhost:5080/auctions` and answers 201 with `Access-Control-Allow-Origin:
+http://localhost:5173` and the exposed headers; a page script's preflighted `GET` (with `Authorization`) reads `ETag`,
+`Tarol-Position` and `Tarol-Request-Id`. Failed before [verified]: the app posted to `/api/auctions` (timeout waiting for
+the cross-origin response). After: the artflow project **10 passed, 1 skipped** (push still `fixme`, B2) against the
+sample in stay-up mode.
+

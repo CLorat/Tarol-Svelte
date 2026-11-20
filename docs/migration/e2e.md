@@ -41,7 +41,8 @@ OpenAPI document (`pnpm --filter @clorat/tarol-docs generate`; `check:package` f
 test compares with the live document). Step 9 adds the component catalogue to the same app.
 
 The Playwright project (`apps/docs/playwright.config.ts`, `@playwright/test` 1.63.0, Chromium 1243 as installed):
-* the **production build** served by `vite preview`, which proxies `/api` to the sample (same origin; BC-1 not needed);
+* the **production build** served by `vite preview` on `http://localhost:5173`, calling the sample's API on
+  `http://localhost:5080` across origins (`VITE_TAROL_API`; CORS since BC-1, the proxy is gone: backend-fixes.md B1);
 * `e2e/apphost.ts` (run by the `sample` setup project) starts the AppHost (`TAROL_NET`, default `../../../Tarol-Net`) unless `TAROL_E2E_URL` is set or
   one is already up, waits for `/health/ready` (≤ 240 s) and for a client list written after the start, and
   the `sample teardown` project stops the process group it started [verified both: reuse, and start + stop in 26 s];

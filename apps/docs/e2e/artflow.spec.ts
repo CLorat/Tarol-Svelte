@@ -1,4 +1,4 @@
-import { api, sql, type User } from './sample.js';
+import { api, sample, sql, type User } from './sample.js';
 import { expect, expectAccessible, signIn, test } from './fixtures.js';
 
 interface Created {
@@ -28,13 +28,44 @@ test('a change: alice creates an auction, bob bids on it', async ({ browser, pag
   await bob.close();
 });
 
+test('the app calls the API on its origin (no proxy), and reads ETag and Tarol-Position across origins (BC-1)', async ({
+  page,
+}) => {
+  await signIn(page, 'alice');
+  const created = page.waitForResponse((r) => r.request().method() === 'POST' && r.url() === `${sample.api}/auctions`);
+  await page.goto('/#/auctions');
+  await page.getByLabel('Reserve (EUR)').fill('130');
+  await page.getByRole('button', { name: 'Create auction' }).click();
+  const answer = await created;
+  // a cross-origin answer from the API itself, readable because the backend allows the app's origin
+  expect(answer.status()).toBe(201);
+  expect(await answer.headerValue('access-control-allow-origin')).toBe('http://localhost:5173');
+  expect(await answer.headerValue('access-control-expose-headers')).toMatch(/ETag.*Tarol-Position/);
+  await expect(page).toHaveURL(/#\/auctions\/[0-9a-f-]{36}$/);
+  // the page script reads what CORS exposes: the version from ETag, the position from Tarol-Position (a preflighted request)
+  const read = await page.evaluate(async (api) => {
+    const w = window as unknown as { __tarolE2E: { token: string } };
+    const r = await fetch(`${api}/auctions?limit=1`, { headers: { authorization: `Bearer ${w.__tarolE2E.token}` } });
+    return {
+      status: r.status,
+      etag: r.headers.get('etag'),
+      position: r.headers.get('tarol-position'),
+      id: r.headers.get('tarol-request-id'),
+    };
+  }, sample.api);
+  expect(read.status).toBe(200);
+  expect(read.etag).toMatch(/^W\/"/);
+  expect(read.position).toMatch(/^\d+\.\d+$/);
+  expect(read.id).toMatch(/^[0-9a-f]{32}$/);
+});
+
 test('a paged list: 5 rows, the total, and the next page by its cursor', async ({ page }) => {
   for (let i = 0; i < 6; i++) await createAuction('alice');
   await signIn(page, 'alice');
   const cursors: (string | null)[] = [];
   page.on('request', (r) => {
     const url = new URL(r.url());
-    if (url.pathname === '/api/auctions') cursors.push(url.searchParams.get('after'));
+    if (url.origin === sample.api && url.pathname === '/auctions') cursors.push(url.searchParams.get('after'));
   });
   await page.goto('/#/auctions');
   const grid = page.getByRole('grid', { name: 'All auctions' });
@@ -55,7 +86,7 @@ test('a validation error on the right field: the client rule, and the server 400
   await signIn(page, 'alice');
   let posts = 0;
   page.on('request', (r) => {
-    if (r.method() === 'POST' && r.url().endsWith('/api/auctions')) posts++;
+    if (r.method() === 'POST' && r.url() === `${sample.api}/auctions`) posts++;
   });
   await page.goto('/#/auctions');
   const reserve = page.getByLabel('Reserve (EUR)');
@@ -65,7 +96,7 @@ test('a validation error on the right field: the client rule, and the server 400
   expect(posts).toBe(0);
   // the backend's own verdict: the body without the member is answered 400 {"reserve":["Required"]} by the real API,
   // and lands on the field with the same path (a domain rule such as Range needs BC-9)
-  await page.route('**/api/auctions', (route) =>
+  await page.route(`${sample.api}/auctions`, (route) =>
     route.request().method() === 'POST' ? route.continue({ postData: '{}' }) : route.continue(),
   );
   await reserve.fill('100');
@@ -92,7 +123,8 @@ test('an expired token: the 401 is answered by a refresh and the read repeated o
   const session = await signIn(page, 'alice', { first: 'eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjF9.c2ln' });
   const statuses: number[] = [];
   page.on('response', (r) => {
-    if (new URL(r.url()).pathname === '/api/auctions') statuses.push(r.status());
+    const url = new URL(r.url());
+    if (url.origin === sample.api && url.pathname === '/auctions') statuses.push(r.status());
   });
   await page.goto('/#/auctions');
   await expect(page.getByRole('grid', { name: 'All auctions' })).toBeVisible();
@@ -114,7 +146,8 @@ test('an erased subject: the operator exports, erases, and the personal data is 
     const status = (await erased).status();
     // BC-10: the erasure forgets the key, then answers 500 without a body (ErasureIncompleteException), so the page
     // shows the generic error; what matters here is that the personal data is gone
-    if (status !== 200) test.info().annotations.push({ type: 'BC-10', description: `erase answered ${String(status)}` });
+    if (status !== 200)
+      test.info().annotations.push({ type: 'BC-10', description: `erase answered ${String(status)}` });
   } else {
     // erasure is final; a second run finds it erased (a repeated erase also answers 500: BC-10)
     test.info().annotations.push({ type: 'note', description: 'already erased by an earlier run' });
@@ -127,7 +160,8 @@ test('an erased subject: the operator exports, erases, and the personal data is 
 test('the search box finds an auction and opens it', async ({ page }) => {
   await signIn(page, 'alice');
   await page.goto('/#/auctions');
-  const seller = (await api<{ items: { seller: string }[] }>('alice', 'GET', '/auctions?limit=1')).items[0]?.seller ?? '';
+  const seller =
+    (await api<{ items: { seller: string }[] }>('alice', 'GET', '/auctions?limit=1')).items[0]?.seller ?? '';
   const box = page.getByRole('combobox', { name: 'Search' });
   await box.fill(seller);
   const option = page.getByRole('listbox', { name: 'Search' }).getByRole('option').first();
