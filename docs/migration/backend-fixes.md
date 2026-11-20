@@ -184,3 +184,33 @@ and the page shows "1 bid" without a reload (events only, no wall clock). Failed
 event and failed twice in a row in the full suite (the frame came first); the test now records every frame from the start
 and polls the record. After: the artflow project **11 passed** in three runs in a row, no `fixme` left.
 
+### B3: browser login against the sample's PKCE app (BC-9, BC-18)
+
+Needs Tarol-Net #109 (BC-18): runs against the sample built from its branch (`08d3c66`); CI's e2e job pins that commit
+until #109 is merged.
+
+**Changes** (`apps/docs`, tests; no package change):
+* `src/auth.ts`: the test-only `TokenProvider` (`window.__tarolE2E`, machine tokens) is **removed**. The app signs in with
+  `@clorat/tarol-oidc/zitadel` from `VITE_ZITADEL_*` at build time or `oidc.json` next to the app at run time (one build
+  serves every sample run; the PKCE client id is made per run); a "Sign in" / "Sign out" button and the user's subject in
+  the header; push connects only when signed in.
+* **Found and fixed**: the docs app's hash router read `location` at import, before the login callback restored the
+  return path with `history.replaceState` (no event), so after every login and every silent re-login the app showed the
+  home page. `router.sync()` runs once after `signIn()`. The e2e of step 8 never logged in through a callback, so it did
+  not see it.
+* `e2e/fixtures.ts`: `signIn(page, 'ada' | 'ben' | 'cleo', path)` serves `oidc.json` from the sample's setup output, clicks
+  "Sign in", fills Zitadel's login page with the run's password from `users.txt` and waits for the user's subject and the
+  path. Machine users stay only for test setup through the API.
+* `packages/tarol-oidc/test/contract.test.ts`: `not-registered-until-BC-9` is gone; the tests use the real client id.
+
+**Tests**:
+* contract (`TAROL_E2E=1`, 5 passed): `signs a human user in with code + PKCE, calls the backend with the token and
+  refreshes it (BC-9)` (ada: roles `seller`, `tarol-admin`, `/auctions` 200, admin 200, a refresh-token grant gives a new
+  token that works); `gives a bidder no admin rights` (ben: roles `bidder`, admin 403); the authorization request now ends
+  on a 200 login page at `/ui/login/login`. Failed before [verified]: against `fe0a2bd` the request ended on a 404 (§1);
+  the old test only checked "< 500".
+* e2e (12 passed): every scenario signs in in the browser; new `a reload signs in again without the login page
+  (prompt=none)`: failed first on the router bug above (signed in, but the home page), passes after the fix; `a rejected
+  token` replaces the test-only rejected first token by a token spoiled in transit (`page.route`), and checks that the
+  refresh is one real refresh-token grant at Zitadel.
+

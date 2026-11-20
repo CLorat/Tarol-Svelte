@@ -46,9 +46,9 @@ The Playwright project (`apps/docs/playwright.config.ts`, `@playwright/test` 1.6
 * `e2e/apphost.ts` (run by the `sample` setup project) starts the AppHost (`TAROL_NET`, default `../../../Tarol-Net`) unless `TAROL_E2E_URL` is set or
   one is already up, waits for `/health/ready` (≤ 240 s) and for a client list written after the start, and
   the `sample teardown` project stops the process group it started [verified both: reuse, and start + stop in 26 s];
-* `e2e/fixtures.ts`: `signIn(page, 'alice' | 'bob')` gives the page a machine user's token before it loads (a test-only
-  `TokenProvider` in `src/auth.ts`, active only when the test defines `window.__tarolE2E`), the tenant computed by
-  `zitadelTenant` from the token's organisation; `expectAccessible(page)` (axe-core 4.14.1, WCAG 2.0–2.2 A/AA); and an
+* `e2e/fixtures.ts`: `signIn(page, 'ada' | 'ben' | 'cleo', path)` signs a human user in through the app's "Sign in" button
+  and Zitadel's login page (since step 12 B3, [backend-fixes.md](backend-fixes.md); the step 8 version gave the page a
+  machine token through a test-only `TokenProvider`, now removed); `expectAccessible(page)` (axe-core 4.14.1, WCAG 2.0–2.2 A/AA); and an
   automatic fixture that records **INP and CLS with `web-vitals` 6.2.3** (test only) and fails a test above INP 100 ms or
   CLS 0.01.
 
@@ -58,13 +58,13 @@ The Playwright project (`apps/docs/playwright.config.ts`, `@playwright/test` 1.6
 |---|---|
 | a change: alice creates an auction in the form, bob bids on it in his own page | passes |
 | a paged list: 5 rows of `count=true`, the total, "Load more" sends one `after` cursor; grid keys | passes |
-| a validation error on the right field: the generated `Required` rule blocks the send; the real API's 400 `{"reserve":["Required"]}` (the body without the member, by `page.route`) lands on the Reserve field | passes; a **domain rule** (e.g. `Range` on the reserve: a negative reserve is accepted today [verified]) waits for **BC-9** |
+| a validation error on the right field: the generated `Required` rule blocks the send; the real API's 400 `{"reserve":["Required"]}` (the body without the member, by `page.route`) lands on the Reserve field | passes; the domain rule `Range` on the reserve: step 12 B6 |
 | a coded refusal: alice bids, 403 `Auth.Forbidden` in the form's alert, the optimistic bid rolled back | passes |
-| an expired token: a token the API rejects, 401, one refresh, the read repeated, 200 | passes; a really **expiring** token waits for **BC-9** (a short-lived token option) |
+| an expired token: a token the API rejects, 401, one refresh, the read repeated, 200 | passes (since B3 the first read's token is spoiled in transit and the refresh is a real refresh-token grant); a really expiring token: step 12 B4 |
 | an erased subject: alice exports bob's profile, erases it, name and email show "erased" | passes; the erase answers **500 without a body** although the key is erased (**BC-10**, recorded as an annotation) |
 | the search box finds an auction by its seller and opens it | passes |
 | a push update | passes since B2 of [backend-fixes.md](backend-fixes.md): bob's bid reaches alice's open auction over the hub |
-| a browser login | not written: no PKCE app, no human users (**BC-9**) |
+| a browser login | since step 12 B3: every scenario signs a human user in on Zitadel's login page; a reload signs in again by `prompt=none` |
 
 **Measured** [verified, 3 runs in a row, 7 passed / 1 fixme each, 6.2–6.4 s]: INP **16–24 ms** in the tests with
 interactions the browser counts (INP is `null` where only navigation happened), CLS **0.0000** in every test. The

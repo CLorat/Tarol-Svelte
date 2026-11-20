@@ -77,6 +77,10 @@ skill `tarol-oidc`.
 marks the option deprecated only so that its use stands out; it is the documented way to talk to an `http:` issuer, needed
 for the sample's Zitadel on `http://localhost:8080`, and only active with `allowHttp: true`.
 
+**Done in step 12 B3** ([backend-fixes.md](backend-fixes.md)): the contract tests sign ada and ben in on the sample's
+PKCE app with Chromium on Zitadel's login page (once BC-18 gave the sample a login page), and the e2e signs in, reloads
+(`prompt=none`) and refreshes against the real server. What step 6 recorded:
+
 **Not done: browser login against Zitadel (waits for BC-9).** The sample's Zitadel setup creates machine users only; there
 is no user-agent (PKCE) application and no human user with a password, so the full code + PKCE login, `prompt=none` and
 the end-session redirect cannot run against the real server yet. The contract tests cover what can run: discovery and the

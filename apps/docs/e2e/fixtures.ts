@@ -1,9 +1,8 @@
 import { test as base, expect, type Page } from '@playwright/test';
-import { zitadelTenant } from '@clorat/tarol-oidc/zitadel';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { accessToken, type User } from './sample.js';
+import { loginConfig, password, userId, type Person } from './sample.js';
 
 const require = createRequire(import.meta.url);
 const axePath = require.resolve('axe-core/axe.min.js');
@@ -28,32 +27,22 @@ declare global {
   }
 }
 
-/** The organisation claim of a token: the tenant the backend derives (`@clorat/tarol-oidc/zitadel`). */
-async function tenantOf(token: string): Promise<string> {
-  const claims = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8')) as Record<string, unknown>;
-  return zitadelTenant(String(claims['urn:zitadel:iam:user:resourceowner:id']));
-}
-
 /**
- * Signs a machine user in: the page gets the token before it loads (BC-9 will replace this by a browser login). `first`
- * replaces the first token, e.g. by a rejected one; `refresh` counts how often the app asked for a new token.
+ * Signs a human user in the way a person does: the app's "Sign in" button, Zitadel's login page (user name, then the
+ * password of this sample run), back to the app with code + PKCE (`@clorat/tarol-oidc`). The app gets its login settings
+ * from `oidc.json`, served here from the sample's setup output (the client id is made per run). Tokens live in the page's
+ * memory, so later navigations must change the hash only (`page.goto('/#/…')` keeps the document).
  */
-export async function signIn(page: Page, user: User, options: { first?: string } = {}): Promise<{ refreshes: () => number }> {
-  const token = await accessToken(user);
-  const tenant = await tenantOf(token);
-  let refreshes = 0;
-  await page.exposeFunction('__tarolE2ERefresh', async () => {
-    refreshes++;
-    return accessToken(user);
-  });
-  await page.addInitScript(
-    ({ token, tenant }) => {
-      const w = window as unknown as { __tarolE2E: unknown; __tarolE2ERefresh: () => Promise<string> };
-      w.__tarolE2E = { token, tenant, refresh: () => w.__tarolE2ERefresh() };
-    },
-    { token: options.first ?? token, tenant },
-  );
-  return { refreshes: () => refreshes };
+export async function signIn(page: Page, person: Person, path = '/#/'): Promise<void> {
+  await page.route('**/oidc.json', (route) => route.fulfill({ json: loginConfig() }));
+  await page.goto(path);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.locator('#loginName').fill(person);
+  await page.locator('#submit-button').click();
+  await page.locator('#password').fill(password(person));
+  await page.locator('#submit-button').click();
+  await expect(page.getByTestId('user')).toHaveText(userId(person));
+  await expect.poll(() => new URL(page.url()).hash).toBe(new URL(path, 'http://localhost').hash); // back where it started
 }
 
 /** Expects no axe-core violation (WCAG 2.0–2.2 A/AA) on the page (philosophy P6). */

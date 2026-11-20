@@ -10,8 +10,32 @@ export const sample = {
   zitadel: process.env['TAROL_E2E_ZITADEL'] ?? join(tmpdir(), 'artflow-zitadel'),
 };
 
-/** The sample's machine users (ZitadelSetup): alice is seller and tarol-admin, bob is bidder. */
+/** The sample's machine users (ZitadelSetup), for test setup through the API: alice is seller and tarol-admin, bob is bidder. */
 export type User = 'alice' | 'bob';
+
+/** The sample's human users, who sign in in the browser: ada is seller and tarol-admin, ben and cleo are bidders. */
+export type Person = 'ada' | 'ben' | 'cleo';
+
+/** The login settings the app reads from `oidc.json`: the PKCE app and the project of this sample run. */
+export function loginConfig(): { issuer: string; clientId: string; projectId: string } {
+  const clientId = readFileSync(join(sample.zitadel, 'web.txt'), 'utf8').trim().split(' ')[1] ?? '';
+  const projectId = readFileSync(join(sample.zitadel, 'project.txt'), 'utf8').trim();
+  return { issuer: sample.issuer, clientId, projectId };
+}
+
+/** A human user's line of users.txt: `user <login> <password> <user id> <roles>` (passwords are made per run). */
+function user(person: Person): string[] {
+  const line = readFileSync(join(sample.zitadel, 'users.txt'), 'utf8')
+    .split('\n')
+    .find((l) => l.startsWith(`user ${person} `));
+  return line?.split(' ') ?? [];
+}
+
+/** A human user's password, generated per sample run (never in the repository). */
+export const password = (person: Person): string => user(person)[2] ?? '';
+
+/** A human user's Zitadel id: the token's `sub`. */
+export const userId = (person: Person): string => user(person)[3] ?? '';
 
 /** A token for a machine user by client credentials, with the scopes `@clorat/tarol-oidc/zitadel` asks for. */
 export async function accessToken(user: User): Promise<string> {

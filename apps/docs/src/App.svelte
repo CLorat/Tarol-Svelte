@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { TarolClient } from '@clorat/tarol-client';
   import type { PushClient } from '@clorat/tarol-client/push';
+  import type { Oidc } from '@clorat/tarol-oidc';
   import { AppShell, SearchBox } from '@clorat/tarol-components';
-  import { ThemeRoot } from '@clorat/tarol-design';
+  import { Button, ThemeRoot } from '@clorat/tarol-design';
   import { setTarol } from '@clorat/tarol-svelte';
   import { untrack } from 'svelte';
   import Auction from './artflow/Auction.svelte';
@@ -19,7 +20,10 @@
   import Theming from './guides/Theming.svelte';
   import { router } from './router.svelte.js';
 
-  const props: { client: TarolClient; push?: PushClient } = $props();
+  const props: { client: TarolClient; push?: PushClient; oidc?: Oidc } = $props();
+  const oidc = untrack(() => props.oidc);
+  let session = $state(oidc?.session() ?? null);
+  oidc?.subscribe((s) => (session = s));
   setTarol(
     untrack(() => props.client),
     untrack(() => props.push),
@@ -73,6 +77,14 @@
           <option value="comfortable">comfortable</option><option value="compact">compact</option>
         </select>
       </label>
+      {#if oidc}
+        {#if session}
+          <span data-testid="user">{session.subject}</span>
+          <Button variant="secondary" onclick={() => void oidc.logout()}>Sign out</Button>
+        {:else}
+          <Button onclick={() => void oidc.login()}>Sign in</Button>
+        {/if}
+      {/if}
       {#if parts[0] === 'auctions'}
         <SearchBox
           label="Search"

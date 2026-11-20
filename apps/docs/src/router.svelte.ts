@@ -17,6 +17,10 @@ export const router = {
   get route(): Route {
     return route;
   },
+  /** Reads the location again: after `history.replaceState` (the login callback restores its path), which fires no event. */
+  sync(): void {
+    route = parse();
+  },
   go(hash: string): void {
     location.hash = hash;
   },
