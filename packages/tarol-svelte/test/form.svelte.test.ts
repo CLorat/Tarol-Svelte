@@ -77,6 +77,28 @@ describe('changeForm', () => {
     expect(form.error('lines[1].sku')).toBeUndefined();
   });
 
+  it('keeps the server detail of a field error and the request id of the failure (BC-5, BC-11)', async () => {
+    const f = fakeClient(() => okResult(1));
+    f.answerChanges(() => ({
+      ok: false,
+      status: 400,
+      requestId: 'r-1',
+      violation: {
+        kind: 'invalid',
+        errors: { customer: ['Length'] },
+        details: { customer: [{ code: 'Length', detail: '3..60' }] },
+      },
+    }));
+    const form = root(() => changeForm(placeOrder, initial, { client: f.client }));
+    await form.submit();
+    expect(form.error('customer')).toBe('Length');
+    expect(form.detail('customer')).toBe('3..60');
+    expect(form.requestId).toBe('r-1');
+    form.values.customer = 'Ada';
+    form.touch('customer');
+    expect(form.detail('customer')).toBeUndefined();
+  });
+
   it('keeps the idempotency key for a retry of the same input and takes a new one for a new input', async () => {
     const f = fakeClient(() => okResult(1));
     f.answerChanges(() => ({ ok: false, status: 0, violation: { kind: 'error', code: 'Network' } }));

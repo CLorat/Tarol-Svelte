@@ -16,6 +16,7 @@ export const de: Catalogue = {
   'ui.sortDescending': 'absteigend sortiert',
   'ui.erased': 'gelöscht',
   'ui.noResults': 'Keine Treffer.',
+  'ui.reference': 'Referenz: {id}',
   Required: 'Dieses Feld ist erforderlich.',
   Range: 'Geben Sie einen Wert zwischen {min} und {max} ein.',
   'Range.min': 'Geben Sie mindestens {min} ein.',

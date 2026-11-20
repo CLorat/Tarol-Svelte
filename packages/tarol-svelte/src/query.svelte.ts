@@ -30,6 +30,8 @@ export interface Query<T> {
   readonly loading: boolean;
   /** The violation of the last read, if it failed. */
   readonly violation: Violation | undefined;
+  /** The request id of the last failed read (`Tarol-Request-Id`), for "Reference: …" next to the error. */
+  readonly requestId: string | undefined;
   /** The aggregate version from the view's ETag. */
   readonly version: number | undefined;
   /** `true` when a list answered before catching up with this client's own write (`Tarol-Stale`). */
@@ -56,6 +58,8 @@ export interface List<T> {
   readonly loading: boolean;
   /** The violation of the last read, if it failed. */
   readonly violation: Violation | undefined;
+  /** The request id of the last failed read (`Tarol-Request-Id`), for "Reference: …" next to the error. */
+  readonly requestId: string | undefined;
   /** `true` when the first page answered before catching up with this client's own write. */
   readonly stale: boolean;
   /** Loads the next page (keyset: the previous page's `next` as `after`). */
@@ -140,6 +144,7 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
   let value = $state<T | undefined>();
   let loading = $state(false);
   let violation = $state<Violation | undefined>();
+  let requestId = $state<string | undefined>();
   let version = $state<number | undefined>();
   let stale = $state(false);
 
@@ -158,7 +163,11 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
         version = r.version;
         stale = r.stale;
         violation = undefined;
-      } else violation = r.violation;
+        requestId = undefined;
+      } else {
+        violation = r.violation;
+        requestId = r.requestId;
+      }
     },
     (v) => (loading = v),
   );
@@ -172,6 +181,9 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
     },
     get violation() {
       return violation;
+    },
+    get requestId() {
+      return requestId;
     },
     get version() {
       return version;
@@ -204,6 +216,7 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
   let total = $state<number | undefined>();
   let loading = $state(false);
   let violation = $state<Violation | undefined>();
+  let requestId = $state<string | undefined>();
   let stale = $state(false);
   let last: ReadRequest | null = null;
 
@@ -224,7 +237,11 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
         total = r.value.total;
         stale = r.stale;
         violation = undefined;
-      } else violation = r.violation;
+        requestId = undefined;
+      } else {
+        violation = r.violation;
+        requestId = r.requestId;
+      }
     },
     (v) => (loading = v),
   );
@@ -244,6 +261,9 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
     },
     get violation() {
       return violation;
+    },
+    get requestId() {
+      return requestId;
     },
     get stale() {
       return stale;
@@ -269,7 +289,11 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
           items = [...items, ...page.value.items];
           next = page.value.next;
           violation = undefined;
-        } else violation = page.violation;
+          requestId = undefined;
+        } else {
+          violation = page.violation;
+          requestId = page.requestId;
+        }
       } finally {
         loading = false;
       }

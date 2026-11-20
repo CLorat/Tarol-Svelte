@@ -13,6 +13,7 @@
   interface State {
     readonly loading: boolean;
     readonly violation: Violation | undefined;
+    readonly requestId?: string | undefined;
     readonly stale?: boolean;
     readonly value?: unknown;
     readonly items?: readonly unknown[];
@@ -41,7 +42,10 @@
 <div class="t-query" aria-busy={state.loading || undefined}>
   {#if state.violation}
     <div class="t-query-error" role="alert">
-      <p>{t(state.violation.kind === 'error' ? state.violation.code : 'error.generic')}</p>
+      <p>
+        {t(state.violation.kind === 'error' ? state.violation.code : 'error.generic')}
+        {#if state.requestId}<span class="t-reference">{t('ui.reference', { id: state.requestId })}</span>{/if}
+      </p>
       <Button variant="secondary" onclick={() => state.refresh()}>{t('ui.retry')}</Button>
     </div>
   {/if}
@@ -91,5 +95,11 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+  /* the request id a user can quote when reporting the error */
+  .t-reference {
+    display: block;
+    color: var(--t-color-fg-muted);
+    font-size: var(--t-text-xs);
   }
 </style>

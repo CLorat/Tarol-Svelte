@@ -278,3 +278,27 @@ sample is **5,297 B, 1,340 B gzip, 1,171 B brotli** for 16 operations (the step 
 gzip, 476 B brotli with the same build); ≈ 84 B gzip per operation; `errors` is a separate export (tree-shaken when
 unused).
 
+### B6: the server's details on the field, and the reference of an error (BC-5, BC-11)
+
+**Public API and behaviour changes** (generated reports):
+* `@clorat/tarol-svelte`: `Form.detail(path)` (the server's detail of the field's shown code, gone when the field is
+  edited) and `Form.requestId` (of the last failed submit); `Query.requestId`, `List.requestId` (of the last failed read).
+* `@clorat/tarol-components`: `FormField` fills `{min}`/`{max}` from the server's detail when the field has no client rule
+  for the code and the detail has the form `<min>..<max>` (the generated rules' form; the paging check's
+  `between 1 and 200` gives the bound-less message); `ChangeForm` and `QueryState` show "Reference: <request id>" under
+  the error (**behaviour change**).
+* `@clorat/tarol-design`: message `ui.reference` (`Reference: {id}` / `Referenz: {id}`).
+* `apps/docs`: `#/auctions?validate=server` leaves the reserve's rules to the server, to show its 400.
+
+**Tests** (failing before [verified]): components `shows the bounds of the server detail on a field without client rules
+(BC-5)`, `shows the request id of a refusal as its reference (BC-11)`, `shows the request id of a failed read in
+QueryState (BC-11)` (3 failed before); svelte `keeps the server detail of a field error and the request id of the
+failure`. e2e: new `the server's rule on the right field: 400 Range on the reserve, with the bounds of its detail (BC-5,
+BC-9)`: the real API answers 400 with `errorDetails.reserve[0].detail = "1..1000000"` and the field reads "Enter a value
+between 1 and 1000000." Without the `FormField` change it read "The value is out of range." [verified: the change
+stashed, the scenario failed]. The client-rule scenario also checks `Range` with its bounds before sending (no POST).
+
+**Verification**: `pnpm verify` green (**168 passed / 15 skipped**); Playwright artflow + catalogue **72 passed**. Sizes:
+`@clorat/tarol-svelte` **2.89 KB gzip / 2.54 KB brotli** (2.74 / 2.40 before; budget 3 KB); `ChangeForm + FormField`
+1.59 KB, `QueryState` 1.50 KB gzip (budget 2 KB each).
+

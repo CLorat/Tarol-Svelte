@@ -1,7 +1,8 @@
 <!--
   @component
   A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that
-  belongs to no field (403, 409, malformed body) is shown and announced above the button.
+  belongs to no field (403, 409, malformed body) is shown and announced above the button, with the request's reference
+  (`Tarol-Request-Id`) for a user to quote.
 -->
 <script lang="ts">
   import { Button, getMessages } from '@clorat/tarol-design';
@@ -37,7 +38,10 @@
   }}
 >
   {@render children()}
-  {#if message}<p class="t-form-error" role="alert">{message}</p>{/if}
+  {#if message}<p class="t-form-error" role="alert">
+      {message}
+      {#if form.requestId}<span class="t-reference">{t('ui.reference', { id: form.requestId })}</span>{/if}
+    </p>{/if}
   <div class="t-form-actions">
     {@render actions?.()}
     <Button type="submit" loading={form.pending}>{submitLabel}</Button>
@@ -59,5 +63,11 @@
     display: flex;
     justify-content: end;
     gap: var(--t-space-2);
+  }
+  /* the request id a user can quote when reporting the error */
+  .t-reference {
+    display: block;
+    color: var(--t-color-fg-muted);
+    font-size: var(--t-text-xs);
   }
 </style>

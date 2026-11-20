@@ -5,13 +5,15 @@
   import { untrack } from 'svelte';
   import { ChangeForm, FormField } from '../../src/lib/index.js';
 
-  const props: { client: TarolClient; locale?: 'en' | 'de' } = $props();
+  // clientRules: false leaves the reserve to the server (its Range comes back as a 400 with the bounds as detail)
+  const props: { client: TarolClient; locale?: 'en' | 'de'; clientRules?: boolean } = $props();
+  const local = untrack(() => props.clientRules ?? true);
   const rules: Record<string, readonly Rule[]> = {
     title: [
       { rule: 'NotEmpty', code: 'Required' },
       { rule: 'Length', code: 'Length', min: 3, max: 80 },
     ],
-    reserve: [{ rule: 'Range', code: 'Range', min: 1, max: 1000000 }],
+    ...(local ? { reserve: [{ rule: 'Range', code: 'Range', min: 1, max: 1000000 }] } : {}),
   };
   const form = changeForm(
     (i: { title: string; reserve: number | null }) => ({ method: 'POST', path: '/auctions', body: i }),

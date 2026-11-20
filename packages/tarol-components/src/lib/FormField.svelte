@@ -1,7 +1,8 @@
 <!--
   @component
   One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is
-  the client rule's or the server's code, as a message from the catalogue with the rule's bounds.
+  the client rule's or the server's code, as a message from the catalogue with the bounds of the client rule, or of the
+  server's detail (`errorDetails`, `1..1000000`) when the field has no client rule for the code.
 -->
 <script lang="ts">
   import { getMessages, NumberField, TextField } from '@clorat/tarol-design';
@@ -29,7 +30,15 @@
   const t = getMessages();
   const code = $derived(form.error(path));
   const rule = $derived(rules.find((r) => r.code === code));
-  const error = $derived(code === undefined ? undefined : t(code, { min: rule?.min, max: rule?.max }));
+  // the backend writes a generated rule's bounds as `<min>..<max>` (a paging check writes words: no bounds then)
+  const bounds = $derived(/^(-?[\d.]+)\.\.(-?[\d.]+)$/.exec(form.detail(path) ?? ''));
+  const error = $derived(
+    code === undefined
+      ? undefined
+      : rule
+        ? t(code, { min: rule.min, max: rule.max })
+        : t(code, { min: bounds?.[1], max: bounds?.[2] }),
+  );
 </script>
 
 {#if type === 'number'}

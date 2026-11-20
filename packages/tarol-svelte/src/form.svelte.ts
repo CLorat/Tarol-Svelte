@@ -1,4 +1,4 @@
-import type { ChangeRequest, Result, TarolClient, Violation } from '@clorat/tarol-client';
+import type { ChangeRequest, FieldError, Result, TarolClient, Violation } from '@clorat/tarol-client';
 import { getTarol } from './context.js';
 import { check, rulePath, type Rules } from './rules.js';
 
@@ -32,6 +32,10 @@ export interface Form<I, T> {
   readonly pending: boolean;
   /** The first error code of a field, or `undefined`. */
   error(path: string): string | undefined;
+  /** The server's detail of the field's first error (`errorDetails`, e.g. the bounds `3..60`), or `undefined`. */
+  detail(path: string): string | undefined;
+  /** The request id of the last failed submit (`Tarol-Request-Id`), for "Reference: …" next to the error. */
+  readonly requestId: string | undefined;
   /** Marks a field as touched and checks it against its rules (call it on blur). */
   touch(path: string): void;
   /** Checks every field with rules; `true` when none fails. */
@@ -92,6 +96,8 @@ export function changeForm<I extends object, T = undefined>(
   let values = $state(structuredClone(initial));
   let clientErrors = $state<Record<string, readonly string[]>>({});
   let serverErrors = $state<Record<string, readonly string[]>>({});
+  let serverDetails = $state<Readonly<Record<string, readonly FieldError[]>>>({});
+  let requestId = $state<string | undefined>();
   let formError = $state<Violation | undefined>();
   let pending = $state(false);
   let sent: { body: string; key: string } | undefined;
@@ -102,6 +108,7 @@ export function changeForm<I extends object, T = undefined>(
     clientErrors = code === null ? rest : { ...rest, [path]: [code] };
     // the user edited the field: the server's verdict on the old value is gone
     if (path in serverErrors) serverErrors = without(serverErrors, path);
+    if (path in serverDetails) serverDetails = without(serverDetails, path);
   };
 
   const errors = $derived({ ...serverErrors, ...clientErrors });
@@ -120,6 +127,14 @@ export function changeForm<I extends object, T = undefined>(
       return pending;
     },
     error: (path) => errors[path]?.[0],
+    detail(path) {
+      // only for the code the field shows: a client rule's error has no server detail
+      const code = errors[path]?.[0];
+      return serverDetails[path]?.find((d) => d.code === code)?.detail;
+    },
+    get requestId() {
+      return requestId;
+    },
     touch: checkPath,
     validate() {
       for (const p of rulePaths(values, rules)) checkPath(p);
@@ -143,12 +158,15 @@ export function changeForm<I extends object, T = undefined>(
         );
         if (!r.ok) rollback?.();
         rollback = undefined;
+        requestId = r.ok ? undefined : r.requestId;
         if (r.ok) {
           sent = undefined;
           serverErrors = {};
+          serverDetails = {};
           options.onSuccess?.(r);
         } else if (r.violation.kind === 'invalid') {
           serverErrors = r.violation.errors;
+          serverDetails = r.violation.details;
           // paths no field of this input can show ('' is the whole body, e.g. malformed JSON) go to formError
           const orphans = Object.entries(r.violation.errors).filter(
             ([p]) => p === '' || (at(input, p) === undefined && !(rulePath(p) in rules)),
@@ -173,6 +191,8 @@ export function changeForm<I extends object, T = undefined>(
       values = structuredClone(next ?? initial);
       clientErrors = {};
       serverErrors = {};
+      serverDetails = {};
+      requestId = undefined;
       formError = undefined;
       sent = undefined;
     },

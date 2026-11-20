@@ -656,7 +656,7 @@
   "ChangeForm": {
     "package": "@clorat/tarol-components",
     "name": "ChangeForm",
-    "doc": "A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that belongs to no field (403, 409, malformed body) is shown and announced above the button.",
+    "doc": "A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that belongs to no field (403, 409, malformed body) is shown and announced above the button, with the request's reference (`Tarol-Request-Id`) for a user to quote.",
     "extends": "",
     "props": [
       {
@@ -832,7 +832,7 @@
   "FormField": {
     "package": "@clorat/tarol-components",
     "name": "FormField",
-    "doc": "One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is the client rule's or the server's code, as a message from the catalogue with the rule's bounds.",
+    "doc": "One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is the client rule's or the server's code, as a message from the catalogue with the bounds of the client rule, or of the server's detail (`errorDetails`, `1..1000000`) when the field has no client rule for the code.",
     "extends": "",
     "props": [
       {

@@ -91,6 +91,10 @@ test('a validation error on the right field: the client rule, and the server 400
   // the rule comes from the backend's OpenAPI document (tarol-codegen): Required, checked before sending
   await page.getByRole('button', { name: 'Create auction' }).click();
   await expect(reserve).toHaveAttribute('aria-invalid', 'true');
+  // and the Range of x-tarol-rules, with its bounds, before sending
+  await reserve.fill('0');
+  await page.getByRole('button', { name: 'Create auction' }).click();
+  await expect(reserve).toHaveAccessibleDescription('Enter a value between 1 and 1000000.');
   expect(posts).toBe(0);
   // the backend's own verdict: the body without the member is answered 400 {"reserve":["Required"]} by the real API,
   // and lands on the field with the same path
@@ -102,6 +106,26 @@ test('a validation error on the right field: the client rule, and the server 400
   await expect(reserve).toHaveAttribute('aria-invalid', 'true');
   await expect(reserve).toHaveAccessibleDescription(/required|enter/i);
   expect(posts).toBe(1);
+  await expectAccessible(page);
+});
+
+test('the server’s rule on the right field: 400 Range on the reserve, with the bounds of its detail (BC-5, BC-9)', async ({
+  page,
+}) => {
+  // the page without client rules: the value reaches the real API, whose [Range(1, 1_000_000)] refuses it
+  await signIn(page, 'ada', '/#/auctions?validate=server');
+  const answer = page.waitForResponse((r) => r.request().method() === 'POST' && r.url() === `${sample.api}/auctions`);
+  const reserve = page.getByLabel('Reserve (EUR)');
+  await reserve.fill('0');
+  await page.getByRole('button', { name: 'Create auction' }).click();
+  const r = await answer;
+  expect(r.status()).toBe(400);
+  expect(await r.json()).toMatchObject({
+    errors: { reserve: ['Range'] },
+    errorDetails: { reserve: [{ code: 'Range', detail: '1..1000000' }] },
+  });
+  await expect(reserve).toHaveAttribute('aria-invalid', 'true');
+  await expect(reserve).toHaveAccessibleDescription('Enter a value between 1 and 1000000.');
   await expectAccessible(page);
 });
 
