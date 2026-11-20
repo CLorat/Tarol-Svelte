@@ -1,5 +1,8 @@
 # Step 10: `@clorat/tarol-admin` (optional admin UI)
 
+> **Since step 12** ([backend-fixes.md](backend-fixes.md), 2026-11-20): Tarol-Net #91 closed BC-1 … BC-17 and the client
+> removed every limitation this note records as waiting for one (step 10 is built: "Built" below). The text below is the state of its step.
+
 Backend entries ([overview.md](../architecture/overview.md#operations-data-protection-jobs-taroloperations-taroldataprotection-taroljobs)):
 dead letters (list with keyset paging, re-drive one or filtered, discard), projection versions (list, drop), subject
 export and erase, `/health/tarol`. Jobs have no HTTP endpoints, so they show only as dead letters and in the health check.

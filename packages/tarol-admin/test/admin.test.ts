@@ -118,7 +118,7 @@ describe('projections', () => {
 describe('data subject', () => {
   const id = '01a1fa48-b4d9-7175-9ea2-afe1328ee641';
 
-  it('exports as a download, and erases after typing the id; an incomplete erasure can be repeated (BC-10)', async () => {
+  it('exports as a download, and erases after typing the id; an incomplete erasure can be repeated', async () => {
     let incomplete = true;
     const f = fakeAdmin((c) => {
       if (!c.path.endsWith('/erase') || !incomplete) return undefined;

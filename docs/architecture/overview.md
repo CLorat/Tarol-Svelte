@@ -41,21 +41,25 @@ reading]** unless marked. The e2e column refers to `samples/Sagas` (API on `:508
 |---|---|---|---|---|---|---|---|---|
 | Creation (`ICreation<T>`, `[Endpoint("POST /x")]`) | app-declared `VERB /pattern`; name = C# type name (`Generators/Emitter.cs:68`) | JSON (app naming policy, camelCase in the sample); route members excluded; ≤ 64 KiB; headers `Idempotency-Key` (1–255 chars), `If-Match: "0"` optional | **201** `{"id":"<uuid>","version":1}`, `Location`, `ETag: "1"`, `Tarol-Position: <tx>.<pos>` (`CE:257-277`); replay **200** + `Idempotent-Replayed: true` | 400 Invalid, 401 (no body), 403, 409 `<T>.AlreadyExists`, 413, 422 `Idempotency.KeyReused` | default or named policy; role map + row rules | none | `POST /auctions {"reserve":100}` as alice | `changes.createAuction(input)` → `ChangeResult<Created<AuctionId>>` |
 | Change (`IChange<T>`) | e.g. `POST /auctions/{auction}/bids` | JSON or no body; `Idempotency-Key`; `If-Match: "<version>"` (quoted integer only, `W/` or `*` → 400) | **204**, `ETag: "<new version>"`, `Tarol-Position` | 400, 401, 403 (before the version check), 404 `<T>.NotFound` (also another tenant), 409 guard code or `Stream.VersionConflict`, 422 | as above | none | `POST /auctions/{id}/bids {"amount":150}` as bob | `changes.placeBid({ auction, amount }, { expectedVersion })` |
-| View (`IView<TAgg,TSelf>`) | `GET /…/{id}` | `If-None-Match` | **200** view JSON, strong `ETag: "<version>"`, `Cache-Control: private, no-cache`, `Vary: Authorization` (`CE:391-398`) | 304, 400, 401, 403, 404 | `Read<T>` | ETag (exact match or `*` only, BC-7) | `GET /auctions/{id}` twice → 304 | `queries.auction.get(id)` / rune `query(...)` |
+| View (`IView<TAgg,TSelf>`) | `GET /…/{id}` | `If-None-Match` | **200** view JSON, strong `ETag: "<version>"`, `Cache-Control: private, no-cache`, `Vary: Authorization` (`CE:391-398`) | 304, 400, 401, 403, 404 | `Read<T>` | ETag (weak comparison, lists of tags, `*`; Tarol-Net #93) | `GET /auctions/{id}` twice → 304 | `queries.auction.get(id)` / rune `query(...)` |
 | List (`IQuery<TRow>`) | e.g. `GET /auctions`, `GET /my/auctions` | filters by JSON name; `sort` = enum member name (direction fixed per member by `[Descending]`); `limit` 1–200 (default 50); `after` (cursor); `count`; header `Tarol-Read-After`; `[FromClaim]` members come from claims, never the request | **200** `{"items":[…],"next":"<cursor>"|null,"total"?:n}`, weak `ETag: W/"<16 hex>"`, `Tarol-Position`, optional `Tarol-Stale: true` (`QE:248-275`) | 400 `limit:["Range"]`, `after:["Query.Cursor"]`, `sort:["Format"]`, `*:["Multiple"]`; 403 `Auth.Claim`; 503 `Projection.Building` + `Retry-After: 5` | `Read<T>` + optional policy | weak ETag → 304 | `GET /auctions?limit=3&count=true`, follow `next` | `queries.auctions.list({ settled, sort, limit })` → `Page<T>`; `DataTable` |
-| Search (`MapTarolSearch`) | `GET /search` | `q` (1–256), `types`, `prefix`, `counts`, `snippets`, `limit` ≤ 50 (default 20), `after`, `lang` | `{"items":[{type,id,aggregate,title,score,snippet?}],"counts"?,"countsCapped"?,"next"}`, `ETag W/"<24 hex>"` (`SearchEndpoints.cs:40-47`) | 400 `Search.*`, 401, 403 `Auth.Forbidden`, 503 `Search.Building` | authenticated, per-type `CheckList` | ETag | `GET /search?q=iris` | `search({ q, types })` in `tarol-client`; no OpenAPI yet (BC-3) |
-| OpenAPI | `/openapi/v1.json` when the app calls `AddOpenApi(o => o.AddTarolEndpoints())` + `MapOpenApi()` (sample: `samples/Sagas/Api/Program.cs:54,64`) | — | OpenAPI 3.1 document; problem responses have an empty schema | — | app's choice | — | `curl :5080/openapi/v1.json` | input of `tarol-codegen` |
+| Search (`MapTarolSearch`) | `GET /search` | `q` (1–256), `types`, `prefix`, `counts`, `snippets`, `limit` ≤ 50 (default 20), `after`, `lang` | `{"items":[{type,id,aggregate,title,score,snippet?,highlights?}],"counts"?,"countsCapped"?,"next"}`: `snippet` is plain text, `highlights: [{start,length}]` in UTF-16 code units (Tarol-Net #94); `ETag W/"<24 hex>"` | 400 `Search.*`, 401, 403 `Auth.Forbidden`, 503 `Search.Building` | authenticated, per-type `CheckList` | ETag | `GET /search?q=iris&snippets=true` | `SearchBox` (text with `<mark>`); `tarolSearch` in the generated client |
+| OpenAPI | `/openapi/v1.json` when the app calls `AddOpenApi(o => o.AddTarolEndpoints())` + `MapOpenApi()` (sample: `samples/Sagas/Api/Program.cs:54,64`) | — | OpenAPI 3.2 document with `x-tarol-kind`, `x-tarol-errors`, `x-tarol-id`, `x-tarol-rules`, `x-tarol-email`, the `TarolProblem` schema and the Tarol headers; search and admin included (Tarol-Net #100, #108); a creation's 201 `id` has no `x-tarol-id` (BC-19), the export no schema (BC-20) | — | app's choice | — | `curl :5080/openapi/v1.json` | input of `tarol-codegen` |
 | Webhooks | `POST /webhooks/{sender}` (HMAC) | server to server | — | — | signature | — | — | **not a client interface** |
 
 **Problems (RFC 9457, `application/problem+json`)**, written directly by `CE:288-359`:
 
 ```json
-{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","status":400,"title":"One or more fields are invalid.","errors":{"title":["Length"],"lines[1].quantity":["Range"]}}
-{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.4","status":403,"title":"Auction.NotSeller","code":"Auction.NotSeller","detail":"…"}
+{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","status":400,"title":"One or more fields are invalid.","errors":{"reserve":["Range"]},"errorDetails":{"reserve":[{"code":"Range","detail":"1..1000000"}]},"traceId":"1ab7…"}
+{"type":"https://tools.ietf.org/html/rfc9110#section-15.5.4","status":403,"title":"Auction.NotSeller","code":"Auction.NotSeller","detail":"…","traceId":"…"}
 ```
 
 * Field keys are camel-cased per segment with indexes kept (`Lines[1].Sku` → `lines[1].sku`); header errors keep the header
-  name (`If-Match`); a malformed body is `{"":["Json"]}`. Values are arrays of codes; the detail text is dropped (BC-5).
+  name (`If-Match`); a malformed body is `{"":["Json"]}`. Values are arrays of codes; `errorDetails` repeats them with the rule's
+  detail (the bounds `1..1000000` for generated rules, free text elsewhere: Tarol-Net #102). Every answer of Tarol's
+  endpoints has `Tarol-Request-Id`, every problem the same value as `traceId` (#104); answers the authorization middleware
+  writes (401, a policy 403) have neither (BC-21). An unknown list key is 400 `Unknown` (#103); a body without
+  `Content-Type: application/json` is 415 without a body (#96).
 * Status per `ErrorType` (`src/Results/Tarol.Results/ErrorType.cs:54-66`): NotFound 404, Conflict 409, Forbidden 403,
   Unauthorized 401, Gone 410, UnprocessableEntity 422, TooManyRequests 429, Unavailable 503, Timeout 504, else 500.
 * **401 never has a body**, and an ASP.NET policy 403 has none either (`CE:294-295`); the client branches on the status there.
@@ -78,7 +82,8 @@ for them.
 
 **Correlation**: the backend makes a new correlation id per request and neither reads nor writes a correlation header; it
 leaves `traceparent` to ASP.NET (`CE:100`). The client sends a W3C `traceparent` per call (cheap, 55 bytes) so that the
-backend's activity joins the browser's trace once ASP.NET picks it up; showing a request id to users needs BC-11.
+backend's activity joins the browser's trace once ASP.NET picks it up. The backend's `Tarol-Request-Id` is the reference
+users quote (`Ok`/`Failed.requestId`, shown by `ChangeForm` and `QueryState`).
 
 ### Auth (`Tarol.Security`, `Tarol.Security.Zitadel`)
 
@@ -95,11 +100,11 @@ backend's activity joins the browser's trace once ASP.NET picks it up; showing a
 | Interface | Detail | Client |
 |---|---|---|
 | Hub | `/tarol/messages`, `[Authorize]`, JSON protocol only (`MessageHub.cs:20`, `UiPush.cs:29,223`) | `connectPush(client)` in `tarol-client/push` |
-| Methods | `Subscribe(topic)`, `Unsubscribe(topic)`, `Publish(topic, data)`; refusals are `HubException` text `Forbidden: …`, `Topic: …`, `Auth.Tenant: …` (BC-12) | `push.subscribe(topic, handler)`, `push.publish(topic, data)` |
+| Methods | `Subscribe(topic)`, `Unsubscribe(topic)`, `Publish(topic, data)`; refusals are `HubException` text `<code>: <detail>` with `Hub.Forbidden`, `Hub.Topic`, `Auth.Tenant`, which SignalR may wrap in its own text (Tarol-Net #105) | `push.subscribe(topic, handler)`, `push.publish(topic, data)`; a refusal is a `HubRefusal { code, detail }` |
 | Callback | `message` with `{topic, id, version, subject, time, sender, data}` (`PushedMessage.cs:14`) | `PushedMessage<T>` |
 | Topics | `<system>.<name>`, ≤ 200 chars, exact names; groups per tenant `<tenant>/<topic>` | validated before sending |
 | Reconnect | no replay, no position: after every (re)connect the client re-subscribes each topic and refetches state over HTTP; **#71**: the restart loop must never end on a timeout (`MessagePushClient.cs:166-210`; delays 0/1/2/5/10 s ± 20 %) | built into `/push`; queries marked `live(topic)` revalidate on reconnect |
-| Gaps | the query-string `access_token` is not read, so a browser WebSocket gets 401 (BC-2); no CORS (BC-1); the sample maps no hub (BC-9) | blocked until BC-2 |
+| Browser | the token in `?access_token=` on the hub path only; the hub closes a connection when its token expires (Tarol-Net #99); the sample pushes `artflow.bid-placed` (#101); CORS by `WithTarolHeaders()` (#98) | `/push` sends the token in the query and reconnects with a fresh one |
 
 ### Operations, data protection, jobs (`Tarol.Operations`, `Tarol.DataProtection`, `Tarol.Jobs`)
 
@@ -107,16 +112,17 @@ backend's activity joins the browser's trace once ASP.NET picks it up; showing a
 |---|---|---|---|---|---|
 | Liveness / readiness | `GET /health/live`, `/health/ready` | text `Healthy` / `Unhealthy` (503) | — | anonymous | e2e wait condition only |
 | Backlogs | `GET /health/tarol` | `{"status","durationMs","checks":{…}}` | 503 when Unhealthy | anonymous | `tarol-admin` status panel |
-| Dead letters | `GET {admin}/dead/{kind}?after=&limit=&tenant=&name=` (kind: `reactions`, `jobs`, `messages`; limit ≤ 200, default 50) | `{"items":[{id,kind,name,tenant,subject,attempts,error,deadAt}],"next":long|null}` | 400/404 `{"error":"…"}` (not problem+json, BC-10) | one policy for the group (sample: role `tarol-admin`) | `tarol-admin` |
-| Re-drive | `POST {admin}/dead/{kind}/{id}/redrive` → 204; `POST {admin}/dead/{kind}/redrive?max=` → `{"redriven":n}` | | 404, 400 | same | `tarol-admin` |
+| Dead letters | `GET {admin}/dead/{kind}?after=&limit=&tenant=&name=` (kind: `reactions`, `jobs`, `messages`; limit ≤ 200, default 50) | `{"items":[{id,kind,name,tenant,subject,attempts,error,deadAt}],"next":long|null}` | problems with `code`: 400 `Admin.Query`, 404 `Admin.Kind`; `GET {admin}/dead` lists the kinds (Tarol-Net #95) | one policy for the group (sample: role `tarol-admin`) | `tarol-admin` |
+| Re-drive | `POST {admin}/dead/{kind}/{id}/redrive` → 204; `POST {admin}/dead/{kind}/redrive?max=` → `{"redriven":n}` | | 404 `Admin.NotFound`, 400 `Admin.Query` | same | `tarol-admin` |
 | Discard | `DELETE {admin}/dead/{kind}/{id}` → 204 | | 404 | same | `tarol-admin` |
-| Projection versions | `GET {admin}/projections` → `[{name,version,state,rows,bytes,superseded}]`; `DELETE {admin}/projections/{name}/{version}` → 204 | | 409 newest or in use | same | `tarol-admin` |
-| Export | `GET {admin}/subjects/{id}/export?tenant=<guid>` (required) → JSON download | | 400 | same | `tarol-admin` |
-| Erase | `POST {admin}/subjects/{id}/erase?tenant=<guid>` → `{tenant,subject,alreadyErased,streams}`; afterwards `[PersonalData]` fields read `null` and new personal data is 409 `DataProtection.SubjectErased` | | 400; 500 when a participant fails (BC-10) | same | `tarol-admin`; components render `null` personal fields as "erased" |
+| Projection versions | `GET {admin}/projections` → `[{name,version,state,rows,bytes,superseded}]`; `DELETE {admin}/projections/{name}/{version}` → 204 | | 409 `Projection.Drop` | same | `tarol-admin` |
+| Export | `GET {admin}/subjects/{id}/export?tenant=<guid>` (required) → JSON download | | 400 `Admin.Tenant` | same | `tarol-admin` |
+| Erase | `POST {admin}/subjects/{id}/erase?tenant=<guid>` → `{tenant,subject,alreadyErased,streams}`; afterwards `[PersonalData]` fields read `null` and new personal data is 409 `DataProtection.SubjectErased` | | 400 `Admin.Tenant`; 409 `DataProtection.ErasureIncomplete` with `failed` (repeatable) | same | `tarol-admin`; components render `null` personal fields as "erased" |
 | Jobs | **no HTTP endpoints**; visible only as `dead/jobs` and the `tarol-jobs` health check | | | | nothing to build until the backend adds endpoints |
 
 ## Where the inventory is incomplete
 
 Every gap that the client would otherwise work around is a proposed backend change in
 [docs/backend/changes.md](../backend/changes.md). The client does not paper over them: a blocked feature waits for its
-BC-* PR, and the plan step says so.
+backend PR, and the plan step says so. BC-1 … BC-17 are closed (Tarol-Net #91, 2026-11-20); open: BC-18 (Tarol-Net
+#109), BC-19 … BC-22.

@@ -34,7 +34,7 @@ function detailClient() {
         const q = String(o?.query?.['q'] ?? '');
         const snippets = o?.query?.['snippets'];
         searches.push({ q, types: o?.query?.['types'], snippets, aborted: () => o?.signal?.aborted ?? false });
-        // BC-8: the snippet is plain text, highlights are UTF-16 ranges (the sunflower is 2 code units)
+        // the snippet is plain text, highlights are UTF-16 ranges (the sunflower is 2 code units)
         const snippet = '🌻 <script>alert(1)</script> Irises by <b>Vincent</b>';
         const items = [
           {
@@ -170,7 +170,7 @@ describe('SearchBox', () => {
     await expect.element(page.getByTestId('opened')).toHaveTextContent('Auction:a1');
   });
 
-  it('shows the snippet as text with the highlights marked, never as markup (BC-8)', async () => {
+  it('shows the snippet as text with the highlights marked, never as markup', async () => {
     const d = detailClient();
     render(d.client);
     await userEvent.click(page.getByRole('combobox', { name: 'Search' }));

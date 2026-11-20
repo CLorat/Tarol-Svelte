@@ -27,7 +27,7 @@ test('a change: ada creates an auction, ben bids on it', async ({ browser, page 
   await ben.close();
 });
 
-test('the app calls the API on its origin (no proxy), and reads ETag and Tarol-Position across origins (BC-1)', async ({
+test('the app calls the API on its origin (no proxy), and reads ETag and Tarol-Position across origins', async ({
   page,
 }) => {
   await signIn(page, 'ada');
@@ -110,7 +110,7 @@ test('a validation error on the right field: the client rule, and the server 400
   await expectAccessible(page);
 });
 
-test('the server’s rule on the right field: 400 Range on the reserve, with the bounds of its detail (BC-5, BC-9)', async ({
+test('the server’s rule on the right field: 400 Range on the reserve, with the bounds of its detail', async ({
   page,
 }) => {
   // the page without client rules: the value reaches the real API, whose [Range(1, 1_000_000)] refuses it
@@ -149,7 +149,7 @@ test('a reload signs in again without the login page (prompt=none)', async ({ pa
   expect(new URL(page.url()).hash).toBe('#/auctions');
 });
 
-test('an expired token: 401, one refresh, the read repeated; the hub closes and reconnects (BC-9, BC-15)', async ({
+test('an expired token: 401, one refresh, the read repeated; the hub closes and reconnects', async ({
   page,
 }) => {
   test.setTimeout(150_000); // waits (by polling) for the server to see the 30-second token expire
@@ -187,7 +187,7 @@ test('an expired token: 401, one refresh, the read repeated; the hub closes and 
   const status = async (): Promise<number> =>
     (await fetch(`${sample.api}/auctions?limit=1`, { headers: { authorization: `Bearer ${token}` } })).status;
   await expect.poll(status, { timeout: 120_000, intervals: [1_000] }).toBe(401); // the server's own expiry
-  await expect.poll(() => sockets[0]?.closed, { timeout: 30_000 }).toBe(true); // BC-15: the hub closed it
+  await expect.poll(() => sockets[0]?.closed, { timeout: 30_000 }).toBe(true); // the hub closed it at expiry
   await page.goto(`/#/auctions/${id}`);
   await expect(page.getByTestId('bids')).toHaveText('0 bids');
   expect(statuses.slice(0, 2)).toEqual([401, 200]); // the expired token, then the refreshed one
@@ -231,7 +231,7 @@ test('a rejected token: the 401 is answered by a refresh and the read repeated o
 });
 
 
-test('the admin UI: ada exports a data subject, erases it, and its export has no personal data left (BC-10)', async ({
+test('the admin UI: ada exports a data subject, erases it, and its export has no personal data left', async ({
   page,
 }) => {
   // the sample has no list of bidder profiles: its apphost.sh finds bob's profile in the store, and so does this setup
@@ -254,7 +254,7 @@ test('the admin UI: ada exports a data subject, erases it, and its export has no
   const dialog = page.getByRole('dialog', { name: 'Erase personal data' });
   await dialog.getByLabel(/Type the subject id/).fill(id);
   await dialog.getByRole('button', { name: 'Erase personal data' }).click();
-  expect((await answer).status()).toBe(200); // was a 500 without a body (BC-10)
+  expect((await answer).status()).toBe(200); // it was a 500 without a body before Tarol-Net #95
   // a first run erases (bob's email was in the export), a later run finds it erased already
   const outcome = page.getByRole('status').filter({ hasText: /Erased \(1 streams\)\.|Already erased\./ });
   await expect(outcome).toBeVisible();
@@ -263,13 +263,13 @@ test('the admin UI: ada exports a data subject, erases it, and its export has no
   await expectAccessible(page);
 });
 
-test('the admin UI: ada sees the dead-letter kinds and the projections; ben gets the 403 (BC-10)', async ({
+test('the admin UI: ada sees the dead-letter kinds and the projections; ben gets the 403', async ({
   browser,
   page,
 }) => {
   await signIn(page, 'ada', '/#/admin');
   const kind = page.getByRole('combobox', { name: 'Kind' });
-  await expect(kind.getByRole('option')).toHaveText(['jobs', 'reactions']); // GET {admin}/dead, new in BC-10
+  await expect(kind.getByRole('option')).toHaveText(['jobs', 'reactions']); // GET {admin}/dead
   await kind.selectOption('reactions');
   await expect(page.getByText('Nothing here yet.')).toBeVisible(); // the sample has no dead letters
   await page.getByRole('tab', { name: 'Projections' }).click();
@@ -299,7 +299,7 @@ test('the search box finds an auction and opens it', async ({ page }) => {
   await expect(page).toHaveURL(/#\/auctions\/[0-9a-f-]{36}$/);
 });
 
-test('a push update: a bid by bob updates ada’s open auction (BC-2, BC-9)', async ({ page }) => {
+test('a push update: a bid by bob updates ada’s open auction', async ({ page }) => {
   const { id } = await createAuction('alice');
   // the hub connection: a WebSocket to the API with the token in the query (browsers cannot set headers on it); its
   // frames are recorded from the start, so a frame that arrives before an assertion is not missed

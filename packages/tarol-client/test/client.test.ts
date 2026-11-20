@@ -116,7 +116,7 @@ describe('changes', () => {
     });
   });
 
-  it('carries the error details, the request id and the trace id of a 400 (BC-5, BC-11)', async () => {
+  it('carries the error details, the request id and the trace id of a 400', async () => {
     const b = backend(
       problem(
         400,
@@ -142,7 +142,7 @@ describe('changes', () => {
     });
   });
 
-  it('keeps a problem’s extension members, e.g. the failed participants of an erasure (BC-10)', async () => {
+  it('keeps a problem’s extension members, e.g. the failed participants of an erasure', async () => {
     const b = backend(
       problem(409, {
         type: 'https://tools.ietf.org/html/rfc9110#section-15.5.10',
@@ -176,7 +176,7 @@ describe('changes', () => {
     expect(r).toMatchObject({ ok: false, requestId: 'abc', violation: { code: 'Auction.NotFound' } });
   });
 
-  it('maps a 415 without a body (BC-16) and reports the request id of a success', async () => {
+  it('maps a 415 without a body and reports the request id of a success', async () => {
     const b = backend(
       new Response(null, { status: 415, headers: { 'tarol-request-id': 'r-1' } }),
       ok(204, undefined, { etag: '"2"', 'tarol-request-id': 'r-2' }),
@@ -391,7 +391,7 @@ describe('reads', () => {
     });
   });
 
-  it('maps an unknown list key as a field error Unknown (BC-14)', async () => {
+  it('maps an unknown list key as a field error Unknown', async () => {
     const b = backend(
       problem(400, {
         errors: { selller: ['Unknown'] },

@@ -1,5 +1,8 @@
 # Step 5: `@clorat/tarol-codegen` (typed client generator)
 
+> **Since step 12** ([backend-fixes.md](backend-fixes.md), 2026-11-20): Tarol-Net #91 closed BC-1 … BC-17 and the client
+> removed every limitation this note records as waiting for one (`x-tarol-kind`, `x-tarol-errors`, `x-tarol-id`, `x-tarol-rules`, `x-tarol-email`: B5). The text below is the state of its step.
+
 ## 1. Inventory: what the backend contract carries today
 
 The sample's `/openapi/v1.json` (OpenAPI **3.2.0**, 23,724 bytes, captured 2026-11-19 [verified]; a copy is the

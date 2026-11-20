@@ -1,5 +1,8 @@
 # Step 6: `@clorat/tarol-oidc` (OIDC code + PKCE, Zitadel preset)
 
+> **Since step 12** ([backend-fixes.md](backend-fixes.md), 2026-11-20): Tarol-Net #91 closed BC-1 … BC-17 and the client
+> removed every limitation this note records as waiting for one (the browser login against the sample: B3, with BC-18). The text below is the state of its step.
+
 ## 1. Inventory
 
 From Tarol-Net (`src/Security/Tarol.Security.Zitadel`, [overview.md](../architecture/overview.md#auth-tarolsecurity-tarolsecurityzitadel)):

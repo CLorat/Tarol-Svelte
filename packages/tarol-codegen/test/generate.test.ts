@@ -163,7 +163,7 @@ describe('schema constructs', () => {
     expect(code).toContain('  quantity: number;');
   });
 
-  it('brands ids named by x-tarol-id (BC-3) and types the created id', () => {
+  it('brands ids named by x-tarol-id and types the created id', () => {
     expect(code).toContain("export type CustomerId = Id<'Customer'>;");
     expect(code).toContain('  owner?: CustomerId;');
     expect(code).toContain('Promise<Result<Created<OrderId>>>');
@@ -188,7 +188,7 @@ describe('schema constructs', () => {
     );
   });
 
-  it('prefers x-tarol-rules (BC-4) over the JSON Schema keywords', () => {
+  it('prefers x-tarol-rules over the JSON Schema keywords', () => {
     const c = generate(
       doc(
         {
@@ -253,7 +253,7 @@ describe('errors instead of any', () => {
   });
 });
 
-describe('Tarol extensions (BC-3, BC-4)', () => {
+describe('Tarol extensions', () => {
   const problem = {
     content: { 'application/problem+json': { schema: { $ref: '#/components/schemas/TarolProblem' } } },
   };

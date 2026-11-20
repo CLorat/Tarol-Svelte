@@ -44,7 +44,7 @@ describe('rules', () => {
       expect(isEmail(bad), bad).toBe(false);
   });
 
-  it('takes the flags of x-tarol-rules: i, and u without doubling it (BC-4)', () => {
+  it('takes the flags of x-tarol-rules: i, and u without doubling it', () => {
     const letters = [{ rule: 'Pattern', code: 'Pattern', pattern: '^\\p{Lu}+$', flags: 'u' }] as const;
     expect(check('ÄBC', letters)).toBeNull();
     expect(check('abc', letters)).toBe('Pattern');

@@ -1,5 +1,8 @@
 # Step 8: end-to-end tests against the backend sample
 
+> **Since step 12** ([backend-fixes.md](backend-fixes.md), 2026-11-20): Tarol-Net #91 closed BC-1 … BC-17 and the client
+> removed every limitation this note records as waiting for one (CORS, push, browser login, real expiry, the real 400, the admin erase: B1 … B6, C). The text below is the state of its step.
+
 ## Inventory
 
 `samples/Sagas` (Tarol-Net) runs through its Aspire AppHost: PostgreSQL, NATS, Zitadel v4.20.3 on `:8080`, the API on

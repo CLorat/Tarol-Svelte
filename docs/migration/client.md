@@ -1,5 +1,8 @@
 # Step 2: `@clorat/tarol-client` (framework-free client core)
 
+> **Since step 12** ([backend-fixes.md](backend-fixes.md), 2026-11-20): Tarol-Net #91 closed BC-1 … BC-17 and the client
+> removed every limitation this note records as waiting for one (push against the real hub, hub codes, request ids, field details: A1, B2). The text below is the state of its step.
+
 ## 1. Inventory: what the core must speak
 
 Taken from [overview.md](../architecture/overview.md), which cites the Tarol-Net files:
