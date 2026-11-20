@@ -26,7 +26,9 @@ description: >-
 5a. One aggregate's page: `<DetailLayout query={view} title={(a) => a.title}>` with snippets `children(a)`, `meta(a)`,
    `actions(a)`, `aside(a)`; it renders the `h1` and the loading/error states. Do not wrap it in `QueryState` again.
 5b. Global search: `<SearchBox label onselect={(hit) => open(hit.type, hit.aggregate)} />`; `types`, `limit`,
-   `minLength` (2), `debounce` (150 ms). Hits are `SearchHit` (`type`, `id`, `aggregate`, `title`, `score`).
+   `minLength` (2), `debounce` (150 ms), `snippets` (default `true`). Hits are `SearchHit` (`type`, `id`, `aggregate`,
+   `title`, `score`, `snippet?`, `highlights?`); the snippet is plain text with UTF-16 ranges: render your own with
+   `highlight(snippet, highlights)` → `{ text, mark }[]` as text nodes and `<mark>`.
 5c. `DataTable` is a grid: keyboard navigation is built in; put at most one widget (a link or a button) in a cell.
 6. All visible text comes from props (your labels) or the message catalogue; never literal text inside the components.
 
@@ -62,7 +64,7 @@ description: >-
 | ESLint `no-unsafe-*` on `row` in a `cell` snippet | typescript-eslint cannot infer a generic component's snippet types: write `{#snippet cell(row: AuctionRow, c: Column)}` and `rowKey={(r: AuctionRow) => r.id}` (svelte-check infers them) |
 | content below a `QueryState` or `DetailLayout` jumps when the data arrives (CLS) | the skeletons are not the loaded height: pass `rows` close to the page size, or reserve the height (`min-height`) of the area |
 | two widgets in one DataTable cell | only the first gets the focus from the arrow keys; split the cell |
-| rendering a search snippet with `{@html}` | never: snippets are server HTML (BC-8); `SearchBox` shows titles as text |
+| rendering a search snippet with `{@html}` | never: the snippet is plain text; `<b>` in it is the document's text. Use `highlight()` and render text nodes |
 
 ## Notes
 

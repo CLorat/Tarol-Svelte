@@ -89,6 +89,16 @@ export const FormField: Component<Props_3, {}, "">;
 // @public
 export type FormField = ReturnType<typeof FormField>;
 
+// @public
+export function highlight(text: string, highlights?: readonly Highlight_2[]): Segment[];
+
+// @public
+interface Highlight_2 {
+    readonly length: number;
+    readonly start: number;
+}
+export { Highlight_2 as Highlight }
+
 // Warning: (ae-forgotten-export) The symbol "Props_4" needs to be exported by the entry point index.d.ts
 //
 // @public
@@ -108,10 +118,18 @@ export type SearchBox = ReturnType<typeof SearchBox>;
 // @public
 export interface SearchHit {
     readonly aggregate: string;
+    readonly highlights?: readonly Highlight_2[];
     readonly id: string;
     readonly score: number;
+    readonly snippet?: string;
     readonly title: string;
     readonly type: string;
+}
+
+// @public
+export interface Segment {
+    readonly mark: boolean;
+    readonly text: string;
 }
 
 // @public

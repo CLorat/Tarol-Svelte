@@ -75,7 +75,13 @@ export function demoClient(): TarolClient {
         const items = auctions
           .filter((a) => a.title.toLowerCase().includes(text))
           .slice(0, Number(q['limit'] ?? 8))
-          .map((a) => ({ type: 'Auction', id: a.id, aggregate: a.id, title: a.title, score: 1 }));
+          .map((a) => {
+            // as the backend answers with snippets=true: plain text and the matched range in UTF-16 code units
+            const snippet = `${a.title}, reserve ${String(a.reserve)} EUR`;
+            const at = snippet.toLowerCase().indexOf(text);
+            const highlights = q['snippets'] === true && at >= 0 && text ? [{ start: at, length: text.length }] : [];
+            return { type: 'Auction', id: a.id, aggregate: a.id, title: a.title, score: 1, snippet, highlights };
+          });
         return delay(ok({ items, next: null }) as Result<T>);
       }
       const found = auctions.find((a) => path === `/auctions/${a.id}`);

@@ -7,6 +7,7 @@
   `onquery` (a server search).
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import Field from './Field.svelte';
   import { getMessages } from './messages.js';
 
@@ -41,6 +42,8 @@
     required?: boolean | undefined;
     /** The input's placeholder (already translated). */
     placeholder?: string | undefined;
+    /** Renders an option's content (default: its label as text), e.g. a second line; never render server text as HTML. */
+    item?: Snippet<[Option]> | undefined;
   }
 
   let {
@@ -55,6 +58,7 @@
     error,
     required = false,
     placeholder,
+    item,
   }: Props = $props();
   const t = getMessages();
   const id = $props.id();
@@ -177,7 +181,7 @@
           choose(option);
         }}
       >
-        {option.label}
+        {#if item}{@render item(option)}{:else}{option.label}{/if}
       </div>
     {/each}
   </div>

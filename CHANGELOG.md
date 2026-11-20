@@ -4,6 +4,9 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-components` (BC-8): `SearchBox` shows the backend's snippet under each title with the matched words in
+  `<mark>`, all as text; `highlight()`, `Highlight`, `Segment`. `@clorat/tarol-design`: `Combobox` `item` snippet
+  (budget 3.1 KB).
 * `@clorat/tarol-client` (BC-5, BC-11, BC-12, BC-14, BC-16): `Invalid.details` (the backend's `errorDetails`),
   `requestId` on every result; `/push` refusals are `HubRefusal` codes (`Hub.Forbidden`, `Hub.Topic`, `Auth.Tenant`,
   `Hub.Disconnected`, `Hub.Error`) found inside SignalR's text (**breaking**: `onRefused` and `publish` gave the raw text).
@@ -15,7 +18,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 * `@clorat/tarol-components`: `FormField` checks a field that shows an error while typing (**fix**: a corrected form
   needed two clicks, because the blur removed the error line under the pointer).
 * `apps/docs`: ArtFlow example screens and the end-to-end suite against `samples/Sagas` (INP, CLS, axe); CI job `e2e`.
-* `@clorat/tarol-components`: `DetailLayout`, `SearchBox` (titles as text; snippets after BC-8); `DataTable` is a
+* `@clorat/tarol-components`: `DetailLayout`, `SearchBox`; `DataTable` is a
   keyboard-navigable grid (**behaviour change**: cells are `gridcell`s).
 * `@clorat/tarol-svelte`: optimistic changes: `Query.patch`/`List.patch` and `changeForm(…, { optimistic })`, rolled back
   on any failure (409 included); `FormOptions<T, I>`.

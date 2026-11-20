@@ -130,3 +130,29 @@ without `Content-Type` while the client's own request is 201).
 **Verification**: `pnpm verify` green (format, build, lint 0 warnings, typecheck, **154 passed / 13 skipped** tests, size,
 package checks, API reports, eng tests). Size: core **2.09 KB gzip / 1.93 KB brotli** (was 1.96 / 1.79; budget 3 KB),
 `/push` **1.51 KB / 1.37 KB** (was 1.35 / 1.23; budget 2 KB).
+
+### A2: `SearchBox` shows snippets as text with the matches marked (BC-8)
+
+**Public API and behaviour changes** (generated reports):
+* `@clorat/tarol-components`: `SearchBox` asks for `snippets=true` (new prop `snippets`, default `true`) and shows the
+  snippet under the title, each highlight range in `<mark>` (**behaviour change**: was the title only); `SearchHit` gets
+  `snippet?` and `highlights?`; `highlight(text, highlights)` → `Segment[]` (`{ text, mark }`) and the types `Highlight`,
+  `Segment` (new) for apps that render hits themselves. Ranges are UTF-16 code units (a JavaScript string's indexes, as
+  the backend writes them); ranges outside the text are cut, overlapping ones merged, empty ones dropped.
+* `@clorat/tarol-design`: `Combobox` takes an optional `item(option)` snippet for an option's content (default: the label
+  as text).
+* Every server text is a text node: no `{@html}` anywhere (the snippet's `<b>` is the document's own text).
+
+**Budget raise (SV-15: a note entry with the measurement)**: `Combobox (with Field)` measured **3.07 KB gzip / 2.70 KB
+brotli** with the `item` snippet (2.99 KB before), 68 B over its 3 KB budget; folding the two arrow-key branches made it
+larger (3.07 → 3.07 KB, +3 B), so the budget is **3.1 KB**. `SearchBox` is **1.69 KB gzip / 1.49 KB brotli** (0.87 /
+0.77 KB before; budget 2 KB): the snippet line, the highlight splitting and its CSS.
+
+**Tests** (failing before [verified]: the new test failed on `snippets` not being requested): `shows the snippet as text with
+the highlights marked, never as markup (BC-8)`: title and snippet with `<script>`, `<b>` and `<img onerror>` stay text, no
+`script`/`b`/`img` element appears, the marks are `<script>` and `Irises` after a 2-unit emoji, an out-of-range range is
+ignored, axe 0; `highlight` unit tests (UTF-16 offsets, sorting, merging, cutting, empty). The docs catalogue's demo
+client answers snippets as the backend does; the catalogue suite passes (58, axe and CLS in both themes).
+
+**Verification**: `pnpm verify` green (**158 passed / 13 skipped**).
+
