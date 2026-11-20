@@ -1,11 +1,14 @@
 # Tarol-Net's answer to the backend changes (2026-11-20)
 
-Tarol-Net worked through [changes.md](changes.md) (BC-1 … BC-17) in one stack of pull requests on top of `main` at `73b35ff`.
+Tarol-Net worked through [changes.md](changes.md) (BC-1 … BC-17) in **one pull request,
+[#91](https://github.com/CLorat/Tarol-Net/pull/91)**, on top of `main` at `73b35ff` (it combines the per-item PRs #92 … #108,
+now closed; the commits stay one per item).
 Its evaluation note is Tarol-Net `docs/migration/client-contract.md`: the check of each finding, the fix, the owner's decisions
-CC-1 … CC-8 and the verification of each PR. **None is merged yet**; a BC is closed when its PR is merged (changes.md), and the
-client step that waits for it removes its limitation then. PRs #91 … #108 are stacked: each one's base is the previous one.
+CC-1 … CC-8 and the verification of each PR. **It is not merged yet**; every BC below closes when #91 is merged (changes.md), and the client
+step that waits for one removes its limitation then. The "item PR" column names the closed per-item PR, whose description
+still explains that item.
 
-| BC | Tarol-Net PR | What the client gets (wire and API) | Owner decision |
+| BC | Item PR (in #91) | What the client gets (wire and API) | Owner decision |
 |---|---|---|---|
 | BC-1 CORS | [#98](https://github.com/CLorat/Tarol-Net/pull/98) | `TarolHeaders.Allowed` / `Exposed` and `CorsPolicyBuilder.WithTarolHeaders()`; the sample allows `http://localhost:5173` | — |
 | BC-2 hub token in the query | [#99](https://github.com/CLorat/Tarol-Net/pull/99) | `?access_token=<JWT>` on `/tarol/messages` (only there; `ZitadelOptions.HubPath`) | CC-2: `AddZitadel` option |

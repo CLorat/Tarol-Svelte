@@ -30,5 +30,5 @@ Priority: **P0** blocks a client step; **P1** the client step ships with a docum
 The `docs/migration/<step>.md` notes say which BC each step waits for. A BC is closed when its Tarol-Net PR is merged; the
 client step that waited for it then removes its limitation in its own PR.
 
-**Status (2026-11-20):** Tarol-Net answered every item in a stack of pull requests (#91 … #108, none merged yet):
+**Status (2026-11-20):** Tarol-Net answered every item in one pull request, #91 (not merged yet):
 [tarol-net-reply.md](tarol-net-reply.md) lists each BC with its PR, what changes on the wire and the owner's decisions.
