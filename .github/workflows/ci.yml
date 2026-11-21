@@ -12,7 +12,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # github.workflow is the caller's name when release.yml calls this file, so the two runs no longer cancel each other
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -56,7 +57,7 @@ jobs:
     timeout-minutes: 40
     env:
       # Tarol-Net #109 (BC-18, the sample's login page) on top of fe0a2bd; the merge commit once it is merged
-      TAROL_NET_COMMIT: 08d3c6649607b3a9a49b03c0e90b5a2ab22325b8
+      TAROL_NET_COMMIT: 9b68afc22e71cc8ccabd2f219f0a4b9b06287fdd
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
