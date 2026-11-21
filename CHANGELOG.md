@@ -4,6 +4,9 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `apps/docs`: the component catalogue on GitHub Pages (`pages.yml`, SV-21): the `VITE_TAROL_PAGES=1` build without login,
+  push and the screens that need the sample.
+
 * `tag.yml` (Actions → Tag): creates the release tag `v<version>` on `main` after `eng/release.mjs check` and starts
   `release.yml` on it, for releases without local git. `release.yml` now also publishes when dispatched on a `v*` tag.
 

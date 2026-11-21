@@ -54,3 +54,36 @@ catalogue needs no backend):
 
 **Size**: the docs app is 173.85 KB / 58.83 KB gzip JS and 16.06 KB / 3.22 KB CSS (every package, every example, the demo
 client). It is not a package and has no budget.
+
+## GitHub Pages (SV-21, 2026-11-21)
+
+The owner chose **the catalogue only**, deployed from `main` (SV-21). `.github/workflows/pages.yml`:
+
+* `build` (every push to `main`, `workflow_dispatch`, and pull requests that change `apps/docs/**` or the workflow):
+  installs, builds the packages, then runs Playwright's projects `pages` and `catalogue` against the **Pages build**
+  (`VITE_TAROL_PAGES=1`; the Playwright `webServer` builds with the job's environment and serves it with `vite preview`).
+  On `main` it uploads `apps/docs/dist` with `actions/upload-pages-artifact` v5.0.0 (`fc324d3…`, composite on
+  `upload-artifact` v7.0.0).
+* `deploy` (on `main` only): `actions/deploy-pages` v5.0.1 (`368f825…`, `node24`) to the environment `github-pages`,
+  with `pages: write` and `id-token: write` for that job alone; everything else has `contents: read`.
+
+**The Pages build** (`VITE_TAROL_PAGES=1`): `main.ts` neither signs in nor connects the push hub; the nav leaves out the
+ArtFlow and admin example links, and `#/auctions…` and `#/admin` show "Needs the sample" with how to run them locally
+instead of calling a backend (the search box of the ArtFlow screens is left out too). The `AdminApp` component page stays:
+like every component page it runs on the in-memory demo client. Vite's `base` is `./`, so the assets load under the
+project URL `https://clorat.github.io/Tarol-Svelte/` (the hash router needs nothing else). Without the variable the
+build is unchanged.
+
+**Checks**: `e2e/pages.spec.ts` (skipped unless `VITE_TAROL_PAGES=1`): the home page has no ArtFlow/admin link and a
+component link, a `DataTable` page renders grid cells, `#/auctions` and `#/admin` show the note, **no request leaves the
+site's origin**, and every script and stylesheet path is relative. `pages` 2 + `catalogue` 60 = **62 passed** (29.8 s)
+locally [verified]. Deliberate violations: the two links shown again → `Expected: 0, Received: 2`; `base: '/'` → the
+relative-path test fails [verified].
+
+**Size** of the Pages build: JS 200,155 B (66,205 B gzip -9 / 58,026 B brotli), CSS 17,353 B (3,445 / 3,070); 3 files,
+228 KB on disk [verified, Node zlib]. It still contains the ArtFlow and admin screens' code (imported statically, behind a
+run-time branch); not worth a second entry for a docs site.
+
+**What the owner does once**: Settings → Pages → Build and deployment → Source = **GitHub Actions**. Until then
+`deploy` fails with "Get Pages site failed" [unverified: GitHub's documented behaviour, not seen here]; `build` and its
+checks pass regardless.

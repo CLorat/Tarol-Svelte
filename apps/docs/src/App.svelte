@@ -21,6 +21,8 @@
   import { router } from './router.svelte.js';
 
   const props: { client: TarolClient; push?: PushClient; oidc?: Oidc } = $props();
+  // the GitHub Pages build (SV-21) has no backend: the ArtFlow and admin screens are left out
+  const pagesBuild = import.meta.env['VITE_TAROL_PAGES'] === '1';
   const oidc = untrack(() => props.oidc);
   let session = $state(oidc?.session() ?? null);
   oidc?.subscribe((s) => (session = s));
@@ -62,8 +64,10 @@
               <a href="#/guides/{g.slug}" aria-current={guide === g ? 'page' : undefined}>{g.title}</a>
             </li>{/each}
           <li><a href="#/tokens">Tokens</a></li>
-          <li><a href="#/auctions">Example: ArtFlow (needs the sample)</a></li>
-          <li><a href="#/admin">Example: admin (needs the sample, tarol-admin)</a></li>
+          {#if !pagesBuild}
+            <li><a href="#/auctions">Example: ArtFlow (needs the sample)</a></li>
+            <li><a href="#/admin">Example: admin (needs the sample, tarol-admin)</a></li>
+          {/if}
         </ul>
       </details>
     {/snippet}
@@ -86,7 +90,7 @@
           <Button onclick={() => void oidc.login()}>Sign in</Button>
         {/if}
       {/if}
-      {#if parts[0] === 'auctions'}
+      {#if parts[0] === 'auctions' && !pagesBuild}
         <SearchBox
           label="Search"
           onselect={(hit) => {
@@ -104,6 +108,12 @@
       <G />
     {:else if parts[0] === 'tokens'}
       <Tokens />
+    {:else if pagesBuild && (parts[0] === 'auctions' || parts[0] === 'admin')}
+      <h1>Needs the sample</h1>
+      <p data-testid="needs-sample">
+        This example screen calls the ArtFlow sample (<code>samples/Sagas</code> in Tarol-Net), which this static site does
+        not have. Run the docs app locally next to the sample (<code>pnpm --filter @clorat/tarol-docs dev</code>).
+      </p>
     {:else if parts[0] === 'auctions' && parts[1]}
       <!-- the route value becomes the branded id once, at the boundary; anything else is not an auction -->
       {#if isId(parts[1])}
