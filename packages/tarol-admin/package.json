@@ -31,10 +31,10 @@
   ],
   "scripts": {
     "build": "svelte-package -i src/lib -o dist && node ../../eng/doc-svelte-dts.mjs dist",
-    "generate": "node scripts/extract.mjs ../tarol-codegen/test/fixtures/artflow.openapi.json /tarol/admin openapi.admin.json && tarol-codegen openapi.admin.json -o src/lib/api.ts",
+    "generate": "node scripts/extract.mjs ../tarol-codegen/test/fixtures/artflow.openapi.json /tarol/admin openapi.admin.json && node ../tarol-codegen/dist/cli.js openapi.admin.json -o src/lib/api.ts",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
     "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/admin.js AdminApp && size-limit",
-    "check:package": "publint --strict && node scripts/extract.mjs ../tarol-codegen/test/fixtures/artflow.openapi.json /tarol/admin openapi.admin.json --check && tarol-codegen openapi.admin.json -o src/lib/api.ts --check",
+    "check:package": "publint --strict && node scripts/extract.mjs ../tarol-codegen/test/fixtures/artflow.openapi.json /tarol/admin openapi.admin.json --check && node ../tarol-codegen/dist/cli.js openapi.admin.json -o src/lib/api.ts --check",
     "api:update": "api-extractor run --local",
     "api:check": "api-extractor run"
   },

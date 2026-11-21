@@ -64,3 +64,26 @@ Each check gets a deliberate violation once, and the failure is recorded:
 ## Dev dependencies (all dev only; decided with SV-13)
 
 Versions, licences and sizes are recorded in [dependencies.md](dependencies.md) when the PR adds them.
+
+## The first real CI runs (2026-11-21)
+
+The owner made the repository public; from then on every job gets a runner. The first run (PR #26) showed three faults
+that no local run could, all fixed in that PR:
+
+* **`build`: `tarol-codegen: not found`** in `@clorat/tarol-admin`'s `check:package`. pnpm links a workspace package's
+  `bin` at install time, and on a fresh install `packages/tarol-codegen/dist/cli.js` does not exist yet, so no link is
+  made; every earlier local checkout had a `dist/` from a previous install. The scripts of `tarol-admin` and `apps/docs`
+  now call `node …/tarol-codegen/dist/cli.js` [verified: reproduced in a fresh clone (`pnpm install --frozen-lockfile`,
+  `pnpm build`, `pnpm check:packages` → the same error), passing there after the change].
+* **The PR's own CI run was cancelled** within a second: `release.yml` calls `ci.yml`, a called workflow keeps the
+  caller's `github.ref`, so both runs were in the concurrency group `ci-refs/pull/26/merge` and the second cancelled the
+  first (`cancel-in-progress` on pull requests). The group is now `ci-${{ github.workflow }}-${{ github.ref }}`
+  (`github.workflow` is the caller's name in a called workflow).
+* **`visual`: 88 failures, all "A snapshot doesn't exist … writing actual"**: the expected first run (docs-app.md). The
+  88 baselines it wrote in `mcr.microsoft.com/playwright:v1.63.0-noble` (artifact `visual` of run 44893866441) are
+  committed to `apps/docs/e2e/__screenshots__/` (22 components × 2 themes × 2 densities); from now on the job compares.
+  Playwright 1.63 marks a test whose baseline it had to write as failed even with `--update-snapshots=missing`, so a
+  new component's first run fails the same way until its 4 images are committed.
+
+`e2e` passed on the first run: the AppHost in Docker, the contract tests and the Playwright suite against Tarol-Net
+`9b68afc` [verified, run 44893866441]. CodeQL passed.
