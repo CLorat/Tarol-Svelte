@@ -29,8 +29,8 @@ The same model as Tarol-Net step 17 (`docs/architecture/release.md` there), deci
 * `publish` (environment `release`, `packages: write`, `contents: write`): `npm publish` of exactly the tarballs `pack`
   verified, with `GITHUB_TOKEN`; a version already on the feed is skipped, so a re-run after a later failure is safe;
   pre-releases get the dist-tag `next`. Then `gh release create --verify-tag` with the notes.
-* Pins: the same action SHAs as Tarol-Net (`checkout`, `setup-node`, `upload-artifact` v4.6.2, `download-artifact`
-  v5.0.0).
+* Pins: the same action SHAs as Tarol-Net (`checkout`, `setup-node`, `upload-artifact`, `download-artifact`; since
+  2026-11-21 `upload-artifact` v7.0.2 and `download-artifact` v8.0.2, foundation.md "Node 24 actions").
 
 **Verification** [verified locally; the workflow itself cannot run, no job of this repository gets a runner]:
 * `eng/tests/release.test.mjs`: **6** tests (tags, the CHANGELOG section, a complete release and a pre-release, every
