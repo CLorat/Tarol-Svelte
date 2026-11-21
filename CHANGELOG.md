@@ -4,6 +4,11 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+### Fixed
+
+* `@clorat/tarol-codegen`: the installed `tarol-codegen` command did nothing and exited 0 (also with `--check`), because
+  the entry check compared file names and the bin is a link named `tarol-codegen`; it compares the resolved paths now.
+
 ## [0.1.0]
 
 The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is

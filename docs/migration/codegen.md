@@ -106,3 +106,18 @@ and `<Op>Input` types, `requests` (descriptors for the runes), `rules` (per chan
 |---|---|---|
 | "Call the new backend change" | regenerate, then `changes.<name>(input)` | hand-writing `fetch('/…')` |
 | "The backend added a field" | rerun the generator | editing the generated file |
+
+## 8. Fix: the installed bin did nothing (2026-11-21)
+
+Found by the consumer check of the published `0.1.0-preview.2` (release.md): in an app that installed
+`@clorat/tarol-codegen` from GitHub Packages, `tarol-codegen <doc> -o api.ts` (the command of the README and the skill)
+printed nothing, wrote nothing and **exited 0**; `node node_modules/@clorat/tarol-codegen/dist/cli.js` worked
+[verified]. The "run when executed, not when imported" check compared the end of `import.meta.url` with the last part of
+`process.argv[1]`, and an installed bin runs as `node_modules/.bin/tarol-codegen`, a symlink: `cli.js` never ends with
+`tarol-codegen`. Every check in this repository called `dist/cli.js` directly (foundation.md, "The first real CI runs"),
+so none saw it.
+
+The check now compares the resolved paths (`realpathSync` of `argv[1]` and of the module). **Behaviour change**: the
+bin runs. New test `runs through a bin link, as installed` (symlink to `dist/cli.js`, then `node <link> …`); with the
+old check it fails (`1 failed | 2 passed`), with the new one 3 pass [verified]. In a CI `--check` step the old bin
+passed silently, whatever the file held; re-run such steps after upgrading.
