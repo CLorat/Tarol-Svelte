@@ -59,6 +59,8 @@ export interface ReadOptions {
   readonly query?: Readonly<Record<string, QueryValue>>;
   /** Aborts the request; an aborted call throws, as `fetch` does. */
   readonly signal?: AbortSignal;
+  /** PROTOTYPE: a position to read after (a pushed message's), besides this client's own. */
+  readonly readAfter?: string;
 }
 
 /** What a creation returns: the new aggregate's id and version 1. */
@@ -242,7 +244,9 @@ export function createClient(options: ClientOptions): TarolClient {
       const cached = cache.get(key);
       const headers: Record<string, string> = {};
       if (cached) headers['if-none-match'] = cached.etag;
-      if (position) headers['tarol-read-after'] = position;
+      const after =
+        o.readAfter && (position === null || comparePositions(o.readAfter, position) > 0) ? o.readAfter : position;
+      if (after) headers['tarol-read-after'] = after;
       const init: RequestInit = { method: 'GET' };
       if (o.signal) init.signal = o.signal;
       const answer = await send(target, init, headers);

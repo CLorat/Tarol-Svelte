@@ -16,6 +16,10 @@ export interface PushedMessage<T = unknown> {
   readonly sender: string;
   /** The contract's JSON payload. */
   readonly data: T;
+  /** PROTOTYPE (BC-23): the event's stream revision (the view's version after it); absent from today's backend. */
+  readonly revision?: number | null;
+  /** PROTOTYPE (BC-23): the commit's `Tarol-Position`, for `Tarol-Read-After`; absent from today's backend. */
+  readonly position?: string | null;
 }
 
 /** The connection state. */

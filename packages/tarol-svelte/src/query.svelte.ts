@@ -1,5 +1,5 @@
 import type { Page, QueryValue, Result, TarolClient, Violation } from '@clorat/tarol-client';
-import type { PushClient } from '@clorat/tarol-client/push';
+import type { PushClient, PushedMessage } from '@clorat/tarol-client/push';
 import { getTarol } from './context.js';
 
 /** A read as the generated client describes it: a path and its query-string parameters. */
@@ -8,12 +8,25 @@ export interface ReadRequest {
   readonly path: string;
   /** Filters, `sort`, `limit` and the other query-string parameters. */
   readonly query?: Readonly<Record<string, QueryValue>>;
+  /** The stream the read shows (the generated client sets it for a view by id): live messages of other streams are skipped. */
+  readonly subject?: string;
+}
+
+/** A live topic with options (PROTOTYPE). */
+export interface LiveTopic<V = never, T = never> {
+  /** The topic, `<system>.<name>`. */
+  readonly topic: string;
+  /** Only messages of this stream (default: the request's `subject`, when it has one). `null`: every message. */
+  readonly subject?: string | null;
+  /** Applies a message to the cached value without a request; only when the message is the next revision (BC-23). */
+  readonly apply?: (value: V, message: PushedMessage<T>) => V;
 }
 
 /** Settings of {@link query} and {@link list}. */
 export interface QueryOptions {
   /** Push topics that make this query stale: it revalidates on every message and after every push reconnect. */
-  readonly live?: string | readonly string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PROTOTYPE
+  readonly live?: string | LiveTopic<any, any> | readonly (string | LiveTopic<any, any>)[];
   /** Revalidate when the window gets focus again. Default `true`. */
   readonly revalidateOnFocus?: boolean;
   /** Revalidate after every change this client commits (cheap: ETag 304, `Tarol-Read-After`). Default `true`. */
@@ -71,8 +84,12 @@ export interface List<T> {
 }
 
 interface Source<T> {
-  load(signal: AbortSignal): Promise<Result<T>>;
+  load(signal: AbortSignal, readAfter?: string): Promise<Result<T>>;
+  readonly subject?: string | undefined;
 }
+
+/** What a message means for a query (PROTOTYPE): `skip` it, `read` again, or it was applied. */
+type Verdict = 'skip' | 'read' | 'applied';
 
 /** Runs the shared loop: re-read on argument change, focus, own change and push topic; abort the previous read. */
 function track<T>(
@@ -81,18 +98,21 @@ function track<T>(
   options: QueryOptions,
   apply: (r: Result<T>) => void,
   setLoading: (v: boolean) => void,
+  onMessage?: (spec: LiveTopic<never, never>, m: PushedMessage<never>) => Verdict,
 ): () => Promise<void> {
   let current: Source<T> | null = null;
   let controller: AbortController | undefined;
+  let busy = false;
+  let again: string | true | undefined;
 
-  const run = async (): Promise<void> => {
+  const run = async (readAfter?: string): Promise<void> => {
     const s = current;
     if (!s) return;
     controller?.abort();
     const c = (controller = new AbortController());
     setLoading(true);
     try {
-      const r = await s.load(c.signal);
+      const r = await s.load(c.signal, readAfter);
       if (!c.signal.aborted) apply(r);
     } catch (error) {
       if (!c.signal.aborted) throw error;
@@ -122,10 +142,39 @@ function track<T>(
         document.removeEventListener('visibilitychange', onVisible);
       });
     }
-    const topics = typeof options.live === 'string' ? [options.live] : (options.live ?? []);
-    if (tarol.push && topics.length > 0) {
-      for (const t of topics) offs.push(tarol.push.subscribe(t, () => void run()));
-      offs.push(tarol.push.onReconnect(() => void run()));
+    const live = options.live;
+    const specs = (live === undefined ? [] : Array.isArray(live) ? live : [live]).map((t: string | LiveTopic) =>
+      typeof t === 'string' ? { topic: t } : t,
+    ) as LiveTopic<never, never>[];
+    // a burst of messages: one read in flight, at most one after it (not one per message)
+    const coalesced = async (readAfter?: string): Promise<void> => {
+      if (busy) {
+        again = readAfter ?? true;
+        return;
+      }
+      busy = true;
+      try {
+        await run(readAfter);
+        while (again !== undefined) {
+          const next = again;
+          again = undefined;
+          await run(next === true ? undefined : next);
+        }
+      } finally {
+        busy = false;
+      }
+    };
+    if (tarol.push && specs.length > 0) {
+      for (const spec of specs)
+        offs.push(
+          tarol.push.subscribe<never>(spec.topic, (m) => {
+            const subject = spec.subject === undefined ? current?.subject : spec.subject;
+            if (subject != null && m.subject !== subject) return;
+            const verdict = onMessage ? onMessage(spec, m) : 'read';
+            if (verdict === 'read') void coalesced(m.position ?? undefined);
+          }),
+        );
+      offs.push(tarol.push.onReconnect(() => void coalesced()));
     }
     return () => {
       for (const off of offs) off();
@@ -153,7 +202,11 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
     () => {
       const r = request();
       return r
-        ? { load: (signal) => tarol.client.read<T>(r.path, r.query ? { query: r.query, signal } : { signal }) }
+        ? {
+            subject: r.subject,
+            load: (signal, readAfter) =>
+              tarol.client.read<T>(r.path, { ...(r.query ? { query: r.query } : {}), signal, ...(readAfter ? { readAfter } : {}) }),
+          }
         : null;
     },
     options,
@@ -170,6 +223,17 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
       }
     },
     (v) => (loading = v),
+    (spec, m) => {
+      // BC-23: without the event's revision a message cannot be ordered against the cache: read again
+      if (m.revision == null || version === undefined) return 'read';
+      if (m.revision <= version) return 'skip'; // the cache already has it (e.g. this client's own change)
+      if (m.revision === version + 1 && spec.apply && value !== undefined) {
+        value = (spec.apply as unknown as (v: T, m: PushedMessage<never>) => T)(value, m);
+        version = m.revision;
+        return 'applied';
+      }
+      return 'read';
+    },
   );
 
   return {
@@ -220,14 +284,18 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
   let stale = $state(false);
   let last: ReadRequest | null = null;
 
-  const read = (r: ReadRequest, signal: AbortSignal, after?: string) =>
-    tarol.client.read<Page<T>>(r.path, { query: after === undefined ? { ...r.query } : { ...r.query, after }, signal });
+  const read = (r: ReadRequest, signal: AbortSignal, after?: string, readAfter?: string) =>
+    tarol.client.read<Page<T>>(r.path, {
+      query: after === undefined ? { ...r.query } : { ...r.query, after },
+      signal,
+      ...(readAfter ? { readAfter } : {}),
+    });
 
   const refresh = track<Page<T>>(
     tarol,
     () => {
       const r = (last = request());
-      return r ? { load: (signal) => read(r, signal) } : null;
+      return r ? { load: (signal, readAfter) => read(r, signal, undefined, readAfter) } : null;
     },
     options,
     (r) => {
