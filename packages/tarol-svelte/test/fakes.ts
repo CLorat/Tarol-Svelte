@@ -69,9 +69,9 @@ export function fakePush() {
   return {
     push,
     handlers,
-    emit(topic: string, data: unknown) {
+    emit(topic: string, data: unknown, subject: string | null = null) {
       for (const h of handlers.get(topic) ?? [])
-        h({ topic, id: '1', version: 1, subject: null, time: '', sender: 's', data });
+        h({ topic, id: '1', version: 1, subject, time: '', sender: 's', data });
     },
     reconnect() {
       for (const l of reconnects) l();

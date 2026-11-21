@@ -4,6 +4,13 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+### Changed
+
+* `@clorat/tarol-svelte`: a live query whose request names a `subject` revalidates only for messages of that stream, and
+  pushed messages are coalesced (one read in flight, one after it); `LiveTopic` and `ReadRequest.subject` are new
+  (SV-24).
+* `@clorat/tarol-codegen`: the request of a view by id carries `subject` (the `x-tarol-id` path parameter).
+
 ## [0.1.0]
 
 The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is

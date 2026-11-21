@@ -49,7 +49,12 @@ views and keyset lists, forms bound to backend changes with field errors on the 
 Queries revalidate on window focus, after every change this client commits, and on their `live` topics (and after a push
 reconnect, since the hub has no replay). Reads are cheap: the client sends `If-None-Match` and reuses 304s.
 
-Size: 2.62 KB gzip compiled, without Svelte and `@clorat/tarol-client`. Plain Svelte 5 apps (SV-3); nothing touches
+A view by id names its stream: the generated `requests.auctionView({ auction })` carries `subject: auction`, so
+`query(…, { live: 'artflow.bid-placed' })` re-reads only for bids on that auction (the message's `subject`). Use
+`live: { topic, subject: null }` for a topic whose messages are about another stream (e.g. a saga's). A list has no
+subject and re-reads on every message. A burst of messages makes one read in flight and at most one after it.
+
+Size: 3.04 KB gzip / 2.67 KB brotli compiled (budget 3.2 KB, SV-24), without Svelte and `@clorat/tarol-client`. Plain Svelte 5 apps (SV-3); nothing touches
 `window` at import time.
 
 Licence: AGPL-3.0-only, or a commercial licence from the copyright holder.

@@ -69,6 +69,11 @@ describe('the sample (samples/Sagas /openapi/v1.json)', () => {
     await expect(code).toMatchFileSnapshot('__snapshots__/artflow.ts');
   });
 
+  it('names the stream of a view by id (its x-tarol-id path parameter) as the request subject, and only there', () => {
+    expect(code).toContain('({ path: `/auctions/${enc(auction)}`, subject: auction })');
+    expect(code.match(/, subject: \w+ }\)/g)).toHaveLength(1);
+  });
+
   it('compiles with strict settings, and its builders fit the Svelte runes', () => {
     const usage = `
 import { asId, createClient, type ClientCode } from '@clorat/tarol-client';

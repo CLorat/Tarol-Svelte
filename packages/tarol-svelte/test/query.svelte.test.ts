@@ -110,9 +110,102 @@ describe('query', () => {
     p.reconnect();
     await expect.poll(() => f.reads.length).toBe(3);
   });
+
+  const a = '01a1ffbf-64d1-7386-9add-dd64e748f7fc';
+  const b = '01a1ffbf-0000-7000-8000-000000000000';
+  const settle = () => new Promise((r) => setTimeout(r, 10));
+
+  it('a request with a subject revalidates only for messages of that stream (SV-24)', async () => {
+    const f = fakeClient(() => okResult(1));
+    const p = fakePush();
+    root(() =>
+      query(() => ({ path: `/auctions/${a}`, subject: a }), {
+        tarol: { client: f.client, push: p.push },
+        live: 'artflow.bid-placed',
+        revalidateOnFocus: false,
+      }),
+    );
+    await expect.poll(() => f.reads.length).toBe(1);
+    for (let i = 0; i < 10; i++) p.emit('artflow.bid-placed', {}, b);
+    p.emit('artflow.bid-placed', {}, null); // a client's publish has no subject
+    await settle();
+    expect(f.reads.length).toBe(1);
+    p.emit('artflow.bid-placed', {}, a);
+    await expect.poll(() => f.reads.length).toBe(2);
+    p.reconnect(); // no replay: every live query reads again
+    await expect.poll(() => f.reads.length).toBe(3);
+  });
+
+  it('subject: null takes every message; an explicit subject filters a request without one', async () => {
+    const f = fakeClient(() => okResult(1));
+    const p = fakePush();
+    root(() =>
+      query(() => ({ path: `/auctions/${a}`, subject: a }), {
+        tarol: { client: f.client, push: p.push },
+        live: [
+          { topic: 'artflow.payout-made', subject: null },
+          { topic: 'artflow.noted', subject: b },
+        ],
+        revalidateOnFocus: false,
+      }),
+    );
+    await expect.poll(() => f.reads.length).toBe(1);
+    p.emit('artflow.payout-made', {}, b);
+    await expect.poll(() => f.reads.length).toBe(2);
+    p.emit('artflow.noted', {}, a);
+    await settle();
+    expect(f.reads.length).toBe(2);
+    p.emit('artflow.noted', {}, b);
+    await expect.poll(() => f.reads.length).toBe(3);
+  });
+
+  it('a burst of messages makes one read in flight and one after it (coalesced)', async () => {
+    let release: (() => void) | undefined;
+    const f = fakeClient(
+      () =>
+        new Promise((resolve) => {
+          release = () => {
+            resolve(okResult(1));
+          };
+        }),
+    );
+    const p = fakePush();
+    root(() =>
+      query(() => ({ path: '/v' }), {
+        tarol: { client: f.client, push: p.push },
+        live: 'artflow.bid-placed',
+        revalidateOnFocus: false,
+      }),
+    );
+    await expect.poll(() => f.reads.length).toBe(1);
+    release?.();
+    await settle();
+    for (let i = 0; i < 10; i++) p.emit('artflow.bid-placed', {});
+    await expect.poll(() => f.reads.length).toBe(2); // the first message's read
+    release?.();
+    await expect.poll(() => f.reads.length).toBe(3); // one more for the other nine
+    release?.();
+    await settle();
+    expect(f.reads.length).toBe(3);
+  });
 });
 
 describe('list', () => {
+  it('revalidates on every message of a live topic (rows of any stream may be on the page)', async () => {
+    const f = fakeClient(() => okResult({ items: [], next: null }));
+    const p = fakePush();
+    root(() =>
+      list(() => ({ path: '/auctions' }), {
+        tarol: { client: f.client, push: p.push },
+        live: 'artflow.bid-placed',
+        revalidateOnFocus: false,
+      }),
+    );
+    await expect.poll(() => f.reads.length).toBe(1);
+    p.emit('artflow.bid-placed', {}, '01a1ffbf-0000-7000-8000-000000000000');
+    await expect.poll(() => f.reads.length).toBe(2);
+  });
+
   const pages: Record<string, Page<number>> = {
     first: { items: [1, 2], next: 'c1', total: 3 },
     c1: { items: [3], next: null },

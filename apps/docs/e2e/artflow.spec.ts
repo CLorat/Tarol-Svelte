@@ -322,3 +322,27 @@ test('a push update: a bid by bob updates ada’s open auction', async ({ page }
   await expect(page.getByTestId('bids')).toHaveText('1 bid'); // revalidated by the push, no reload
 });
 
+test('a push for another auction does not re-read the open one (SV-24: the view names its stream)', async ({ page }) => {
+  const { id } = await createAuction('alice');
+  const other = await createAuction('alice');
+  const frames: string[] = [];
+  const reads: string[] = [];
+  page.on('websocket', (ws) => {
+    ws.on('framereceived', (f) => frames.push(String(f.payload)));
+  });
+  page.on('request', (r) => {
+    if (r.method() === 'GET' && new URL(r.url()).pathname === `/auctions/${id}`) reads.push(r.url());
+  });
+  await signIn(page, 'ada', `/#/auctions/${id}`);
+  await expect(page.getByTestId('bids')).toHaveText('0 bids');
+  await expect.poll(() => frames.some((f) => f.includes('"type":3'))).toBe(true); // subscribed
+  const before = reads.length;
+  await api('bob', 'POST', `/auctions/${other.id}/bids`, { amount: 150 });
+  await expect.poll(() => frames.some((f) => f.includes('artflow.bid-placed') && f.includes(other.id))).toBe(true);
+  await page.waitForTimeout(500); // a read would start at once
+  expect(reads.length).toBe(before);
+  await api('bob', 'POST', `/auctions/${id}/bids`, { amount: 150 });
+  await expect(page.getByTestId('bids')).toHaveText('1 bid');
+  expect(reads.length).toBe(before + 1);
+});
+

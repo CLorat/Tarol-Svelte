@@ -5,6 +5,8 @@ import type { ChangeOptions, ChangeRequest, Created, Page, QueryValue, Result, T
 export interface ReadRequest {
   readonly path: string;
   readonly query?: Readonly<Record<string, QueryValue>>;
+  /** The stream a view by id shows: its live topics skip messages of other streams. */
+  readonly subject?: string;
 }
 
 /** The id of a Auction (a UUID string). */
@@ -228,7 +230,7 @@ export const requests = {
   /** GET /auctions */
   auctionSearch: (query: AuctionSearchQuery = {}): ReadRequest => ({ path: `/auctions`, query }),
   /** GET /auctions/{auction} */
-  auctionView: ({ auction }: { readonly auction: AuctionId }): ReadRequest => ({ path: `/auctions/${enc(auction)}` }),
+  auctionView: ({ auction }: { readonly auction: AuctionId }): ReadRequest => ({ path: `/auctions/${enc(auction)}`, subject: auction }),
   /** POST /auctions */
   createAuction: (body: CreateAuctionInput): ChangeRequest => ({ method: 'POST', path: `/auctions`, body }),
   /** GET /my/auctions */

@@ -8,12 +8,32 @@ export interface ReadRequest {
   readonly path: string;
   /** Filters, `sort`, `limit` and the other query-string parameters. */
   readonly query?: Readonly<Record<string, QueryValue>>;
+  /**
+   * The id of the stream the read shows (the generated client sets it for a view by id). A live topic then revalidates
+   * the query only for messages with this `subject`.
+   */
+  readonly subject?: string;
+}
+
+/** A live topic with its subject filter, for {@link QueryOptions.live}. */
+export interface LiveTopic {
+  /** The topic, `<system>.<name>`. */
+  readonly topic: string;
+  /**
+   * Revalidate only for messages of this stream id. Default: the request's `subject`, when it has one. `null`: every
+   * message of the topic (e.g. a topic published from another stream than the one the query shows).
+   */
+  readonly subject?: string | null;
 }
 
 /** Settings of {@link query} and {@link list}. */
 export interface QueryOptions {
-  /** Push topics that make this query stale: it revalidates on every message and after every push reconnect. */
-  readonly live?: string | readonly string[];
+  /**
+   * Push topics that make this query stale: it revalidates on their messages and after every push reconnect. A query
+   * whose request names a `subject` (a view by id) skips messages of other streams; a burst of messages makes one read
+   * in flight and at most one after it.
+   */
+  readonly live?: string | LiveTopic | readonly (string | LiveTopic)[];
   /** Revalidate when the window gets focus again. Default `true`. */
   readonly revalidateOnFocus?: boolean;
   /** Revalidate after every change this client commits (cheap: ETag 304, `Tarol-Read-After`). Default `true`. */
@@ -72,6 +92,7 @@ export interface List<T> {
 
 interface Source<T> {
   load(signal: AbortSignal): Promise<Result<T>>;
+  readonly subject?: string | undefined;
 }
 
 /** Runs the shared loop: re-read on argument change, focus, own change and push topic; abort the previous read. */
@@ -101,6 +122,27 @@ function track<T>(
     }
   };
 
+  // pushed messages: one read in flight and at most one queued after it, never one read per message of a burst
+  let busy = false;
+  let again = false;
+  // a function, so the check after an await is not narrowed away by the compiler (as push.ts `closed()`)
+  const queued = (): boolean => again;
+  const coalesced = async (): Promise<void> => {
+    if (busy) {
+      again = true;
+      return;
+    }
+    busy = true;
+    try {
+      do {
+        again = false;
+        await run();
+      } while (queued());
+    } finally {
+      busy = false;
+    }
+  };
+
   $effect(() => {
     current = source(); // reads the caller's $state: a filter change re-runs this effect
     void run();
@@ -122,10 +164,26 @@ function track<T>(
         document.removeEventListener('visibilitychange', onVisible);
       });
     }
-    const topics = typeof options.live === 'string' ? [options.live] : (options.live ?? []);
+    const live = options.live;
+    const topics: readonly (string | LiveTopic)[] =
+      live === undefined
+        ? []
+        : typeof live === 'object' && 'topic' in live
+          ? [live]
+          : typeof live === 'string'
+            ? [live]
+            : live;
     if (tarol.push && topics.length > 0) {
-      for (const t of topics) offs.push(tarol.push.subscribe(t, () => void run()));
-      offs.push(tarol.push.onReconnect(() => void run()));
+      for (const t of topics) {
+        const spec = typeof t === 'string' ? { topic: t } : t;
+        offs.push(
+          tarol.push.subscribe(spec.topic, (m) => {
+            const subject = spec.subject === undefined ? current?.subject : spec.subject;
+            if (subject == null || m.subject === subject) void coalesced();
+          }),
+        );
+      }
+      offs.push(tarol.push.onReconnect(() => void coalesced()));
     }
     return () => {
       for (const off of offs) off();
@@ -153,7 +211,10 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
     () => {
       const r = request();
       return r
-        ? { load: (signal) => tarol.client.read<T>(r.path, r.query ? { query: r.query, signal } : { signal }) }
+        ? {
+            subject: r.subject,
+            load: (signal) => tarol.client.read<T>(r.path, r.query ? { query: r.query, signal } : { signal }),
+          }
         : null;
     },
     options,
@@ -227,7 +288,7 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
     tarol,
     () => {
       const r = (last = request());
-      return r ? { load: (signal) => read(r, signal) } : null;
+      return r ? { subject: r.subject, load: (signal) => read(r, signal) } : null;
     },
     options,
     (r) => {

@@ -25,8 +25,9 @@ Labels, as in Tarol-Net: **[verified]** = reproduced here by a command, a test o
   are generated from the backend contract (SV-4). Hand-written code never repeats a route, a header or a status code.
 * **Forms map `Invalid` field paths onto their fields with no glue.** `form.field('lines[1].quantity')` receives the server's
   code and its message; the client rules come from the same generated metadata (SV-5).
-* **A push subscription is one rune:** `const bids = live('artflow.bid-placed', auction.id)`, or `query(...).live(topic)`
-  to revalidate a query whenever the topic fires.
+* **A push subscription is one option:** `query(() => requests.auctionView({ auction: id }), { live: 'artflow.bid-placed' })`
+  revalidates the view when a message about that auction arrives (the generated request names its stream, SV-24);
+  `live(() => topic)` exposes the latest message.
 * **Measure:** the lines of code of the sample screens in the docs app (shell, list, create form, detail), recorded in the
   components note. **Check:** the docs app is built and its e2e test runs in CI, so the examples cannot rot.
 
