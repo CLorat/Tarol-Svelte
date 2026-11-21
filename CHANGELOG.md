@@ -9,6 +9,9 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 * `apps/docs`: the component catalogue on GitHub Pages (`pages.yml`, SV-21): the `VITE_TAROL_PAGES=1` build without login,
   push and the screens that need the sample.
 
+* Release: a `consumer` job after `publish` installs the published packages from GitHub Packages and uses them
+  (`eng/consumer.mjs`, SV-23).
+
 ### Fixed
 
 * `@clorat/tarol-codegen`: the installed `tarol-codegen` command did nothing and exited 0 (also with `--check`), because

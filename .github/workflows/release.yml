@@ -155,3 +155,35 @@ jobs:
           --title "tarol-svelte $VERSION"
           --notes-file release/release-notes.md
           $PRERELEASE
+
+  # SV-23: install what was just published, as an app does, and use it (eng/consumer.mjs). The release is out by then;
+  # a red job means it is broken for consumers and the next version must fix it.
+  consumer:
+    name: consumer
+    needs: [pack, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read # GitHub Packages needs a token even for public packages
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # the repository's Playwright renders the consumer's page; the consumer itself installs with npm, like an app
+      - name: Install
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Install the published packages and use them
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.pack.outputs.version }}
+        run: node eng/consumer.mjs "$VERSION"

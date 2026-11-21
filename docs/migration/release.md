@@ -80,3 +80,32 @@ logs read through the GitHub API]:
 state between. The environment `release` has no required reviewer (or did not exist and was created by the run). The
 owner adds one under Settings → Environments → `release` → Required reviewers before the next tag; until then any run of
 Tag publishes without a second look.
+
+## The consumer check (SV-23, 2026-11-21)
+
+**By hand first**, on the published `0.1.0-preview.2`, in a scratch app outside the repository: an `.npmrc` with
+`@clorat:registry=https://npm.pkg.github.com` and a token with `read:packages` (saved by the owner as a network secret of
+the session's environment, never in chat), `npm install` of the 7 packages at `0.1.0-preview.2` with `svelte`, `vite`
+and `@sveltejs/vite-plugin-svelte`: all 7 at that version, each with its `skills/tarol-*/SKILL.md` in `node_modules`;
+a page with `createClient`, `setTarol`, `ThemeRoot`, `QueryState` and `DataTable` built (78.01 KB / 30.12 KB gzip JS,
+7.34 KB / 1.95 KB CSS) and rendered its rows in Chromium with 0 page errors [verified]. It found one bug: **the installed
+`tarol-codegen` bin did nothing and exited 0** (codegen.md §8, fixed in PR #28).
+
+The owner chose to make it a job (SV-23): **`consumer`** in `release.yml`, after `publish` (`packages: read`,
+`GITHUB_TOKEN`), runs `node eng/consumer.mjs <version>`, which does the same in a temporary directory: `ignore-scripts`,
+the 7 packages from GitHub Packages plus Svelte, Vite and the plugin at the repository's versions; every package at the
+version with its skill; the installed bin generates the sample's client from the codegen fixture; the page builds and
+renders its 2 rows (stub `/api/auctions` on a local server) in the repository's Playwright Chromium. Every problem is
+listed; any problem fails the job. `--from <dir>` installs `.tgz` files instead (with `overrides`, so their own
+`@clorat` dependencies resolve to the other tarballs), for a rehearsal before a tag.
+
+**Verification** [verified]:
+* Against the published `0.1.0-preview.2`: `problem: tarol-codegen: the installed bin wrote no client`, exit 1: the real
+  bug is the deliberate violation, and nothing else is reported.
+* Against tarballs packed from PR #28 (the fix) as `0.1.0-preview.9`: `7 packages at 0.1.0-preview.9 installed, skills
+  present, bin and page work`, exit 0.
+* `eng/tests/consumer.test.mjs`: 3 tests (the package list; a complete install; a missing package, another version and a
+  missing skill, each reported), part of `pnpm eng:test`.
+
+The release is out when `consumer` runs; a red job means the version is broken for consumers, and the next version fixes
+it (a version on the feed is never replaced). `0.1.0-preview.2` fails this check: the next release, with #28, passes it.
