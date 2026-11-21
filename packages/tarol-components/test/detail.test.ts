@@ -25,16 +25,35 @@ const ok = <T>(value: T, version?: number): Result<T> => ({
 
 function detailClient() {
   const server = { highest: 100, version: 1 };
-  const searches: { q: unknown; types: unknown; aborted: () => boolean }[] = [];
+  const searches: { q: unknown; types: unknown; snippets: unknown; aborted: () => boolean }[] = [];
   let answer: (r: ChangeRequest) => Promise<Result<unknown>> = () => Promise.resolve(ok(undefined));
   const listeners = new Set<() => void>();
   const client: TarolClient = {
     read<T>(path: string, o?: ReadOptions) {
       if (path === '/search') {
         const q = String(o?.query?.['q'] ?? '');
-        searches.push({ q, types: o?.query?.['types'], aborted: () => o?.signal?.aborted ?? false });
+        const snippets = o?.query?.['snippets'];
+        searches.push({ q, types: o?.query?.['types'], snippets, aborted: () => o?.signal?.aborted ?? false });
+        // BC-8: the snippet is plain text, highlights are UTF-16 ranges (the sunflower is 2 code units)
+        const snippet = '🌻 <script>alert(1)</script> Irises by <b>Vincent</b>';
         const items = [
-          { type: 'Auction', id: '1', aggregate: 'a1', title: '<img src=x onerror=alert(1)> Irises', score: 2 },
+          {
+            type: 'Auction',
+            id: '1',
+            aggregate: 'a1',
+            title: '<img src=x onerror=alert(1)> Irises',
+            score: 2,
+            ...(snippets === true
+              ? {
+                  snippet,
+                  highlights: [
+                    { start: snippet.indexOf('<script>'), length: '<script>'.length },
+                    { start: snippet.indexOf('Irises'), length: 6 },
+                    { start: 999, length: 3 }, // out of range: ignored
+                  ],
+                }
+              : {}),
+          },
           { type: 'Bid', id: '2', aggregate: 'a1', title: `Bid on ${q}`, score: 1 },
         ];
         return Promise.resolve(ok({ items, next: null }) as Result<T>);
@@ -142,11 +161,29 @@ describe('SearchBox', () => {
     await userEvent.keyboard('r');
     await expect.poll(() => d.searches.map((s) => s.q)).toEqual(['ir']);
     const first = page.getByRole('option').first();
-    await expect.element(first).toHaveTextContent('<img src=x onerror=alert(1)> Irises');
+    await expect
+      .element(first)
+      .toHaveTextContent('<img src=x onerror=alert(1)> Irises 🌻 <script>alert(1)</script> Irises by <b>Vincent</b>');
     expect(document.querySelector('[role=listbox] img')).toBeNull(); // server text is never markup
     await expectAccessible();
     await userEvent.keyboard('{ArrowDown}{Enter}');
     await expect.element(page.getByTestId('opened')).toHaveTextContent('Auction:a1');
+  });
+
+  it('shows the snippet as text with the highlights marked, never as markup (BC-8)', async () => {
+    const d = detailClient();
+    render(d.client);
+    await userEvent.click(page.getByRole('combobox', { name: 'Search' }));
+    await userEvent.keyboard('ir');
+    await expect.poll(() => d.searches.map((s) => s.snippets)).toEqual([true]);
+    const first = page.getByRole('option').first();
+    await expect
+      .element(first)
+      .toHaveTextContent('<img src=x onerror=alert(1)> Irises 🌻 <script>alert(1)</script> Irises by <b>Vincent</b>');
+    const option = document.querySelector('[role=option]');
+    expect(option?.querySelector('script, b, img')).toBeNull();
+    expect([...(option?.querySelectorAll('mark') ?? [])].map((m) => m.textContent)).toEqual(['<script>', 'Irises']);
+    await expectAccessible();
   });
 
   it('aborts the previous request when the text changes', async () => {

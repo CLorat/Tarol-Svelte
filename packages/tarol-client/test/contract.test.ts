@@ -80,7 +80,18 @@ describe.runIf(run)('contract with samples/Sagas', () => {
     expect(await alice.change({ method: 'POST', path: '/auctions', body: { reserve: 'x' } })).toEqual({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { reserve: ['Json'] } },
+      requestId: expect.stringMatching(/^[0-9a-f]{32}$/) as string,
+      violation: { kind: 'invalid', errors: { reserve: ['Json'] }, details: { reserve: [{ code: 'Json' }] } },
+    });
+    // the sample's rule [Range(1, 1_000_000)] on the reserve, with its bounds as the detail (BC-5, BC-9)
+    expect(await alice.change({ method: 'POST', path: '/auctions', body: { reserve: 0 } })).toMatchObject({
+      ok: false,
+      status: 400,
+      violation: {
+        kind: 'invalid',
+        errors: { reserve: ['Range'] },
+        details: { reserve: [{ code: 'Range', detail: '1..1000000' }] },
+      },
     });
     const created = await alice.change<Created>({ method: 'POST', path: '/auctions', body: { reserve: 100 } });
     if (!created.ok) throw new Error('create failed');
@@ -110,7 +121,42 @@ describe.runIf(run)('contract with samples/Sagas', () => {
     expect(await bob.read('/auctions', { query: { limit: 500 } })).toEqual({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { limit: ['Range'] } },
+      requestId: expect.any(String) as string,
+      violation: {
+        kind: 'invalid',
+        errors: { limit: ['Range'] },
+        details: { limit: [{ code: 'Range', detail: 'between 1 and 200' }] },
+      },
+    });
+    // a key the list does not know is refused instead of being ignored (BC-14)
+    expect(await bob.read('/auctions', { query: { selller: 'x' } })).toMatchObject({
+      ok: false,
+      status: 400,
+      violation: { kind: 'invalid', errors: { selller: ['Unknown'] } },
+    });
+  });
+
+  it('gives every answer a request id, the same as the problem trace id (BC-11)', async () => {
+    const created = await alice.change<Created>({ method: 'POST', path: '/auctions', body: { reserve: 100 } });
+    expect(created).toMatchObject({ ok: true, requestId: expect.stringMatching(/^[0-9a-f]{32}$/) as string });
+    const missing = await alice.read('/auctions/01000000-0000-7000-8000-000000000000');
+    expect(missing).toMatchObject({ ok: false, status: 404, violation: { code: 'Auction.NotFound' } });
+    const raw = await fetch(`${api}/auctions/01000000-0000-7000-8000-000000000000`, {
+      headers: { authorization: `Bearer ${await token('alice')}` },
+    });
+    expect(((await raw.json()) as { traceId: string }).traceId).toBe(raw.headers.get('tarol-request-id'));
+  });
+
+  it('answers 415 for a body without Content-Type; the client always sends it (BC-16)', async () => {
+    const raw = await fetch(`${api}/auctions`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${await token('alice')}` },
+      body: new Blob(['{"reserve":100}']), // a Blob without a type sends no Content-Type
+    });
+    expect(raw.status).toBe(415);
+    expect(await alice.change({ method: 'POST', path: '/auctions', body: { reserve: 100 } })).toMatchObject({
+      ok: true,
+      status: 201,
     });
   });
 

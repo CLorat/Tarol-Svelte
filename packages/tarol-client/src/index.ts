@@ -15,4 +15,4 @@ export { asId, isId } from './id.js';
 export type { Id } from './id.js';
 export { comparePositions } from './position.js';
 export { fallbackCode, toViolation } from './result.js';
-export type { Failed, Invalid, Ok, Problem, Result, Violation } from './result.js';
+export type { ClientCode, Failed, FieldError, Invalid, Ok, Problem, Result, Violation } from './result.js';

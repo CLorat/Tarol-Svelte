@@ -75,7 +75,13 @@ export function demoClient(): TarolClient {
         const items = auctions
           .filter((a) => a.title.toLowerCase().includes(text))
           .slice(0, Number(q['limit'] ?? 8))
-          .map((a) => ({ type: 'Auction', id: a.id, aggregate: a.id, title: a.title, score: 1 }));
+          .map((a) => {
+            // as the backend answers with snippets=true: plain text and the matched range in UTF-16 code units
+            const snippet = `${a.title}, reserve ${String(a.reserve)} EUR`;
+            const at = snippet.toLowerCase().indexOf(text);
+            const highlights = q['snippets'] === true && at >= 0 && text ? [{ start: at, length: text.length }] : [];
+            return { type: 'Auction', id: a.id, aggregate: a.id, title: a.title, score: 1, snippet, highlights };
+          });
         return delay(ok({ items, next: null }) as Result<T>);
       }
       const found = auctions.find((a) => path === `/auctions/${a.id}`);
@@ -88,7 +94,7 @@ export function demoClient(): TarolClient {
     change<T>(r: ChangeRequest): Promise<Result<T>> {
       const body = (r.body ?? {}) as Record<string, unknown>;
       if (typeof body['amount'] === 'number' && body['amount'] < 100)
-        return delay({ ok: false, status: 400, violation: { kind: 'invalid', errors: { amount: ['Range'] } } }, 300);
+        return delay({ ok: false, status: 400, violation: { kind: 'invalid', errors: { amount: ['Range'] }, details: { amount: [{ code: 'Range' }] } } }, 300);
       for (const l of listeners) l({ method: r.method, path: r.path });
       return delay(ok(undefined as T), 300);
     },

@@ -23,10 +23,12 @@ export function check(value: unknown, rules: readonly Rule[]): string | null;
 
 // @public
 export interface Form<I, T> {
+    detail(path: string): string | undefined;
     error(path: string): string | undefined;
     readonly errors: Readonly<Record<string, readonly string[]>>;
     readonly formError: Violation | undefined;
     readonly pending: boolean;
+    readonly requestId: string | undefined;
     reset(values?: I): void;
     submit(): Promise<Result<T> | undefined>;
     touch(path: string): void;
@@ -59,6 +61,7 @@ export interface List<T> {
     more(): Promise<void>;
     patch(update: (items: readonly T[]) => readonly T[]): () => void;
     refresh(): Promise<void>;
+    readonly requestId: string | undefined;
     readonly stale: boolean;
     readonly total: number | undefined;
     readonly violation: Violation | undefined;
@@ -81,6 +84,7 @@ export interface Query<T> {
     readonly loading: boolean;
     patch(update: (value: T) => T): () => void;
     refresh(): Promise<void>;
+    readonly requestId: string | undefined;
     readonly stale: boolean;
     readonly value: T | undefined;
     readonly version: number | undefined;

@@ -88,19 +88,25 @@
             "description": "A page of the list",
             "headers": {
               "ETag": {
-                "description": "A weak ETag of the page's rows, for If-None-Match",
+                "description": "A weak ETag of the page, for If-None-Match",
                 "schema": {
                   "type": "string"
                 }
               },
               "Tarol-Position": {
-                "description": "The projection's position: every change at or before it is in the list",
+                "description": "The position read: every change at or before it is in the answer",
                 "schema": {
                   "type": "string"
                 }
               },
               "Tarol-Stale": {
                 "description": "true when Tarol-Read-After timed out",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
                 "schema": {
                   "type": "string"
                 }
@@ -133,36 +139,114 @@
             }
           },
           "304": {
-            "description": "Not modified (If-None-Match)"
+            "description": "Not modified (If-None-Match)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "503": {
             "description": "The projection is being built (a new version); Retry-After says when to ask again",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "400": {
             "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "404": {
             "description": "Not found (also another tenant's)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           }
-        }
+        },
+        "x-tarol-kind": "list",
+        "x-tarol-errors": ["Auth.Forbidden", "Projection.Building"]
       },
       "post": {
         "tags": ["GeneratedEndpoints"],
@@ -204,6 +288,30 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "Tarol-Position": {
+                "description": "The commit's position, for Tarol-Read-After on a list or search",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "true when the answer is the first outcome of a repeated Idempotency-Key",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "The new aggregate",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
               }
             },
             "content": {
@@ -227,44 +335,138 @@
           },
           "400": {
             "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "404": {
             "description": "Not found (also another tenant's)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "409": {
             "description": "A guard, a lifecycle step or a stale If-Match (Stream.VersionConflict)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "415": {
             "description": "The body is not application/json",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "422": {
             "description": "A read aggregate is missing, or the Idempotency-Key was used for another request",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           }
-        }
+        },
+        "x-tarol-kind": "creation",
+        "x-tarol-errors": [
+          "Auction.AlreadyExists",
+          "Auth.Forbidden",
+          "Idempotency.DuplicateKey",
+          "Idempotency.KeyReused",
+          "Stream.VersionConflict"
+        ]
       }
     },
     "/auctions/{auction}": {
@@ -279,7 +481,8 @@
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "x-tarol-id": "Auction"
           }
         ],
         "responses": {
@@ -288,6 +491,12 @@
             "headers": {
               "ETag": {
                 "description": "The aggregate's version, for If-Match / If-None-Match",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
                 "schema": {
                   "type": "string"
                 }
@@ -302,30 +511,90 @@
             }
           },
           "304": {
-            "description": "Not modified (If-None-Match)"
+            "description": "Not modified (If-None-Match)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "404": {
             "description": "Not found (also another tenant's)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           }
-        }
+        },
+        "x-tarol-kind": "view",
+        "x-tarol-errors": ["Auction.NotFound", "Auth.Forbidden"]
       }
     },
     "/auctions/{auction}/bids": {
@@ -340,7 +609,8 @@
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "x-tarol-id": "Auction"
           },
           {
             "name": "If-Match",
@@ -378,49 +648,163 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "Tarol-Position": {
+                "description": "The commit's position, for Tarol-Read-After on a list or search",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "true when the answer is the first outcome of a repeated Idempotency-Key",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
           "400": {
             "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "404": {
             "description": "Not found (also another tenant's)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "409": {
             "description": "A guard, a lifecycle step or a stale If-Match (Stream.VersionConflict)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "415": {
             "description": "The body is not application/json",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "422": {
             "description": "A read aggregate is missing, or the Idempotency-Key was used for another request",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           }
-        }
+        },
+        "x-tarol-kind": "change",
+        "x-tarol-errors": [
+          "Auction.NotFound",
+          "Auction.Settled",
+          "Auth.Forbidden",
+          "Bid.TooLow",
+          "Idempotency.DuplicateKey",
+          "Idempotency.KeyReused",
+          "Stream.VersionConflict"
+        ]
       }
     },
     "/auctions/{auction}/settle": {
@@ -435,7 +819,8 @@
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "x-tarol-id": "Auction"
           },
           {
             "name": "If-Match",
@@ -472,49 +857,162 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "Tarol-Position": {
+                "description": "The commit's position, for Tarol-Read-After on a list or search",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Idempotent-Replayed": {
+                "description": "true when the answer is the first outcome of a repeated Idempotency-Key",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
           "400": {
             "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "404": {
             "description": "Not found (also another tenant's)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "409": {
             "description": "A guard, a lifecycle step or a stale If-Match (Stream.VersionConflict)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "415": {
             "description": "The body is not application/json",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "422": {
             "description": "A read aggregate is missing, or the Idempotency-Key was used for another request",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           }
-        }
+        },
+        "x-tarol-kind": "change",
+        "x-tarol-errors": [
+          "Auction.NotFound",
+          "Auction.Settled",
+          "Auth.Forbidden",
+          "Idempotency.DuplicateKey",
+          "Idempotency.KeyReused",
+          "Stream.VersionConflict"
+        ]
       }
     },
     "/my/auctions": {
@@ -578,19 +1076,25 @@
             "description": "A page of the list",
             "headers": {
               "ETag": {
-                "description": "A weak ETag of the page's rows, for If-None-Match",
+                "description": "A weak ETag of the page, for If-None-Match",
                 "schema": {
                   "type": "string"
                 }
               },
               "Tarol-Position": {
-                "description": "The projection's position: every change at or before it is in the list",
+                "description": "The position read: every change at or before it is in the answer",
                 "schema": {
                   "type": "string"
                 }
               },
               "Tarol-Stale": {
                 "description": "true when Tarol-Read-After timed out",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
                 "schema": {
                   "type": "string"
                 }
@@ -623,36 +1127,1330 @@
             }
           },
           "304": {
-            "description": "Not modified (If-None-Match)"
+            "description": "Not modified (If-None-Match)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "503": {
             "description": "The projection is being built (a new version); Retry-After says when to ask again",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "400": {
             "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "401": {
-            "description": "Not authenticated"
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "403": {
             "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           },
           "404": {
             "description": "Not found (also another tenant's)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
-              "application/problem+json": {}
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
             }
           }
-        }
+        },
+        "x-tarol-kind": "list",
+        "x-tarol-errors": ["Auth.Forbidden", "Projection.Building"]
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": ["SearchEndpoints"],
+        "operationId": "TarolSearch",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "The text: words (all must match), \"a phrase\", -word, a OR b; 1 to 256 characters",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "description": "Comma-separated document types; default: every type the caller may read",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "description": "The last word is a prefix",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "counts",
+            "in": "query",
+            "description": "Also count the matches per type",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "snippets",
+            "in": "query",
+            "description": "Return a plain-text snippet and its highlights",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "The page size (1 to 50)",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The cursor of the previous page (its next)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "The query's language (ISO 639-1); default: Accept-Language",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Tarol-Read-After",
+            "in": "header",
+            "description": "Wait until the search contains the change that answered this Tarol-Position (bounded; then Tarol-Stale: true)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of hits, best first",
+            "headers": {
+              "ETag": {
+                "description": "A weak ETag of the page, for If-None-Match",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Position": {
+                "description": "The position read: every change at or before it is in the answer",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Stale": {
+                "description": "true when Tarol-Read-After timed out",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["items", "next"],
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "required": ["type", "id", "aggregate", "title", "score"],
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "description": "The document type (a stream type, or an entity's <stream type>.<name>)"
+                          },
+                          "id": {
+                            "type": "string",
+                            "description": "The document's id (an aggregate's or an entity's)",
+                            "format": "uuid"
+                          },
+                          "aggregate": {
+                            "type": "string",
+                            "description": "The aggregate it is shown through",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "The display title (plain text)"
+                          },
+                          "score": {
+                            "type": "number",
+                            "description": "The rank within this page"
+                          },
+                          "snippet": {
+                            "type": "string",
+                            "description": "With snippets=true: plain text, never markup"
+                          },
+                          "highlights": {
+                            "type": "array",
+                            "items": {
+                              "required": ["start", "length"],
+                              "type": "object",
+                              "properties": {
+                                "start": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                },
+                                "length": {
+                                  "type": "integer",
+                                  "format": "int32"
+                                }
+                              },
+                              "description": "A matched range of the snippet in UTF-16 code units (a JavaScript string's indexes)"
+                            },
+                            "description": "With snippets=true: the matched words of the snippet"
+                          }
+                        }
+                      }
+                    },
+                    "counts": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
+                      "description": "With counts=true: matches per type"
+                    },
+                    "countsCapped": {
+                      "type": "boolean",
+                      "description": "With counts=true: a count stopped at its cap"
+                    },
+                    "next": {
+                      "type": ["null", "string"],
+                      "description": "The cursor of the next page (after); null on the last"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (If-None-Match)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The search index is being built (a new version); Retry-After says when to ask again",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input: problem details with errors keyed by JSON paths",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused by the endpoint policy or the change's authorization (problem details with code)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (also another tenant's)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "search",
+        "x-tarol-errors": ["Search.Building", "Auth.Forbidden", "Tenant.NotFound"]
+      }
+    },
+    "/tarol/admin/dead": {
+      "get": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminKinds",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Auth.Forbidden"]
+      }
+    },
+    "/tarol/admin/dead/{kind}": {
+      "get": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminDeadLetters",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "reactions, jobs, messages, \u2026",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The next of the previous page",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "At most 200",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "description": "Only this tenant's",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Only this reaction, job or subscription",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeadLetterPageView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Admin.Query", "Admin.Kind", "Auth.Forbidden"]
+      }
+    },
+    "/tarol/admin/dead/{kind}/{id}/redrive": {
+      "post": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminRedrive",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "The kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The dead letter",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Admin.Kind", "Admin.NotFound", "Auth.Forbidden"]
+      }
+    },
+    "/tarol/admin/dead/{kind}/redrive": {
+      "post": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminRedriveMany",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "The kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "description": "Only this tenant's",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Only this reaction, job or subscription",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max",
+            "in": "query",
+            "description": "At most 1,000 (the default)",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedriveView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Admin.Query", "Admin.Kind", "Auth.Forbidden"]
+      }
+    },
+    "/tarol/admin/dead/{kind}/{id}": {
+      "delete": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminDiscard",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "description": "The kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The dead letter",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Admin.Kind", "Admin.NotFound", "Auth.Forbidden"]
+      }
+    },
+    "/tarol/admin/projections": {
+      "get": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminProjections",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectionVersion"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Auth.Forbidden"]
+      }
+    },
+    "/tarol/admin/projections/{name}/{version}": {
+      "delete": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminDropProjection",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "The projection",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "description": "A superseded version",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Projection.Drop", "Auth.Forbidden"]
+      }
+    },
+    "/tarol/admin/subjects/{id}/export": {
+      "get": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminExportSubject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The data subject",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "description": "Required; the empty GUID for tenant-less data",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Admin.Tenant", "Auth.Forbidden"]
+      }
+    },
+    "/tarol/admin/subjects/{id}/erase": {
+      "post": {
+        "tags": ["Tarol.Admin"],
+        "operationId": "TarolAdminEraseSubject",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The data subject",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "description": "Required; the empty GUID for tenant-less data",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The scheme's challenge",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A problem with a code (x-tarol-errors)",
+            "headers": {
+              "Tarol-Request-Id": {
+                "description": "The request's id (the problem's traceId): quote it when reporting an error",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TarolProblem"
+                }
+              }
+            }
+          }
+        },
+        "x-tarol-kind": "admin",
+        "x-tarol-errors": ["Admin.Tenant", "DataProtection.ErasureIncomplete", "Auth.Forbidden"]
       }
     }
   },
@@ -670,26 +2468,22 @@
             "type": "string"
           },
           "reserve": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": ["number", "string"],
+            "type": "number",
             "format": "double"
           },
           "highestBid": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": ["number", "string"],
+            "type": "number",
             "format": "double"
           },
           "bids": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": "integer",
             "format": "int32"
           },
           "settled": {
             "type": "boolean"
           },
           "paid": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": ["number", "string"],
+            "type": "number",
             "format": "double"
           },
           "openedAt": {
@@ -710,21 +2504,18 @@
             "type": "string"
           },
           "reserve": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": ["number", "string"],
+            "type": "number",
             "format": "double"
           },
           "bids": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": ["integer", "string"],
+            "type": "integer",
             "format": "int32"
           },
           "settled": {
             "type": "boolean"
           },
           "paid": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": ["number", "string"],
+            "type": "number",
             "format": "double"
           }
         }
@@ -734,9 +2525,89 @@
         "type": "object",
         "properties": {
           "reserve": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": ["number", "string"],
-            "format": "double"
+            "maximum": 1000000,
+            "minimum": 1,
+            "type": "number",
+            "format": "double",
+            "x-tarol-rules": [
+              {
+                "rule": "Range",
+                "code": "Range",
+                "min": 1,
+                "max": 1000000
+              }
+            ]
+          }
+        }
+      },
+      "DeadLetterPageView": {
+        "required": ["items", "next"],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeadLetterView"
+            }
+          },
+          "next": {
+            "type": ["null", "integer"],
+            "format": "int64"
+          }
+        }
+      },
+      "DeadLetterView": {
+        "required": ["id", "kind", "name", "tenant", "subject", "attempts", "error", "deadAt"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tenant": {
+            "type": ["null", "string"],
+            "format": "uuid"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "attempts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "error": {
+            "type": ["null", "string"]
+          },
+          "deadAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ErasureView": {
+        "required": ["tenant", "subject", "alreadyErased", "streams"],
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subject": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "alreadyErased": {
+            "type": "boolean"
+          },
+          "streams": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -745,20 +2616,121 @@
         "type": "object",
         "properties": {
           "amount": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": ["number", "string"],
+            "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "ProjectionVersion": {
+        "required": ["name", "version", "state", "rows", "bytes", "superseded"],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "state": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "superseded": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RedriveView": {
+        "required": ["redriven"],
+        "type": "object",
+        "properties": {
+          "redriven": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
       "SettleAuction": {
         "type": "object"
+      },
+      "TarolProblem": {
+        "required": ["type", "status", "title"],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The RFC 9110 section of the status"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": {
+            "type": "string",
+            "description": "The code, or \"One or more fields are invalid.\""
+          },
+          "code": {
+            "type": "string",
+            "description": "The error's code (e.g. Auction.NotOpen); absent for invalid input"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "The request's id, also its Tarol-Request-Id header: quote it when reporting the problem"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "The rule codes per JSON path of the input"
+          },
+          "errorDetails": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "required": ["code"],
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "Per JSON path of the input: each error's code and the rule's detail (e.g. the bounds 3..60)"
+          }
+        },
+        "description": "RFC 9457 problem details: code for an error, errors for invalid input"
       }
     }
   },
   "tags": [
     {
       "name": "GeneratedEndpoints"
+    },
+    {
+      "name": "SearchEndpoints"
+    },
+    {
+      "name": "Tarol.Admin"
     }
   ]
 }

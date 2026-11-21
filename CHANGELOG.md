@@ -4,6 +4,19 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* `@clorat/tarol-svelte` (BC-5, BC-11): `Form.detail(path)`, `Form.requestId`, `Query`/`List.requestId`.
+  `@clorat/tarol-components`: `FormField` shows the bounds of the server's detail; `ChangeForm` and `QueryState` show the
+  error's reference. `@clorat/tarol-design`: `ui.reference`.
+* `@clorat/tarol-codegen` (BC-3, BC-4): `x-tarol-kind` required, admin and `me` operations, `x-tarol-errors` as
+  `<Op>Code` unions and `errors`, `x-tarol-id` on path parameters, `x-tarol-email` checked, `Required` kept next to
+  `x-tarol-rules`. `@clorat/tarol-client`: `Result<T, C>` (codes), `ClientCode`. `@clorat/tarol-svelte`: **fix** `flags: "u"`.
+* `@clorat/tarol-components` (BC-8): `SearchBox` shows the backend's snippet under each title with the matched words in
+  `<mark>`, all as text; `highlight()`, `Highlight`, `Segment`. `@clorat/tarol-design`: `Combobox` `item` snippet
+  (budget 3.1 KB).
+* `@clorat/tarol-client` (BC-5, BC-11, BC-12, BC-14, BC-16): `Invalid.details` (the backend's `errorDetails`),
+  `requestId` on every result; `/push` refusals are `HubRefusal` codes (`Hub.Forbidden`, `Hub.Topic`, `Auth.Tenant`,
+  `Hub.Disconnected`, `Hub.Error`) found inside SignalR's text (**breaking**: `onRefused` and `publish` gave the raw text).
+  Catalogue messages for `Unknown`, `Request.UnsupportedMediaType` and the hub codes.
 * Release: `release.yml` publishes a tag `v*` to GitHub Packages behind the environment `release`; `eng/release.mjs`
   (version, checks, notes).
 * `apps/docs`: the component catalogue (a page per component with a live example, its source, props from the types and
@@ -11,7 +24,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 * `@clorat/tarol-components`: `FormField` checks a field that shows an error while typing (**fix**: a corrected form
   needed two clicks, because the blur removed the error line under the pointer).
 * `apps/docs`: ArtFlow example screens and the end-to-end suite against `samples/Sagas` (INP, CLS, axe); CI job `e2e`.
-* `@clorat/tarol-components`: `DetailLayout`, `SearchBox` (titles as text; snippets after BC-8); `DataTable` is a
+* `@clorat/tarol-components`: `DetailLayout`, `SearchBox`; `DataTable` is a
   keyboard-navigable grid (**behaviour change**: cells are `gridcell`s).
 * `@clorat/tarol-svelte`: optimistic changes: `Query.patch`/`List.patch` and `changeForm(…, { optimistic })`, rolled back
   on any failure (409 included); `FormOptions<T, I>`.

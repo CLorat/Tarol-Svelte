@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import { connectPush, isTopic, type PushOptions } from '../src/push.js';
+import { connectPush, hubRefusal, isTopic, type PushOptions } from '../src/push.js';
 
 const RS = '\u001e';
 
@@ -188,9 +188,16 @@ describe('push', () => {
     const handler = vi.fn();
     p.subscribe('billing.secret', handler);
     await handshake();
-    last().complete('Subscribe', 'Forbidden: Subscribe billing.secret');
+    // SignalR wraps the server's HubException text; the code is found inside it (BC-12)
+    const text =
+      "An unexpected error occurred invoking 'Subscribe' on the server. HubException: Hub.Forbidden: Subscribe billing.secret";
+    last().complete('Subscribe', text);
     await settle();
-    expect(refused).toHaveBeenCalledWith('billing.secret', 'Forbidden: Subscribe billing.secret');
+    expect(refused).toHaveBeenCalledWith('billing.secret', {
+      code: 'Hub.Forbidden',
+      detail: 'Subscribe billing.secret',
+      message: text,
+    });
     last().push(message('billing.secret', 1));
     expect(handler).not.toHaveBeenCalled();
     p.close();
@@ -235,8 +242,30 @@ describe('push', () => {
     last().complete('Publish');
     expect(await accepted).toBeNull();
     expect(last().invocations('Publish')[0]?.arguments).toEqual(['artflow.chat', { text: 'hi' }]);
+    const refused = p.publish('artflow.chat', 2);
+    last().complete('Publish', 'Auth.Tenant: no tenant claim');
+    expect(await refused).toEqual({
+      code: 'Auth.Tenant',
+      detail: 'no tenant claim',
+      message: 'Auth.Tenant: no tenant claim',
+    });
     p.close();
-    expect(await p.publish('artflow.chat', 1)).toBe('Disconnected');
+    expect(await p.publish('artflow.chat', 1)).toEqual({ code: 'Hub.Disconnected', detail: '', message: '' });
+  });
+
+  it('finds the hub codes inside any text, and falls back to Hub.Error', () => {
+    expect(hubRefusal('Hub.Topic: not a topic: x')).toEqual({
+      code: 'Hub.Topic',
+      detail: 'not a topic: x',
+      message: 'Hub.Topic: not a topic: x',
+    });
+    expect(hubRefusal('HubException: Auth.Tenant: no tenant')).toMatchObject({
+      code: 'Auth.Tenant',
+      detail: 'no tenant',
+    });
+    // the pre-BC-12 prefixes are no longer codes
+    expect(hubRefusal('Forbidden: Subscribe billing.secret')).toMatchObject({ code: 'Hub.Error' });
+    expect(hubRefusal('')).toMatchObject({ code: 'Hub.Error', detail: '' });
   });
 
   it('pings every 15 s and reconnects after 30 s of silence', async () => {

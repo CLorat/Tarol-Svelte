@@ -10,11 +10,13 @@
 <Code
   code={`import { connectPush } from '@clorat/tarol-client/push';
 
-const push = connectPush({ url: '/api/tarol/messages', tokens });
+const push = connectPush({ url: 'https://api.example.com/tarol/messages', tokens });
 setTarol(client, push);
 const auctions = list(() => requests.auctionSearch({}), { live: 'artflow.bid-placed' });`}
 />
 <p>
-  In a browser the hub needs the token in the query string (backend change BC-2) and the sample maps no hub yet (BC-9);
-  until then push runs against the contract tests' fake hub only.
+  A browser cannot set headers on a WebSocket, so the client sends the token as <code>?access_token=</code>; the hub
+  reads it there only. When the token expires the hub closes the connection, and the client reconnects with a fresh token
+  from the same provider. A refused topic arrives in <code>onRefused</code> as a code such as <code>Hub.Forbidden</code>.
+  The ArtFlow example's auction page revalidates on <code>artflow.bid-placed</code>.
 </p>

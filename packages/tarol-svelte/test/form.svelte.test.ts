@@ -62,7 +62,11 @@ describe('changeForm', () => {
     f.answerChanges(() => ({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { 'lines[1].sku': ['Sku.Unknown'] } },
+      violation: {
+        kind: 'invalid',
+        errors: { 'lines[1].sku': ['Sku.Unknown'] },
+        details: { 'lines[1].sku': [{ code: 'Sku.Unknown' }] },
+      },
     }));
     const form = root(() => changeForm(placeOrder, initial, { client: f.client, rules }));
     await form.submit();
@@ -71,6 +75,28 @@ describe('changeForm', () => {
     form.values.lines[1]!.sku = 'C';
     form.touch('lines[1].sku');
     expect(form.error('lines[1].sku')).toBeUndefined();
+  });
+
+  it('keeps the server detail of a field error and the request id of the failure (BC-5, BC-11)', async () => {
+    const f = fakeClient(() => okResult(1));
+    f.answerChanges(() => ({
+      ok: false,
+      status: 400,
+      requestId: 'r-1',
+      violation: {
+        kind: 'invalid',
+        errors: { customer: ['Length'] },
+        details: { customer: [{ code: 'Length', detail: '3..60' }] },
+      },
+    }));
+    const form = root(() => changeForm(placeOrder, initial, { client: f.client }));
+    await form.submit();
+    expect(form.error('customer')).toBe('Length');
+    expect(form.detail('customer')).toBe('3..60');
+    expect(form.requestId).toBe('r-1');
+    form.values.customer = 'Ada';
+    form.touch('customer');
+    expect(form.detail('customer')).toBeUndefined();
   });
 
   it('keeps the idempotency key for a retry of the same input and takes a new one for a new input', async () => {
@@ -96,10 +122,14 @@ describe('changeForm', () => {
     f.answerChanges(() => ({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { '': ['Json'], customer: ['Length'] } },
+      violation: {
+        kind: 'invalid',
+        errors: { '': ['Json'], customer: ['Length'] },
+        details: { '': [{ code: 'Json' }], customer: [{ code: 'Length' }] },
+      },
     }));
     await form.submit();
-    expect(form.formError).toEqual({ kind: 'invalid', errors: { '': ['Json'] } });
+    expect(form.formError).toEqual({ kind: 'invalid', errors: { '': ['Json'] }, details: { '': [{ code: 'Json' }] } });
     expect(form.error('customer')).toBe('Length');
   });
 
@@ -120,7 +150,7 @@ describe('changeForm', () => {
     f.answerChanges(() => ({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { customer: ['Length'] } },
+      violation: { kind: 'invalid', errors: { customer: ['Length'] }, details: { customer: [{ code: 'Length' }] } },
     }));
     const form = root(() => changeForm(placeOrder, initial, { client: f.client }));
     form.values.customer = 'X';

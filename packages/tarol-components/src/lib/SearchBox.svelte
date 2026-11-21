@@ -1,12 +1,14 @@
 <!--
   @component
   The global search box over the backend's `MapTarolSearch` entry (`GET /search?q=…`): a `Combobox` that asks the server
-  as the user types (debounced, the previous request aborted) and lists the hits by title. Choosing a hit calls `onselect`
-  with it, e.g. to navigate to its aggregate. Hits are shown as plain text; the server's highlighted snippets are not
-  requested (they are HTML, BC-8), so no server text is ever rendered as markup.
+  as the user types (debounced, the previous request aborted) and lists the hits: the title, and under it the backend's
+  snippet with the matched words in `<mark>`. Choosing a hit calls `onselect` with it, e.g. to navigate to its aggregate.
+  Every server text is rendered as text: the snippet is plain text with highlight ranges (UTF-16 offsets), never markup.
 -->
 <script module lang="ts">
-  /** A search hit as `MapTarolSearch` answers it (without the snippet, see the component's notes). */
+  import type { Highlight } from './highlight.js';
+
+  /** A search hit as `MapTarolSearch` answers it. */
   export interface SearchHit {
     /** The searchable type, e.g. `Auction`. */
     readonly type: string;
@@ -18,6 +20,10 @@
     readonly title: string;
     /** The relevance score. */
     readonly score: number;
+    /** With `snippets=true`: a passage of the document, plain text. */
+    readonly snippet?: string;
+    /** The matched words of `snippet`, in UTF-16 code units. */
+    readonly highlights?: readonly Highlight[];
   }
 </script>
 
@@ -25,6 +31,7 @@
   import type { Violation } from '@clorat/tarol-client';
   import { Combobox, getMessages } from '@clorat/tarol-design';
   import { getTarol } from '@clorat/tarol-svelte';
+  import { highlight } from './highlight.js';
 
   interface Props {
     /** The visible label (the app's own text). */
@@ -45,6 +52,8 @@
     describe?: ((hit: SearchHit) => string) | undefined;
     /** The input's placeholder (already translated). */
     placeholder?: string | undefined;
+    /** Asks for snippets and shows them under the titles. Default `true`. */
+    snippets?: boolean | undefined;
   }
 
   let {
@@ -57,6 +66,7 @@
     debounce = 150,
     describe,
     placeholder,
+    snippets = true,
   }: Props = $props();
   const t = getMessages();
   const { client } = getTarol();
@@ -82,7 +92,7 @@
     loading = true;
     timer = setTimeout(() => {
       const controller = (running = new AbortController());
-      const query = { q, limit, ...(types ? { types: types.join(',') } : {}) };
+      const query = { q, limit, ...(snippets ? { snippets: true } : {}), ...(types ? { types: types.join(',') } : {}) };
       client
         .read<{ items: SearchHit[] }>(path, { query, signal: controller.signal })
         .then((r) => {
@@ -110,8 +120,38 @@
   bind:value
   error={violation ? t(violation.kind === 'error' ? violation.code : 'error.generic') : undefined}
   onquery={search}
+  {item}
   onchange={(v) => {
     const hit = hits.find((h) => key(h) === v);
     if (hit) onselect(hit);
   }}
 />
+
+{#snippet item(option: { value: string; label: string })}
+  {@const hit = hits.find((h) => key(h) === option.value)}
+  <span class="t-hit-title">{option.label}</span>
+  {#if hit?.snippet}
+    <span class="t-hit-snippet">
+      {#each highlight(hit.snippet, hit.highlights) as s, i (i)}{#if s.mark}<mark>
+            {s.text}
+          </mark>{:else}{s.text}{/if}{/each}
+    </span>
+  {/if}
+{/snippet}
+
+<style>
+  .t-hit-title,
+  .t-hit-snippet {
+    display: block;
+  }
+  .t-hit-snippet {
+    color: var(--t-color-fg-muted);
+    font-size: var(--t-text-xs);
+  }
+  /* the match stands out by weight: no new colour pair, so the token contrast checks still hold */
+  mark {
+    background: none;
+    color: inherit;
+    font-weight: 600;
+  }
+</style>

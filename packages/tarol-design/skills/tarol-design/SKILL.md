@@ -27,6 +27,7 @@ description: >-
    and are announced assertively.
 7. Buttons are `type="button"` unless you say `type="submit"`; `loading` disables and sets `aria-busy`.
 8. Choosing one value from many: `<Combobox label options={[{ value, label }]} bind:value>` (`value` is `string | null`).
+   An `item(option)` snippet renders an option's content (e.g. a second line); render text, never `{@html}`.
    For a server search pass `filter={false}`, fetch in `onquery(text)` and set `options`; `loading` shows the loading
    text. Dates: `<DateField bind:value>` binds `'YYYY-MM-DD' | null` (a backend `DateOnly`).
 9. Actions in a menu: `<MenuButton items={[{ id, label, disabled? }]} onselect={(id) => …}>Actions</MenuButton>`; never a

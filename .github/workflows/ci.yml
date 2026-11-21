@@ -55,7 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      TAROL_NET_COMMIT: 73b35ff79983b2401d6ade66260d409b898e5c04
+      # Tarol-Net #109 (BC-18, the sample's login page) on top of fe0a2bd; the merge commit once it is merged
+      TAROL_NET_COMMIT: 08d3c6649607b3a9a49b03c0e90b5a2ab22325b8
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -91,7 +92,8 @@ jobs:
       - name: Start the sample
         run: |
           cd tarol-net/samples/Sagas/AppHost
-          ASPIRE_ALLOW_UNSECURED_TRANSPORT=true DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true \
+          # 30-second access tokens (clock skew 0): the e2e's expiry scenario runs; every other one refreshes as it goes
+          ARTFLOW_TOKEN_LIFETIME=30s ASPIRE_ALLOW_UNSECURED_TRANSPORT=true DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true \
             ASPNETCORE_URLS=http://localhost:18888 ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL=http://localhost:18890 \
             nohup dotnet bin/Debug/net11.0/ArtFlow.AppHost.dll > "$RUNNER_TEMP/apphost.log" 2>&1 &
           for i in $(seq 120); do curl -sf http://localhost:5080/health/ready > /dev/null && exit 0; sleep 2; done

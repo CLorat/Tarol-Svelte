@@ -108,8 +108,59 @@ describe('changes', () => {
     expect(r).toEqual({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { 'lines[1].quantity': ['Range'], '': ['Json'] } },
+      violation: {
+        kind: 'invalid',
+        errors: { 'lines[1].quantity': ['Range'], '': ['Json'] },
+        details: { 'lines[1].quantity': [{ code: 'Range' }], '': [{ code: 'Json' }] },
+      },
     });
+  });
+
+  it('carries the error details, the request id and the trace id of a 400 (BC-5, BC-11)', async () => {
+    const b = backend(
+      problem(
+        400,
+        {
+          title: 'One or more fields are invalid.',
+          errors: { reserve: ['Range'] },
+          errorDetails: { reserve: [{ code: 'Range', detail: '1..1000000' }] },
+          traceId: '1ab7b7af266c4111b857fa99a936bc1b',
+        },
+        { 'tarol-request-id': '1ab7b7af266c4111b857fa99a936bc1b' },
+      ),
+    );
+    const r = await client(b).change({ method: 'POST', path: '/auctions', body: { reserve: 0 } });
+    expect(r).toEqual({
+      ok: false,
+      status: 400,
+      requestId: '1ab7b7af266c4111b857fa99a936bc1b',
+      violation: {
+        kind: 'invalid',
+        errors: { reserve: ['Range'] },
+        details: { reserve: [{ code: 'Range', detail: '1..1000000' }] },
+      },
+    });
+  });
+
+  it('takes the request id from the problem when the header is not readable', async () => {
+    const b = backend(problem(404, { code: 'Auction.NotFound', traceId: 'abc' }));
+    const r = await client(b).change({ method: 'POST', path: '/x', body: {} });
+    expect(r).toMatchObject({ ok: false, requestId: 'abc', violation: { code: 'Auction.NotFound' } });
+  });
+
+  it('maps a 415 without a body (BC-16) and reports the request id of a success', async () => {
+    const b = backend(
+      new Response(null, { status: 415, headers: { 'tarol-request-id': 'r-1' } }),
+      ok(204, undefined, { etag: '"2"', 'tarol-request-id': 'r-2' }),
+    );
+    const c = client(b);
+    expect(await c.change({ method: 'POST', path: '/x', body: {} })).toEqual({
+      ok: false,
+      status: 415,
+      requestId: 'r-1',
+      violation: { kind: 'error', code: 'Request.UnsupportedMediaType' },
+    });
+    expect(await c.change({ method: 'POST', path: '/x', body: {} })).toMatchObject({ ok: true, requestId: 'r-2' });
   });
 
   it('maps a coded problem with its detail (409 version conflict)', async () => {
@@ -308,7 +359,21 @@ describe('reads', () => {
     expect(await client(b).read('/auctions', { query: { limit: 500 } })).toEqual({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { limit: ['Range'] } },
+      violation: { kind: 'invalid', errors: { limit: ['Range'] }, details: { limit: [{ code: 'Range' }] } },
+    });
+  });
+
+  it('maps an unknown list key as a field error Unknown (BC-14)', async () => {
+    const b = backend(
+      problem(400, {
+        errors: { selller: ['Unknown'] },
+        errorDetails: { selller: [{ code: 'Unknown', detail: 'not a filter, sort or paging key of this list' }] },
+      }),
+    );
+    const r = await client(b).read('/auctions', { query: { selller: 'x' } });
+    expect(r).toMatchObject({
+      ok: false,
+      violation: { kind: 'invalid', errors: { selller: ['Unknown'] }, details: { selller: [{ code: 'Unknown' }] } },
     });
   });
 });
@@ -324,7 +389,23 @@ describe('helpers', () => {
   it('falls back to a status code for bodies that are not problems', () => {
     expect(toViolation(403, null)).toEqual({ kind: 'error', code: 'Auth.Forbidden' });
     expect(toViolation(418, 'teapot')).toEqual({ kind: 'error', code: 'Http.418' });
-    expect(toViolation(400, { errors: { a: ['X', 1] } })).toEqual({ kind: 'invalid', errors: { a: ['X'] } });
+    expect(toViolation(400, { errors: { a: ['X', 1] } })).toEqual({
+      kind: 'invalid',
+      errors: { a: ['X'] },
+      details: { a: [{ code: 'X' }] },
+    });
+    // a detail for a code the errors do not list is dropped; a malformed detail is ignored
+    expect(
+      toViolation(400, {
+        errors: { a: ['X'] },
+        errorDetails: {
+          a: [
+            { code: 'Y', detail: '1' },
+            { code: 'X', detail: 2 },
+          ],
+        },
+      }),
+    ).toEqual({ kind: 'invalid', errors: { a: ['X'] }, details: { a: [{ code: 'X' }] } });
   });
 
   it('accepts only D-format UUIDs as ids', () => {

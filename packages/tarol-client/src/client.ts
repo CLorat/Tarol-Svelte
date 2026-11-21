@@ -175,15 +175,20 @@ export function createClient(options: ClientOptions): TarolClient {
 
   function failed(answer: Answer): Failed {
     const status = answer.response?.status ?? 0;
+    const body = answer.body as { traceId?: unknown } | undefined;
+    const requestId =
+      answer.response?.headers.get('tarol-request-id') ?? (typeof body?.traceId === 'string' ? body.traceId : null);
     return {
       ok: false,
       status,
       violation: status === 0 ? { kind: 'error', code: fallbackCode(0) } : toViolation(status, answer.body),
+      ...(requestId ? { requestId } : {}),
     };
   }
 
   function ok<T>(response: Response, value: unknown, notModified: boolean, version?: number): Ok<T> {
     const p = response.headers.get('tarol-position');
+    const requestId = response.headers.get('tarol-request-id');
     return {
       ok: true,
       value: value as T,
@@ -193,6 +198,7 @@ export function createClient(options: ClientOptions): TarolClient {
       notModified,
       ...(version === undefined ? {} : { version }),
       ...(p ? { position: p } : {}),
+      ...(requestId ? { requestId } : {}),
     };
   }
 

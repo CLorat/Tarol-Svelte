@@ -9,4 +9,6 @@ export type { SearchHit } from './SearchBox.svelte';
 export type { Column } from './column.js';
 export type { DataTableProps } from './DataTable.svelte';
 export type { DetailLayoutProps } from './DetailLayout.svelte';
+export { highlight } from './highlight.js';
+export type { Highlight, Segment } from './highlight.js';
 export { setAt } from './paths.js';

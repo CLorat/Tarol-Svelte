@@ -1,56 +1,53 @@
-import type { TokenProvider } from '@clorat/tarol-client';
-import { createOidc } from '@clorat/tarol-oidc';
+import { createOidc, type Oidc } from '@clorat/tarol-oidc';
 import { zitadel } from '@clorat/tarol-oidc/zitadel';
 
+/** Where the app signs in: a Zitadel user-agent app (PKCE) and the backend's project (its audience). */
+interface LoginConfig {
+  issuer: string;
+  clientId: string;
+  projectId: string;
+}
+
 /**
- * What the e2e suite puts on the page before it loads (Playwright `addInitScript`): a machine user's token from Zitadel's
- * client-credentials grant, and a way to get a new one. Test only: it stands in for the browser login until the sample
- * has a PKCE app and human users (BC-9). A build never sets it.
+ * The deployment's login settings: `VITE_ZITADEL_CLIENT_ID` / `VITE_ZITADEL_PROJECT_ID` (/ `VITE_ZITADEL_ISSUER`) at build
+ * time, else `oidc.json` next to the app at run time (so one build serves any sample run: the client id is made per
+ * run). Without either the app is anonymous (the component catalogue needs no backend).
  */
-interface E2eTokens {
-  token: string;
-  tenant: string;
-  refresh: () => Promise<string | null>;
-}
-
-declare global {
-  interface Window {
-    __tarolE2E?: E2eTokens;
-  }
-}
-
-/** The app's TokenProvider: the e2e one when present, else the Zitadel login when configured, else anonymous. */
-export async function tokens(): Promise<TokenProvider | undefined> {
-  const e2e = window.__tarolE2E;
-  if (e2e) {
-    let token = e2e.token;
-    return {
-      token: () => token,
-      tenant: () => e2e.tenant,
-      async refresh() {
-        const next = await e2e.refresh();
-        if (next === null) return false;
-        token = next;
-        return true;
-      },
-    };
-  }
+async function config(): Promise<LoginConfig | undefined> {
   const env = import.meta.env;
   const clientId = env['VITE_ZITADEL_CLIENT_ID'] as string | undefined;
   const projectId = env['VITE_ZITADEL_PROJECT_ID'] as string | undefined;
-  if (!clientId || !projectId) return undefined;
   const issuer = (env['VITE_ZITADEL_ISSUER'] as string | undefined) ?? 'http://localhost:8080';
+  if (clientId && projectId) return { issuer, clientId, projectId };
+  try {
+    const r = await fetch(new URL('oidc.json', location.href));
+    if (!r.ok) return undefined;
+    const c = (await r.json()) as Partial<LoginConfig>;
+    return c.clientId && c.projectId ? { issuer: c.issuer ?? issuer, clientId: c.clientId, projectId: c.projectId } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The browser login (code + PKCE, tokens in memory): finishes a callback, or asks Zitadel silently (`prompt=none`) after a
+ * reload; signed out, the app offers `login()`. `undefined` when the deployment has no login settings.
+ */
+export async function signIn(): Promise<Oidc | undefined> {
+  const c = await config();
+  if (!c) return undefined;
   const oidc = createOidc(
     zitadel({
-      issuer,
-      clientId,
-      projectId,
+      issuer: c.issuer,
+      clientId: c.clientId,
+      projectId: c.projectId,
       redirectUri: `${location.origin}/`,
       postLogoutRedirectUri: `${location.origin}/`,
-      allowHttp: issuer.startsWith('http://localhost'),
+      allowHttp: c.issuer.startsWith('http://localhost'),
     }),
   );
   const result = await oidc.handleRedirect();
+  // after a reload the tokens are gone: one silent attempt per load (its answer is a callback, so never a loop)
   if (result.kind === 'none' && !oidc.session()) await oidc.restore();
-  return oidc.provider;
+  return oidc;
 }

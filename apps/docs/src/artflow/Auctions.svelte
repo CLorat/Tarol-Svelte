@@ -2,6 +2,7 @@
   import type { Created } from '@clorat/tarol-client';
   import { ChangeForm, DataTable, FormField, QueryState, type Column } from '@clorat/tarol-components';
   import { changeForm, list } from '@clorat/tarol-svelte';
+  import { untrack } from 'svelte';
   import { router } from '../router.svelte.js';
   import { requests, rules, type AuctionRow } from './api.js';
   import { euros, short } from './format.js';
@@ -15,11 +16,13 @@
     { key: 'highestBid', header: 'Highest bid', align: 'end', sort: { value: 'HighestBid', direction: 'descending' } },
     { key: 'openedAt', header: 'Opened', sort: { value: 'OpenedAt', direction: 'descending' } },
   ];
+  // #/auctions?validate=server leaves the rules to the backend: its 400 brings the code and the bounds (errorDetails)
+  const serverOnly = untrack(() => router.route.query.get('validate') === 'server');
   const create = changeForm<{ reserve: number | null }, Created>(
     (i) => requests.createAuction({ reserve: i.reserve ?? 0 }),
     { reserve: null },
     {
-      rules: rules.createAuction,
+      ...(serverOnly ? {} : { rules: rules.createAuction }),
       onSuccess: (r) => {
         router.go(`#/auctions/${r.value.id}`);
       },
@@ -32,7 +35,13 @@
 <section aria-labelledby="create">
   <h2 id="create">New auction</h2>
   <ChangeForm form={create} submitLabel="Create auction">
-    <FormField form={create} path="reserve" label="Reserve (EUR)" type="number" rules={rules.createAuction.reserve} />
+    <FormField
+      form={create}
+      path="reserve"
+      label="Reserve (EUR)"
+      type="number"
+      rules={serverOnly ? [] : rules.createAuction.reserve}
+    />
   </ChangeForm>
 </section>
 <section aria-labelledby="all">

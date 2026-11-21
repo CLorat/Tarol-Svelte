@@ -43,6 +43,7 @@ const doc = (schemas: Record<string, Schema>, paths: OpenApiDocument['paths'] = 
 const post = (operationId: string, body: string, created = false) => ({
   post: {
     operationId,
+    'x-tarol-kind': created ? 'creation' : 'change',
     requestBody: { content: { 'application/json': { schema: { $ref: `#/components/schemas/${body}` } } } },
     responses: created
       ? {
@@ -70,15 +71,28 @@ describe('the sample (samples/Sagas /openapi/v1.json)', () => {
 
   it('compiles with strict settings, and its builders fit the Svelte runes', () => {
     const usage = `
-import { createClient } from '@clorat/tarol-client';
+import { asId, createClient, type ClientCode } from '@clorat/tarol-client';
 import { changeForm, list, query } from '@clorat/tarol-svelte';
-import { requests, rules, tarol } from './artflow.js';
+import { errors, requests, rules, tarol, type PlaceBidCode } from './artflow.js';
 
 const api = tarol(createClient({ baseUrl: '/api' }));
 export async function run(): Promise<void> {
   const created = await api.changes.createAuction({ reserve: 100 });
-  if (created.ok) await api.changes.placeBid({ auction: created.value.id, amount: 150 }, { expectedVersion: created.value.version });
-  if (created.ok) await api.changes.settleAuction({ auction: created.value.id }); // a change whose body schema is empty
+  if (!created.ok) return;
+  // the 201 id carries no x-tarol-id yet (BC-19): brand it once
+  const auction = asId<'Auction'>(created.value.id);
+  const bid = await api.changes.placeBid({ auction, amount: 150 }, { expectedVersion: created.value.version });
+  if (!bid.ok && bid.violation.kind === 'error') {
+    const code: PlaceBidCode | ClientCode = bid.violation.code;
+    void code;
+    // @ts-expect-error not a code of PlaceBid
+    void (bid.violation.code === 'Auction.NotSeller');
+  }
+  const listed: readonly string[] = errors.placeBid;
+  void listed;
+  // @ts-expect-error a plain string is not an auction's id
+  await api.changes.settleAuction({ auction: created.value.id });
+  await api.changes.settleAuction({ auction }); // a change whose body schema is empty
   const page = await api.queries.auctionSearch({ sort: 'HighestBid', limit: 20 });
   if (page.ok) for (const a of page.value.items) a.highestBid.toFixed(2);
   // @ts-expect-error amount is required
@@ -90,7 +104,7 @@ export async function run(): Promise<void> {
 }
 export function screen(): void {
   list(() => requests.auctionSearch({ settled: false }));
-  query(() => requests.auctionView({ auction: 'x' }));
+  query(() => requests.auctionView({ auction: asId<'Auction'>('01a1fa49-3098-785c-817a-9f7832ceea0e') }));
   changeForm(requests.createAuction, { reserve: 0 }, { rules: rules.createAuction });
 }
 `;
@@ -221,7 +235,7 @@ describe('errors instead of any', () => {
       '#/components/schemas/A/properties/b',
     );
     fails(doc({ A: { type: 'object', properties: { b: { type: 'array' } } } }), '#/components/schemas/A/properties/b');
-    fails(doc({}, { '/x': { get: { responses: {} } } }), '#/paths/~1x/get');
+    fails(doc({}, { '/x': { get: { responses: {}, 'x-tarol-kind': 'view' } } }), '#/paths/~1x/get');
   });
 
   it('rejects a path parameter that collides with a body member, and an unknown x-tarol-kind', () => {
@@ -236,5 +250,134 @@ describe('errors instead of any', () => {
       '#/paths/~1x~1{id}/post',
     );
     fails(doc(body, { '/x': { post: { ...op.post, 'x-tarol-kind': 'other' } } }), '#/paths/~1x/post/x-tarol-kind');
+  });
+});
+
+describe('Tarol extensions (BC-3, BC-4)', () => {
+  const problem = {
+    content: { 'application/problem+json': { schema: { $ref: '#/components/schemas/TarolProblem' } } },
+  };
+  const schemas: Record<string, Schema> = {
+    TarolProblem: { type: 'object', required: ['type', 'status', 'title'], properties: { code: { type: 'string' } } },
+    Signup: {
+      type: 'object',
+      required: ['email', 'name'],
+      properties: {
+        email: {
+          type: 'string',
+          format: 'email',
+          'x-tarol-rules': [{ rule: 'Email', code: 'Email' }],
+          'x-tarol-email':
+            'one @ with 1 to 64 characters before it; a domain of at most 253 characters that contains a dot, does not start or end with one and has no empty label; no white space; at most 254 characters',
+        },
+        name: {
+          type: 'string',
+          minLength: 3,
+          'x-tarol-rules': [{ rule: 'Pattern', code: 'Pattern', pattern: '^\\p{L}+$', flags: 'iu' }],
+        },
+      },
+    },
+    Erasure: { type: 'object', required: ['streams'], properties: { streams: { type: 'integer' } } },
+  };
+  const paths: OpenApiDocument['paths'] = {
+    '/signups': {
+      post: {
+        ...post('Signup', 'Signup').post,
+        'x-tarol-errors': ['Signup.Taken', 'Auth.Forbidden'],
+        responses: { '204': {}, '409': problem },
+      },
+    },
+    '/me': {
+      get: {
+        operationId: 'Me',
+        'x-tarol-kind': 'me',
+        responses: {
+          '200': {
+            content: {
+              'application/json': { schema: { type: 'object', properties: { subject: { type: 'string' } } } },
+            },
+          },
+        },
+      },
+    },
+    '/admin/subjects/{id}/erase': {
+      post: {
+        operationId: 'AdminErase',
+        'x-tarol-kind': 'admin',
+        'x-tarol-errors': ['Admin.Tenant', 'DataProtection.ErasureIncomplete'],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'tenant', in: 'query', required: true, schema: { type: 'string', format: 'uuid' } },
+        ],
+        responses: { '200': { content: { 'application/json': { schema: { $ref: '#/components/schemas/Erasure' } } } } },
+      },
+    },
+    '/admin/subjects/{id}/export': {
+      get: {
+        operationId: 'AdminExport',
+        'x-tarol-kind': 'admin',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'tenant', in: 'query', required: true, schema: { type: 'string', format: 'uuid' } },
+        ],
+        responses: { '200': {} },
+      },
+    },
+    '/admin/dead/{kind}/{id}': {
+      delete: {
+        operationId: 'AdminDiscard',
+        'x-tarol-kind': 'admin',
+        parameters: [
+          { name: 'kind', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer', format: 'int64' } },
+        ],
+        responses: { '204': {} },
+      },
+    },
+  };
+  const code = generate(doc(schemas, paths));
+
+  it('types the error codes of each operation from x-tarol-errors', () => {
+    expect(code).toContain(`export type SignupCode = "Signup.Taken" | "Auth.Forbidden";`);
+    expect(code).toContain('Promise<Result<undefined, SignupCode>>');
+    expect(code).toContain(`signup: ["Signup.Taken", "Auth.Forbidden"],`);
+  });
+
+  it('generates admin and me operations by their kind, with required query values and untyped answers only where the document has none', () => {
+    expect(code).toContain(
+      'adminErase: (input: AdminEraseInput, options?: ChangeOptions): Promise<Result<Erasure, AdminEraseCode>>',
+    );
+    expect(code).toContain('export type AdminEraseInput = { readonly id: string } & { readonly tenant: string };');
+    expect(code).toMatch(
+      /adminExport: \(p: \{ readonly id: string \}, query: AdminExportQuery\): Promise<Result<unknown>>/,
+    );
+    expect(code).toContain('  readonly tenant: string;');
+    expect(code).toContain(
+      'adminDiscard: (input: AdminDiscardInput, options?: ChangeOptions): Promise<Result<undefined>>',
+    );
+    expect(code).toContain('me: (): Promise<Result<{');
+  });
+
+  it('keeps Required next to x-tarol-rules, passes flags, and checks the e-mail semantics', () => {
+    const r = /export const rules = (\{[\s\S]*?\}) as const;/.exec(code)?.[1] ?? '';
+    expect(r).toContain('"email": [{"rule":"Required","code":"Required"}, {"rule":"Email","code":"Email"}]');
+    expect(r).toContain(
+      '"name": [{"rule":"Required","code":"Required"}, {"rule":"Pattern","code":"Pattern","pattern":"^\\\\p{L}+$","flags":"iu"}]',
+    );
+    const changed = structuredClone(schemas);
+    const email = changed['Signup']?.properties?.['email'] as Record<string, unknown>;
+    email['x-tarol-email'] = 'any text with an @';
+    expect(() => generate(doc(changed, paths))).toThrow(/x-tarol-email/);
+  });
+
+  it('leaves TarolProblem to the client (its Violation) and requires x-tarol-kind', () => {
+    expect(code).not.toContain('TarolProblem');
+    const untyped: Record<string, unknown> = { ...post('Pay', 'Signup').post };
+    delete untyped['x-tarol-kind'];
+    expect(() => generate(doc(schemas, { '/pay': { post: untyped } }))).toThrow(/x-tarol-kind is required/);
+  });
+
+  it('compiles', () => {
+    expect(typecheck({ 'api.ts': code })).toEqual([]);
   });
 });

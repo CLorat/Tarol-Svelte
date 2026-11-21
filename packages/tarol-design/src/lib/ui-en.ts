@@ -16,4 +16,5 @@ export const uiEn: Catalogue = {
   'ui.sortDescending': 'sorted descending',
   'ui.erased': 'erased',
   'ui.noResults': 'No matches.',
+  'ui.reference': 'Reference: {id}',
 };

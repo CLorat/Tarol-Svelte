@@ -4,7 +4,9 @@ import { page, userEvent } from 'vitest/browser';
 import '@clorat/tarol-design/tokens.css';
 import { expectAccessible } from './axe.js';
 import { fakeClient } from './fake.js';
+import type { Result } from '@clorat/tarol-client';
 import BidForm from './fixtures/BidForm.svelte';
+import Failing from './fixtures/Failing.svelte';
 import Table from './fixtures/Table.svelte';
 
 let app: ReturnType<typeof mount> | undefined;
@@ -149,7 +151,7 @@ describe('ChangeForm and FormField', () => {
     const f = fakeClient(0, () => ({
       ok: false,
       status: 400,
-      violation: { kind: 'invalid', errors: { reserve: ['Range'] } },
+      violation: { kind: 'invalid', errors: { reserve: ['Range'] }, details: { reserve: [{ code: 'Range' }] } },
     }));
     render(BidForm, { client: f.client });
     await userEvent.type(page.getByLabelText(/Title/), 'Irises');
@@ -158,6 +160,54 @@ describe('ChangeForm and FormField', () => {
     await expect
       .element(page.getByLabelText('Reserve'))
       .toHaveAccessibleDescription('Enter a value between 1 and 1000000.');
+  });
+
+  it('shows the bounds of the server detail on a field without client rules (BC-5)', async () => {
+    const f = fakeClient(0, () => ({
+      ok: false,
+      status: 400,
+      requestId: '1ab7b7af266c4111b857fa99a936bc1b',
+      violation: {
+        kind: 'invalid',
+        errors: { reserve: ['Range'] },
+        details: { reserve: [{ code: 'Range', detail: '1..1000000' }] },
+      },
+    }));
+    render(BidForm, { client: f.client, clientRules: false });
+    await userEvent.type(page.getByLabelText(/Title/), 'Irises');
+    await userEvent.type(page.getByLabelText('Reserve'), '0{Enter}');
+    await expect
+      .element(page.getByLabelText('Reserve'))
+      .toHaveAccessibleDescription('Enter a value between 1 and 1000000.');
+  });
+
+  it('shows the request id of a refusal as its reference (BC-11)', async () => {
+    const f = fakeClient(0, () => ({
+      ok: false,
+      status: 403,
+      requestId: 'r-42',
+      violation: { kind: 'error', code: 'Auth.Forbidden' },
+    }));
+    render(BidForm, { client: f.client });
+    await userEvent.type(page.getByLabelText(/Title/), 'Irises');
+    await page.getByRole('button', { name: 'Create' }).click();
+    await expect.element(page.getByRole('alert')).toHaveTextContent('You are not allowed to do this. Reference: r-42');
+    await expectAccessible();
+  });
+
+  it('shows the request id of a failed read in QueryState (BC-11)', async () => {
+    const f = fakeClient(0);
+    f.client.read = <T>() =>
+      Promise.resolve({
+        ok: false,
+        status: 404,
+        requestId: 'r-7',
+        violation: { kind: 'error', code: 'NotFound' },
+      } as Result<T>);
+    render(Failing, { client: f.client });
+    await expect
+      .element(page.getByRole('alert'))
+      .toHaveTextContent('This item does not exist (any more). Reference: r-7 Try again');
   });
 
   it('announces a coded refusal above the button, in German with the de catalogue', async () => {

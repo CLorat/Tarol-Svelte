@@ -124,6 +124,14 @@
         "bindable": false,
         "default": null,
         "doc": "The input's placeholder (already translated)."
+      },
+      {
+        "name": "item",
+        "type": "Snippet<[Option]>",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Renders an option's content (default: its label as text), e.g. a second line; never render server text as HTML."
       }
     ]
   },
@@ -648,7 +656,7 @@
   "ChangeForm": {
     "package": "@clorat/tarol-components",
     "name": "ChangeForm",
-    "doc": "A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that belongs to no field (403, 409, malformed body) is shown and announced above the button.",
+    "doc": "A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that belongs to no field (403, 409, malformed body) is shown and announced above the button, with the request's reference (`Tarol-Request-Id`) for a user to quote.",
     "extends": "",
     "props": [
       {
@@ -824,7 +832,7 @@
   "FormField": {
     "package": "@clorat/tarol-components",
     "name": "FormField",
-    "doc": "One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is the client rule's or the server's code, as a message from the catalogue with the rule's bounds.",
+    "doc": "One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is the client rule's or the server's code, as a message from the catalogue with the bounds of the client rule, or of the server's detail (`errorDetails`, `1..1000000`) when the field has no client rule for the code.",
     "extends": "",
     "props": [
       {
@@ -936,7 +944,7 @@
   "SearchBox": {
     "package": "@clorat/tarol-components",
     "name": "SearchBox",
-    "doc": "The global search box over the backend's `MapTarolSearch` entry (`GET /search?q=…`): a `Combobox` that asks the server as the user types (debounced, the previous request aborted) and lists the hits by title. Choosing a hit calls `onselect` with it, e.g. to navigate to its aggregate. Hits are shown as plain text; the server's highlighted snippets are not requested (they are HTML, BC-8), so no server text is ever rendered as markup.",
+    "doc": "The global search box over the backend's `MapTarolSearch` entry (`GET /search?q=…`): a `Combobox` that asks the server as the user types (debounced, the previous request aborted) and lists the hits: the title, and under it the backend's snippet with the matched words in `<mark>`. Choosing a hit calls `onselect` with it, e.g. to navigate to its aggregate. Every server text is rendered as text: the snippet is plain text with highlight ranges (UTF-16 offsets), never markup.",
     "extends": "",
     "props": [
       {
@@ -1010,6 +1018,14 @@
         "bindable": false,
         "default": null,
         "doc": "The input's placeholder (already translated)."
+      },
+      {
+        "name": "snippets",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "true",
+        "doc": "Asks for snippets and shows them under the titles. Default `true`."
       }
     ]
   }
