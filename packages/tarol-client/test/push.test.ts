@@ -188,7 +188,7 @@ describe('push', () => {
     const handler = vi.fn();
     p.subscribe('billing.secret', handler);
     await handshake();
-    // SignalR wraps the server's HubException text; the code is found inside it (BC-12)
+    // SignalR wraps the server's HubException text; the code is found inside it
     const text =
       "An unexpected error occurred invoking 'Subscribe' on the server. HubException: Hub.Forbidden: Subscribe billing.secret";
     last().complete('Subscribe', text);
@@ -263,7 +263,7 @@ describe('push', () => {
       code: 'Auth.Tenant',
       detail: 'no tenant',
     });
-    // the pre-BC-12 prefixes are no longer codes
+    // the prefixes before Tarol-Net #105 are no longer codes
     expect(hubRefusal('Forbidden: Subscribe billing.secret')).toMatchObject({ code: 'Hub.Error' });
     expect(hubRefusal('')).toMatchObject({ code: 'Hub.Error', detail: '' });
   });

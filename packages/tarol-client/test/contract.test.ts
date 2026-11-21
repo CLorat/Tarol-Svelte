@@ -83,7 +83,7 @@ describe.runIf(run)('contract with samples/Sagas', () => {
       requestId: expect.stringMatching(/^[0-9a-f]{32}$/) as string,
       violation: { kind: 'invalid', errors: { reserve: ['Json'] }, details: { reserve: [{ code: 'Json' }] } },
     });
-    // the sample's rule [Range(1, 1_000_000)] on the reserve, with its bounds as the detail (BC-5, BC-9)
+    // the sample's rule [Range(1, 1_000_000)] on the reserve, with its bounds as the detail
     expect(await alice.change({ method: 'POST', path: '/auctions', body: { reserve: 0 } })).toMatchObject({
       ok: false,
       status: 400,
@@ -128,7 +128,7 @@ describe.runIf(run)('contract with samples/Sagas', () => {
         details: { limit: [{ code: 'Range', detail: 'between 1 and 200' }] },
       },
     });
-    // a key the list does not know is refused instead of being ignored (BC-14)
+    // a key the list does not know is refused instead of being ignored
     expect(await bob.read('/auctions', { query: { selller: 'x' } })).toMatchObject({
       ok: false,
       status: 400,
@@ -136,7 +136,7 @@ describe.runIf(run)('contract with samples/Sagas', () => {
     });
   });
 
-  it('gives every answer a request id, the same as the problem trace id (BC-11)', async () => {
+  it('gives every answer a request id, the same as the problem trace id', async () => {
     const created = await alice.change<Created>({ method: 'POST', path: '/auctions', body: { reserve: 100 } });
     expect(created).toMatchObject({ ok: true, requestId: expect.stringMatching(/^[0-9a-f]{32}$/) as string });
     const missing = await alice.read('/auctions/01000000-0000-7000-8000-000000000000');
@@ -147,7 +147,7 @@ describe.runIf(run)('contract with samples/Sagas', () => {
     expect(((await raw.json()) as { traceId: string }).traceId).toBe(raw.headers.get('tarol-request-id'));
   });
 
-  it('answers 415 for a body without Content-Type; the client always sends it (BC-16)', async () => {
+  it('answers 415 for a body without Content-Type; the client always sends it', async () => {
     const raw = await fetch(`${api}/auctions`, {
       method: 'POST',
       headers: { authorization: `Bearer ${await token('alice')}` },

@@ -22,7 +22,7 @@ export interface Ok<T> {
   readonly stale: boolean;
   /** `true` when the value came from the client's cache after a 304. */
   readonly notModified: boolean;
-  /** The backend's `Tarol-Request-Id`, when the answer carried one (BC-11). */
+  /** The backend's `Tarol-Request-Id`, when the answer carried one. */
   readonly requestId?: string;
 }
 
@@ -38,7 +38,7 @@ export interface Failed<C extends string = string> {
   /** The HTTP status, or 0 when the network failed. */
   readonly status: number;
   /**
-   * The request's id: the `Tarol-Request-Id` header, else the problem's `traceId` (BC-11). Show it with the error so a user
+   * The request's id: the `Tarol-Request-Id` header, else the problem's `traceId`. Show it with the error so a user
    * can quote it; the backend's traces are found by it.
    */
   readonly requestId?: string;
@@ -54,7 +54,7 @@ export interface Invalid {
   /** Field path → codes, e.g. `{ 'lines[1].quantity': ['Range'] }`; `''` is the whole body. */
   readonly errors: Readonly<Record<string, readonly string[]>>;
   /**
-   * The same errors with the rule's detail where the backend gave one (`errorDetails`, BC-5), e.g.
+   * The same errors with the rule's detail where the backend gave one (`errorDetails`), e.g.
    * `{ reserve: [{ code: 'Range', detail: '1..1000000' }] }`. Same paths and codes as {@link Invalid.errors}.
    */
   readonly details: Readonly<Record<string, readonly FieldError[]>>;
@@ -76,6 +76,11 @@ export interface Problem<C extends string = string> {
   readonly code: C | ClientCode;
   /** The backend's detail text, for logs; user messages come from the code. */
   readonly detail?: string;
+  /**
+   * The problem's other members (RFC 9457 extensions), e.g. `failed` of `DataProtection.ErasureIncomplete`; absent when
+   * there are none.
+   */
+  readonly extensions?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -142,8 +147,24 @@ export function toViolation(status: number, body: unknown): Violation {
     const code = typeof body['code'] === 'string' ? body['code'] : undefined;
     const title = typeof body['title'] === 'string' ? body['title'] : undefined;
     const detail = typeof body['detail'] === 'string' ? body['detail'] : undefined;
-    const problem: Problem = { kind: 'error', code: code ?? title ?? fallbackCode(status) };
-    return detail === undefined ? problem : { ...problem, detail };
+    const known = new Set([
+      'type',
+      'status',
+      'title',
+      'code',
+      'detail',
+      'traceId',
+      'instance',
+      'errors',
+      'errorDetails',
+    ]);
+    const extra = Object.entries(body).filter(([k]) => !known.has(k));
+    return {
+      kind: 'error',
+      code: code ?? title ?? fallbackCode(status),
+      ...(detail === undefined ? {} : { detail }),
+      ...(extra.length > 0 ? { extensions: Object.fromEntries(extra) } : {}),
+    };
   }
   return { kind: 'error', code: fallbackCode(status) };
 }

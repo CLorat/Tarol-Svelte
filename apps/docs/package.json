@@ -16,6 +16,7 @@
     "visual": "playwright test --trace off --project visual"
   },
   "dependencies": {
+    "@clorat/tarol-admin": "workspace:*",
     "@clorat/tarol-client": "workspace:*",
     "@clorat/tarol-components": "workspace:*",
     "@clorat/tarol-design": "workspace:*",

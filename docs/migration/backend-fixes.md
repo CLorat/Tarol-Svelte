@@ -44,7 +44,8 @@ Not on the wire as the reply suggests, or new gaps (recorded in changes.md as BC
 
 ## 2. Per BC: today, the change, the PR
 
-PRs are stacked in this order (each on the one before; retargeted to `main` before its base is merged). The branch of each
+The parts below were first opened as one PR each and then, at the owner's request (2026-11-21), combined into two:
+#15 (0, A1 … B6) and #25 (C, D, stacked on #15), with one commit per part. In this order: The branch of each
 is `ccr-b40caadf-18fp3u-<id>`; PR 0 is `ccr-b40caadf-18fp3u` itself.
 
 | PR | Branch suffix | Content |
@@ -301,4 +302,35 @@ stashed, the scenario failed]. The client-rule scenario also checks `Range` with
 **Verification**: `pnpm verify` green (**168 passed / 15 skipped**); Playwright artflow + catalogue **72 passed**. Sizes:
 `@clorat/tarol-svelte` **2.89 KB gzip / 2.54 KB brotli** (2.74 / 2.40 before; budget 3 KB); `ChangeForm + FormField`
 1.59 KB, `QueryState` 1.50 KB gzip (budget 2 KB each).
+
+### C: step 10, `@clorat/tarol-admin` (BC-10)
+
+Recorded in [admin.md](admin.md) "Built": the package, its generated client, sizes (5.98 KB gzip / 5.15 KB brotli,
+SV-18), the CLS fix, the tests (7 component, 1 client, 2 e2e), BC-21 and BC-22. `Problem.extensions` in the client and
+the codegen's used-imports are this PR's other public changes.
+
+### D: the sweep, and the verification of step 12
+
+**Sweep**: code, tests and configuration cite no closed BC any more (test titles lost their `(BC-n)` suffixes; the
+names above are the titles as the PRs added them); the open BC-18 … BC-22 stay where they explain a current gap.
+`overview.md` describes the backend as of `fe0a2bd` (search highlights, problems with `errorDetails` and `traceId`,
+request ids, hub codes, the browser hub, the admin problems); the notes of steps 2, 5, 6, 7, 8 and 10 carry a "Since step
+12" banner over their history; the plan's "Waits for" column names the closed BCs and the open BC-18.
+`git grep -n "BC-"` shows the backend list (`docs/backend/`), this note, the history of the step notes and the open
+BC-18 … BC-22 [verified].
+
+**Verification** [verified, 2026-11-20], against a fresh sample started through the AppHost in stay-up mode as CI does
+it (`ARTFLOW_STAY_UP=1 ARTFLOW_TOKEN_LIFETIME=30s samples/Sagas/apphost.sh`, Tarol-Net `08d3c66` = `fe0a2bd` + #109;
+`access token lifetime: 30 s`), by a resumable script (one marker per step):
+
+| Check | Result |
+|---|---|
+| `pnpm verify` (format, build, lint 0 warnings, typecheck, tests, size, package checks, API reports, eng tests) | green; **177 passed / 15 skipped** (19 + 3 skipped files; the skipped ones are the contract tests without `TAROL_E2E`) |
+| contract tests (`TAROL_E2E=1`: client, codegen, oidc) | **15 passed** (the oidc ones sign ada and ben in through Zitadel's login page) |
+| Playwright `sample` + `artflow` + `catalogue` | **75 passed** (15 artflow scenarios: change, CORS, paged list, client rule, server rule, coded refusal, reload, real expiry 32.4 s, rejected token, admin erase, admin kinds/projections and ben's 403, search, push; 58 catalogue pages in both themes, axe 0, CLS ≤ 0.01) |
+| Playwright `sample` + `artflow` again | **15 passed** |
+| sizes (gzip) | client 2.18 KB (budget 3), `/push` 1.51 KB (2), oidc 7.77 KB (9), svelte 2.89 KB (3), Combobox 3.08 KB (3.1, raised in A2), SearchBox 1.69 KB (2), ChangeForm + FormField 1.59 KB (2), QueryState 1.50 KB (2), **AdminApp 5.98 KB (6, SV-18)** |
+
+Not run here: the `visual` project (SV-12: its baselines are made in the Linux CI container only) and the CI workflow
+itself (no runner for this repository yet, foundation.md).
 

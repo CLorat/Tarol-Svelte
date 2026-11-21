@@ -1028,5 +1028,45 @@
         "doc": "Asks for snippets and shows them under the titles. Default `true`."
       }
     ]
+  },
+  "AdminApp": {
+    "package": "@clorat/tarol-admin",
+    "name": "AdminApp",
+    "doc": "The admin UI over Tarol's admin entry (`MapTarolAdmin`): dead letters (re-drive, discard), projection versions (drop a superseded one) and a data subject (export, erase). Mount it on a route of your app inside `ThemeRoot`, after `setTarol(client)`; the user needs the backend's admin role (`tarol-admin` in the sample), else every section shows the 403 `Auth.Forbidden` message. It adds no global state; its texts come from `messages` (default `adminEn`) in front of the app's catalogue.",
+    "extends": "",
+    "props": [
+      {
+        "name": "prefix",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "'/tarol/admin'",
+        "doc": "Where the backend mapped the admin entry. Default `/tarol/admin`."
+      },
+      {
+        "name": "messages",
+        "type": "Catalogue",
+        "optional": true,
+        "bindable": false,
+        "default": "adminEn",
+        "doc": "The admin texts and codes, e.g. `adminDe`. Default `adminEn`."
+      },
+      {
+        "name": "tenant",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The tenant the data-subject section starts with. Default the empty GUID (data without a tenant)."
+      },
+      {
+        "name": "section",
+        "type": "string",
+        "optional": true,
+        "bindable": true,
+        "default": "",
+        "doc": "The open section (bindable): `dead`, `projections` or `subject`."
+      }
+    ]
   }
 }

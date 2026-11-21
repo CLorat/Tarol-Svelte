@@ -1,5 +1,8 @@
 # Steps 4 and 7: `@clorat/tarol-design` and `@clorat/tarol-components`
 
+> **Since step 12** ([backend-fixes.md](backend-fixes.md), 2026-11-20): Tarol-Net #91 closed BC-1 … BC-17 and the client
+> removed every limitation this note records as waiting for one (search snippets with highlights: A2). The text below is the state of its step.
+
 ## 1. Inventory: what the first screen needs
 
 From the sample (`samples/Sagas`): a page shell with navigation and a user menu; a list of auctions with sort and

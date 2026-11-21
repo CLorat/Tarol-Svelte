@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // End-to-end tests against the ArtFlow sample of Tarol-Net (docs/migration/e2e.md). The app is the production build,
-// served by `vite preview` on http://localhost:5173; it calls the sample's API on its own origin (CORS, BC-1).
+// served by `vite preview` on http://localhost:5173; it calls the sample's API on its own origin (CORS).
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: false,

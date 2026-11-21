@@ -58,7 +58,7 @@ export interface PushClient {
 }
 
 /**
- * A refusal of the hub (BC-12): `HubException` messages are `<code>: <detail>`, and SignalR may wrap them in its own text.
+ * A refusal of the hub: `HubException` messages are `<code>: <detail>`, and SignalR may wrap them in its own text.
  * Codes: `Hub.Forbidden` (the topic is not readable or writable for the user), `Hub.Topic` (not a topic name),
  * `Auth.Tenant` (no usable tenant claim); the client adds `Hub.Disconnected` (not connected, the call was not sent) and
  * `Hub.Error` (any other text). Codes are message ids like the HTTP codes (philosophy P7).

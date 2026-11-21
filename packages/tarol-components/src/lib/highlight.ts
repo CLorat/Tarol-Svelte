@@ -6,7 +6,7 @@ export interface Segment {
   readonly mark: boolean;
 }
 
-/** A highlighted range as the backend's search answers it: UTF-16 code units, a JavaScript string's indexes (BC-8). */
+/** A highlighted range as the backend's search answers it: UTF-16 code units, a JavaScript string's indexes. */
 export interface Highlight {
   /** The first code unit. */
   readonly start: number;

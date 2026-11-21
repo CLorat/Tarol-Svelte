@@ -77,7 +77,7 @@ describe('changeForm', () => {
     expect(form.error('lines[1].sku')).toBeUndefined();
   });
 
-  it('keeps the server detail of a field error and the request id of the failure (BC-5, BC-11)', async () => {
+  it('keeps the server detail of a field error and the request id of the failure', async () => {
     const f = fakeClient(() => okResult(1));
     f.answerChanges(() => ({
       ok: false,

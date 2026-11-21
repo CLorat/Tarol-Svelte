@@ -162,7 +162,7 @@ describe('ChangeForm and FormField', () => {
       .toHaveAccessibleDescription('Enter a value between 1 and 1000000.');
   });
 
-  it('shows the bounds of the server detail on a field without client rules (BC-5)', async () => {
+  it('shows the bounds of the server detail on a field without client rules', async () => {
     const f = fakeClient(0, () => ({
       ok: false,
       status: 400,
@@ -181,7 +181,7 @@ describe('ChangeForm and FormField', () => {
       .toHaveAccessibleDescription('Enter a value between 1 and 1000000.');
   });
 
-  it('shows the request id of a refusal as its reference (BC-11)', async () => {
+  it('shows the request id of a refusal as its reference', async () => {
     const f = fakeClient(0, () => ({
       ok: false,
       status: 403,
@@ -195,7 +195,7 @@ describe('ChangeForm and FormField', () => {
     await expectAccessible();
   });
 
-  it('shows the request id of a failed read in QueryState (BC-11)', async () => {
+  it('shows the request id of a failed read in QueryState', async () => {
     const f = fakeClient(0);
     f.client.read = <T>() =>
       Promise.resolve({

@@ -70,7 +70,7 @@ const payload = (jwt: string): Record<string, unknown> =>
   JSON.parse(Buffer.from(jwt.split('.')[1] ?? '', 'base64url').toString('utf8')) as Record<string, unknown>;
 
 describe.runIf(run)('contract with Zitadel and samples/Sagas', () => {
-  it('signs a human user in with code + PKCE, calls the backend with the token and refreshes it (BC-9)', async () => {
+  it('signs a human user in with code + PKCE, calls the backend with the token and refreshes it', async () => {
     const navigations: string[] = [];
     const oidc = createOidc(
       zitadel({

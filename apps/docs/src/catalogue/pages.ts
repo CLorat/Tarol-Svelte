@@ -1,4 +1,6 @@
 import type { Component } from 'svelte';
+import AdminApp from './examples/AdminApp.svelte';
+import AdminAppSource from './examples/AdminApp.svelte?raw';
 import AppShell from './examples/AppShell.svelte';
 import AppShellSource from './examples/AppShell.svelte?raw';
 import Button from './examples/Button.svelte';
@@ -152,6 +154,15 @@ export const pages: readonly CataloguePage[] = [
     example: SearchBox,
     source: SearchBoxSource,
     keys: [['as Combobox', 'the list shows the server’s hits']],
+  },
+  {
+    name: 'AdminApp',
+    example: AdminApp,
+    source: AdminAppSource,
+    keys: [
+      ['← / →', 'moves between the sections (tabs)'],
+      ['Enter on Actions', 'opens a dead letter’s re-drive and discard'],
+    ],
   },
   {
     name: 'AppShell',

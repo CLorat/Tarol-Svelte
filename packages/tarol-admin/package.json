@@ -1,0 +1,62 @@
+{
+  "name": "@clorat/tarol-admin",
+  "version": "0.1.0",
+  "description": "An admin UI for Tarol backends: dead letters (re-drive, discard), projection versions (drop) and a data subject's export and erasure.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CLorat/Tarol-Svelte.git",
+    "directory": "packages/tarol-admin"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/api-temp",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "svelte-package -i src/lib -o dist && node ../../eng/doc-svelte-dts.mjs dist",
+    "generate": "node scripts/extract.mjs ../tarol-codegen/test/fixtures/artflow.openapi.json /tarol/admin openapi.admin.json && tarol-codegen openapi.admin.json -o src/lib/api.ts",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings --output machine",
+    "size": "node ../../eng/bundle-svelte.mjs dist/index.js .size/admin.js AdminApp && size-limit",
+    "check:package": "publint --strict && node scripts/extract.mjs ../tarol-codegen/test/fixtures/artflow.openapi.json /tarol/admin openapi.admin.json --check && tarol-codegen openapi.admin.json -o src/lib/api.ts --check",
+    "api:update": "api-extractor run --local",
+    "api:check": "api-extractor run"
+  },
+  "dependencies": {
+    "@clorat/tarol-client": "workspace:*",
+    "@clorat/tarol-components": "workspace:*",
+    "@clorat/tarol-design": "workspace:*",
+    "@clorat/tarol-svelte": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": "^5.58.0"
+  },
+  "devDependencies": {
+    "@clorat/tarol-codegen": "workspace:*",
+    "@size-limit/file": "14.3.0"
+  },
+  "size-limit": [
+    {
+      "name": "AdminApp (compiled, incl. CSS; without svelte and @clorat) — SV-18",
+      "path": ".size/admin.js",
+      "limit": "6 kB",
+      "gzip": true
+    }
+  ]
+}
