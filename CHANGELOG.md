@@ -4,6 +4,9 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+* Release: a `consumer` job after `publish` installs the published packages from GitHub Packages and uses them
+  (`eng/consumer.mjs`, SV-23).
+
 * `tag.yml` (Actions → Tag): creates the release tag `v<version>` on `main` after `eng/release.mjs check` and starts
   `release.yml` on it, for releases without local git. `release.yml` now also publishes when dispatched on a `v*` tag.
 
