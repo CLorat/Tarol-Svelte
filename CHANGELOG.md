@@ -4,14 +4,16 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
-* `tag.yml` (Actions → Tag): creates the release tag `v<version>` on `main` after `eng/release.mjs check` and starts
-  `release.yml` on it, for releases without local git. `release.yml` now also publishes when dispatched on a `v*` tag.
-
 ## [0.1.0]
 
 The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
-`0.1.0-preview.2`, the version of Tarol-Net it is built and tested against (SV-20); there is no `0.1.0-preview.1` here.
+`0.1.0-preview.2` (2026-11-21), the version of Tarol-Net it is built and tested against (SV-20); there is no
+`0.1.0-preview.1` here, so everything below shipped in it. Later pre-releases add their own "in 0.1.0-preview.N" parts.
 
+### Added in 0.1.0-preview.2
+
+* `tag.yml` (Actions → Tag): creates the release tag `v<version>` on `main` after `eng/release.mjs check` and starts
+  `release.yml` on it, for releases without local git. `release.yml` now also publishes when dispatched on a `v*` tag.
 * `@clorat/tarol-admin` 0.1.0 (step 10, BC-10): `AdminApp` (dead letters: re-drive, discard, re-drive all; projection
   versions: drop a superseded one; a data subject: export, erase, an incomplete erasure repeated), `adminEn`, `adminDe`,
   `adminErrors`. `@clorat/tarol-client`: `Problem.extensions`. `@clorat/tarol-codegen`: only the used client types are
