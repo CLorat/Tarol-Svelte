@@ -4,7 +4,14 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
-### Added
+## [0.1.0]
+
+The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
+`0.1.0-preview.2` (2026-11-21), the version of Tarol-Net it is built and tested against (SV-20); there is no
+`0.1.0-preview.1` here. The "in 0.1.0-preview.N" parts list what each pre-release added; `0.1.0-preview.3` is built
+against Tarol-Net `0.1.0-preview.3`.
+
+### Added in 0.1.0-preview.3
 
 * `apps/docs`: the component catalogue on GitHub Pages (`pages.yml`, SV-21): the `VITE_TAROL_PAGES=1` build without login,
   push and the screens that need the sample.
@@ -12,16 +19,10 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 * Release: a `consumer` job after `publish` installs the published packages from GitHub Packages and uses them
   (`eng/consumer.mjs`, SV-23).
 
-### Fixed
+### Fixed in 0.1.0-preview.3
 
 * `@clorat/tarol-codegen`: the installed `tarol-codegen` command did nothing and exited 0 (also with `--check`), because
   the entry check compared file names and the bin is a link named `tarol-codegen`; it compares the resolved paths now.
-
-## [0.1.0]
-
-The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
-`0.1.0-preview.2` (2026-11-21), the version of Tarol-Net it is built and tested against (SV-20); there is no
-`0.1.0-preview.1` here, so everything below shipped in it. Later pre-releases add their own "in 0.1.0-preview.N" parts.
 
 ### Added in 0.1.0-preview.2
 
