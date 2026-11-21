@@ -188,7 +188,10 @@ The prototype tests show that the conflict notice keeps focus on the input, keep
 7. **BC-24 (a group per subject)**: record only (P2). It saves bandwidth per client, but filtering in the client
    (candidate 2) already saves the requests, and it is the requests that load the server.
 
-The owner's answers are SV-24 onwards in [decisions.md](../migration/decisions.md).
+The owner's answers (2026-11-21), in [decisions.md](../migration/decisions.md): **SV-24** subject filter by default
+with coalescing (budget 3.2 KB); **SV-25** BC-23 and BC-25 as Tarol-Net PRs, BC-24 recorded only; **SV-26** `from` with
+the FormField notice (budget 3.5 KB together with SV-24); **SV-27** no apply for now. Item 6 (DataTable focus) is a fix
+without a decision.
 
 ### C.2 Backend changes (recorded in [changes.md](../backend/changes.md))
 

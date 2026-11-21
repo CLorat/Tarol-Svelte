@@ -1,6 +1,6 @@
 # Owner decisions (SV-*)
 
-Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026-11-20, SV-19 … SV-23 on 2026-11-21). The reasoning and the measurements behind every question are in
+Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026-11-20, SV-19 … SV-27 on 2026-11-21). The reasoning and the measurements behind every question are in
 [plan.md](plan.md) and the evaluation notes it links to.
 
 | # | Question | Owner's answer |
@@ -29,3 +29,7 @@ Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026
 | SV-21 | GitHub Pages for the docs app (SV-11 "later") | **Catalogue only**, deployed from `main` with `actions/deploy-pages`: the component pages, guides and tokens on the in-memory demo client; the ArtFlow and admin screens need the sample backend and are left out of the Pages build. The owner sets Settings → Pages → Source = GitHub Actions. Cost: free for a public repository, about a minute of Actions per push to `main`. |
 | SV-22 | First visual baselines of a new component (Playwright 1.63 fails a test whose baseline it wrote) | **A documented manual step** ([docs-app.md](docs-app.md)): download the `visual` artifact, copy only the missing images, review, commit. No workflow that opens a PR with baselines. |
 | SV-23 | A consumer check of the published packages (it found the `tarol-codegen` bin bug) | **Yes, after `publish`**: a `consumer` job in `release.yml` installs the just-published version from GitHub Packages and uses it (`eng/consumer.mjs`, [release.md](release.md)). |
+| SV-24 | Live queries and messages for another aggregate ([frontend-ease.md](../review/frontend-ease.md) §B, candidates 2 and 2+) | **Filter by subject by default**: the generated view request carries `subject` (from `x-tarol-id`), so a live query skips messages of other streams (`live: { topic, subject: null }` opts out); bursts coalesce to one read in flight plus one queued. Measured: other auctions 10 reads → 0, a burst of 10 → 2; +0.21 KB gzip / +0.18 KB brotli, so the `@clorat/tarol-svelte` budget is raised from 3 KB to **3.2 KB**. |
+| SV-25 | Backend changes from the review as Tarol-Net PRs | **BC-23** (revision and position in the pushed message) and **BC-25** (`x-tarol-topics` in the OpenAPI document) as Tarol-Net PRs from this session, one per BC; **BC-24** (a group per subject) is recorded only. |
+| SV-26 | Edit forms under live data (candidates 5a, 5b) | **`changeForm(…, { from })` with the FormField notice**: untouched fields follow the server, an edited field keeps the input and shows "changed meanwhile" with "Use the new value" / "Keep mine", and the submit sends the version the edit started from. +0.27 KB gzip on `@clorat/tarol-svelte` (its budget becomes **3.5 KB** together with SV-24); `ChangeForm + FormField` 1.84 of 2 KB. |
+| SV-27 | Apply push payloads to the cache without a request (candidate 3) | **Not now**: revisit when a screen needs it (a ticker, a chat); the revision guard from BC-23 is kept in mind. |
