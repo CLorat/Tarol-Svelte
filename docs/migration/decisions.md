@@ -1,6 +1,6 @@
 # Owner decisions (SV-*)
 
-Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026-11-20, SV-19 … on 2026-11-21). The reasoning and the measurements behind every question are in
+Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026-11-20, SV-19 … SV-22 on 2026-11-21). The reasoning and the measurements behind every question are in
 [plan.md](plan.md) and the evaluation notes it links to.
 
 | # | Question | Owner's answer |
@@ -26,3 +26,5 @@ Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026
 | SV-18 | Size budget of `@clorat/tarol-admin` | **≤ 6 KB gzip** (without Svelte and the other `@clorat` packages); gzip and brotli recorded. |
 | SV-19 | Size budgets raised in steps 7 and 8 | **Confirmed** (2026-11-21): `Combobox` 3 KB (later 3.1 KB with the `item` snippet, step 12), all of `@clorat/tarol-design` 10 KB, `DetailLayout` with `QueryState` 2.5 KB; the measurements are in design.md §9–10. |
 | SV-20 | First release version | **The same version as Tarol-Net**: the first pre-release is `0.1.0-preview.2` (Tarol-Net's current one), cut with the Tag workflow (`tag.yml`, as in Tarol-Net); the repository is public (2026-11-21), so Actions run. |
+| SV-21 | GitHub Pages for the docs app (SV-11 "later") | **Catalogue only**, deployed from `main` with `actions/deploy-pages`: the component pages, guides and tokens on the in-memory demo client; the ArtFlow and admin screens need the sample backend and are left out of the Pages build. The owner sets Settings → Pages → Source = GitHub Actions. Cost: free for a public repository, about a minute of Actions per push to `main`. |
+| SV-22 | First visual baselines of a new component (Playwright 1.63 fails a test whose baseline it wrote) | **A documented manual step** ([docs-app.md](docs-app.md)): download the `visual` artifact, copy only the missing images, review, commit. No workflow that opens a PR with baselines. |

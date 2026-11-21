@@ -55,6 +55,33 @@ catalogue needs no backend):
 **Size**: the docs app is 173.85 KB / 58.83 KB gzip JS and 16.06 KB / 3.22 KB CSS (every package, every example, the demo
 client). It is not a package and has no budget.
 
+## New components: their first visual baselines (2026-11-21)
+
+A new component page adds 4 screenshots (light/dark × comfortable/compact). The CI job `visual` runs with
+`--update-snapshots=missing`, but **Playwright 1.63 still fails a test whose baseline it had to write**, so the first CI run of a pull request with a new component is red until its 4 images
+are committed. They must come from the CI container (`mcr.microsoft.com/playwright:v1.63.0-noble`): images rendered
+anywhere else differ in font rasterisation. The owner chose to keep this a manual step (SV-22: no workflow that writes to
+the repository).
+
+**Procedure** (once per new component):
+
+1. Push the pull request; `visual` fails on exactly the new component's 4 tests and uploads the artifact `visual`
+   (`apps/docs/e2e/__screenshots__` with the existing and the new images, plus `apps/docs/test-results`).
+2. Download it: in the browser, the run's page → **Artifacts** → `visual`. From a session, list the run's artifacts
+   (GitHub API `GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts`), then fetch the archive URL of
+   `download_workflow_run_artifact`: it redirects to Azure blob storage. The Tarol cloud environment allows
+   `productionresultssa12.blob.core.windows.net`; GitHub may hand out another `productionresultssa*` host, which is then
+   refused by the network policy and has to be added to the environment (exact host, no wildcard).
+3. Unzip it into an empty directory outside the repository and copy **only the missing files**, so no existing baseline
+   is replaced by accident:
+   `cp -n <dir>/apps/docs/e2e/__screenshots__/<Component>-*.png apps/docs/e2e/__screenshots__/`.
+   `git status` must show exactly 4 new files and no modified ones.
+4. Look at each of the 4 images (theme, density, no cut-off content, no spinner left), commit them with the component
+   (`docs: visual baselines for <Component>`), push. The next run of `visual` passes.
+
+A changed component works the same way, but its images are **modified** files: the run fails with a diff
+(`*-diff.png` in `test-results`); replace the old images only after reviewing the diff, and say why in the commit.
+
 ## GitHub Pages (SV-21, 2026-11-21)
 
 The owner chose **the catalogue only**, deployed from `main` (SV-21). `.github/workflows/pages.yml`:
