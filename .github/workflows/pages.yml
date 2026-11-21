@@ -1,0 +1,65 @@
+name: Pages
+
+# The docs app's component catalogue on GitHub Pages (SV-21): built from main with VITE_TAROL_PAGES=1 (no login, no
+# push, no ArtFlow or admin screens: they need the backend sample), checked in Chromium, then deployed. Pull requests
+# that change it build and check without deploying. The owner sets Settings → Pages → Source = "GitHub Actions" once.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths: ['.github/workflows/pages.yml', 'apps/docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_TAROL_PAGES: '1'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
+
+      # the Playwright webServer builds the app (with VITE_TAROL_PAGES from the job) and serves it with vite preview
+      - name: Build and check the Pages build
+        run: |
+          pnpm --filter "./packages/**" build
+          pnpm --filter @clorat/tarol-docs exec playwright test --trace off --project pages --project catalogue
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          path: apps/docs/dist
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write # deploy to Pages
+      id-token: write # the OIDC token deploy-pages verifies the deployment with
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

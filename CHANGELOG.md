@@ -4,6 +4,11 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+* `apps/docs`: the component catalogue on GitHub Pages (`pages.yml`, SV-21): the `VITE_TAROL_PAGES=1` build without login,
+  push and the screens that need the sample.
+
 ### Fixed
 
 * `@clorat/tarol-codegen`: the installed `tarol-codegen` command did nothing and exited 0 (also with `--check`), because
