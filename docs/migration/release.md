@@ -109,3 +109,12 @@ listed; any problem fails the job. `--from <dir>` installs `.tgz` files instead 
 
 The release is out when `consumer` runs; a red job means the version is broken for consumers, and the next version fixes
 it (a version on the feed is never replaced). `0.1.0-preview.2` fails this check: the next release, with #28, passes it.
+
+## `0.1.0-preview.3` (2026-11-21)
+
+The owner asked for the next release of both repositories. Tarol-Net `main` was still its `v0.1.0-preview.2` commit
+`9b68afc`, so Tarol-Net `0.1.0-preview.3` (Tag dispatched by this session at the owner's request) has the same code; it
+is cut to keep the versions equal (SV-20), and the `e2e` pin `9b68afc` stays right. tarol-svelte `0.1.0-preview.3`
+ships the codegen bin fix (#28), and is the first release with the `consumer` job (#32). Before the tag, the
+`[Unreleased]` entries move into `[0.1.0]` as "in 0.1.0-preview.3" parts, which the release notes use; `release.mjs
+check 0.1.0-preview.3`: 7 packages, 0 problems [verified].
