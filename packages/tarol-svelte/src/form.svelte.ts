@@ -18,6 +18,12 @@ export interface FormOptions<T, I = unknown> {
    * fails (a 409 `Stream.VersionConflict` included) or throws; on success the own-change revalidation replaces the patch.
    */
   readonly optimistic?: (input: I) => (() => void) | undefined;
+  /**
+   * PROTOTYPE: the server's current values of an edit form (usually from the live view). Untouched fields follow them;
+   * a field the user changed keeps the user's input and reports a {@link Form.conflict}. The expected version is the one
+   * the user started editing from, so a change based on old values gets a 409 instead of overwriting.
+   */
+  readonly from?: () => I | undefined;
 }
 
 /** The reactive state of a form bound to one backend change. */
@@ -42,6 +48,10 @@ export interface Form<I, T> {
   validate(): boolean;
   /** Checks, then sends the change. The idempotency key is kept while the input is unchanged, so a retry is safe. */
   submit(): Promise<Result<T> | undefined>;
+  /** PROTOTYPE: the server's newer value of a field the user changed, or `undefined` when there is none. */
+  conflict(path: string): { readonly theirs: unknown } | undefined;
+  /** PROTOTYPE: ends a conflict: keep the user's input (`mine`) or take the server's value (`theirs`). */
+  resolve(path: string, choice: 'mine' | 'theirs'): void;
   /** Puts the values back and clears errors. */
   reset(values?: I): void;
 }
@@ -101,6 +111,32 @@ export function changeForm<I extends object, T = undefined>(
   let formError = $state<Violation | undefined>();
   let pending = $state(false);
   let sent: { body: string; key: string } | undefined;
+  // the server values the user's input is based on, and the version they had (PROTOTYPE, option `from`)
+  let base = $state.raw<I | undefined>(options.from?.());
+  let baseVersion: number | undefined = options.expectedVersion?.();
+  let conflicts = $state<Record<string, { theirs: unknown }>>({});
+  if (options.from) {
+    if (base !== undefined) values = $state.snapshot(base) as I;
+    $effect.pre(() => {
+      const next = options.from?.();
+      const version = options.expectedVersion?.();
+      if (next === undefined || next === base) return;
+      const old = base;
+      const edited = (k: string): boolean =>
+        old !== undefined && JSON.stringify(at(values, k)) !== JSON.stringify(at(old, k));
+      let dirty = false;
+      for (const k of Object.keys(next)) {
+        const theirs = at(next, k);
+        if (!edited(k)) (values as Record<string, unknown>)[k] = $state.snapshot(theirs);
+        else {
+          dirty = true;
+          if (JSON.stringify(theirs) !== JSON.stringify(at(old, k))) conflicts = { ...conflicts, [k]: { theirs } };
+        }
+      }
+      base = next;
+      if (!dirty) baseVersion = version;
+    });
+  }
 
   const checkPath = (path: string): void => {
     const code = check(at(values, path), rules[rulePath(path)] ?? []);
@@ -151,7 +187,7 @@ export function changeForm<I extends object, T = undefined>(
       formError = undefined;
       let rollback = options.optimistic?.(input);
       try {
-        const version = options.expectedVersion?.();
+        const version = options.from ? baseVersion : options.expectedVersion?.();
         const r = await client.change<T>(
           change(input),
           version === undefined ? { key: sent.key } : { key: sent.key, expectedVersion: version },
@@ -186,6 +222,15 @@ export function changeForm<I extends object, T = undefined>(
         rollback?.(); // the change threw (aborted): nothing was confirmed
         pending = false;
       }
+    },
+    conflict: (path) => conflicts[path],
+    resolve(path, choice) {
+      const c = conflicts[path];
+      if (!c) return;
+      if (choice === 'theirs') (values as Record<string, unknown>)[path] = $state.snapshot(c.theirs);
+      conflicts = without(conflicts, path);
+      // the user decided with the server's newer state in view: submit against it
+      if (Object.keys(conflicts).length === 0) baseVersion = options.expectedVersion?.();
     },
     reset(next) {
       values = structuredClone(next ?? initial);

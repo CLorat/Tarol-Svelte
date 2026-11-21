@@ -5,7 +5,7 @@
   server's detail (`errorDetails`, `1..1000000`) when the field has no client rule for the code.
 -->
 <script lang="ts">
-  import { getMessages, NumberField, TextField } from '@clorat/tarol-design';
+  import { Button, getMessages, NumberField, TextField } from '@clorat/tarol-design';
   import { at, type Form, type Rule } from '@clorat/tarol-svelte';
   import { setAt } from './paths.js';
 
@@ -39,6 +39,7 @@
         ? t(code, { min: rule.min, max: rule.max })
         : t(code, { min: bounds?.[1], max: bounds?.[2] }),
   );
+  const conflict = $derived(form.conflict(path));
 </script>
 
 {#if type === 'number'}
@@ -81,3 +82,11 @@
     }}
   />
 {/if}
+<!-- PROTOTYPE: a value changed on the server while the user edits it: keep the input, say so politely, let them choose -->
+<div role="status" class="t-field-changed">
+  {#if conflict}
+    {t('ui.changed', { theirs: String(conflict.theirs) })}
+    <Button variant="secondary" onclick={() => form.resolve(path, 'theirs')}>{t('ui.takeTheirs')}</Button>
+    <Button variant="secondary" onclick={() => form.resolve(path, 'mine')}>{t('ui.keepMine')}</Button>
+  {/if}
+</div>

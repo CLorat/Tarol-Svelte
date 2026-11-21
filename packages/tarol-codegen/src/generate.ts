@@ -306,6 +306,8 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     'export interface ReadRequest {',
     '  readonly path: string;',
     '  readonly query?: Readonly<Record<string, QueryValue>>;',
+    '  /** The stream a view by id shows: live messages of other streams skip it (PROTOTYPE). */',
+    '  readonly subject?: string;',
     '}',
     '',
     'const enc = encodeURIComponent;',
@@ -396,7 +398,10 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
         .filter(Boolean)
         .join(', ');
       const q = queryParams.length ? ', query' : '';
-      requests.push(`${summary}  ${o.name}: (${args}): ReadRequest => ({ path: ${url}${q} }),`);
+      // a view by one aggregate id: the request names its stream, so live messages of other streams skip it (PROTOTYPE)
+      const idParam = o.kind === 'view' && pathParams.length === 1 && pathParams[0]?.['x-tarol-id'] ? pathParams[0].name : '';
+      const subject = idParam ? `, subject: ${idParam}` : '';
+      requests.push(`${summary}  ${o.name}: (${args}): ReadRequest => ({ path: ${url}${q}${subject} }),`);
       const callArgs = [
         pathParams.length ? `p: ${pathType}` : '',
         queryParams.length ? `query${queryRequired ? '' : '?'}: ${queryType}` : '',
@@ -449,6 +454,28 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
       const r = body ? rulesOf(resolve(body), `${o.pointer}/requestBody`, '', new Set()) : [];
       if (r.length) rules.push(`  ${o.name}: {\n${r.join('\n')}\n  },`);
     }
+  }
+
+  // PROTOTYPE (BC-25): the UI topics the backend forwards, with the stream their subject is and the payload's schema
+  const topicDoc = (document as { 'x-tarol-topics'?: Record<string, { stream?: string; schema?: Schema }> })['x-tarol-topics'];
+  if (topicDoc) {
+    out.push(
+      '/** A UI push topic: its name, the stream its messages are about, and (as a type only) its payload. */',
+      'export interface Topic<T, S extends string = string> {',
+      '  readonly topic: string;',
+      '  readonly stream?: S;',
+      '  readonly payload?: T;',
+      '}',
+      '',
+      '/** The topics the backend forwards to UI clients (x-tarol-topics): `query(…, { live: topics.bidPlaced })`. */',
+      `export const topics = {\n${Object.entries(topicDoc)
+        .map(
+          ([name, t]) =>
+            `  ${camel(name.slice(name.indexOf('.') + 1))}: { topic: '${name}'${t.stream ? `, stream: '${t.stream}'` : ''} } as Topic<${t.schema ? ts(t.schema, `#/x-tarol-topics/${name}/schema`) : 'unknown'}${t.stream ? `, '${t.stream}'` : ''}>,`,
+        )
+        .join('\n')}\n};`,
+      '',
+    );
   }
 
   out.push(
