@@ -45,3 +45,16 @@ The same model as Tarol-Net step 17 (`docs/architecture/release.md` there), deci
 **What the owner does for the first release**: make Actions run in this repository (foundation.md); create the
 environment `release` with a required reviewer; move `[Unreleased]` to `## [0.1.0] - <date>` in `CHANGELOG.md` on `main`;
 push the tag `v0.1.0` (or `v0.1.0-preview.1`). Never the public npm registry.
+
+## The Tag workflow (2026-11-21, SV-20)
+
+As in Tarol-Net (`tag.yml`, `docs/architecture/release.md` §2.1 there): **Actions → Tag → Run workflow** on `main` with a
+version such as `0.1.0-preview.2`. It checks that the version is valid and not tagged yet, runs `eng/release.mjs check`
+on the versions the tag will give the packages (set in the runner only, not committed), creates the annotated tag
+`v<version>` on `main`'s head and dispatches `release.yml` on it. A tag pushed with `GITHUB_TOKEN` starts no workflow, so
+`release.yml`'s `publish` now runs for a `workflow_dispatch` on a `v*` tag as well as for a pushed tag; on a branch a
+dispatch stays a dry run. `publish` still waits for the environment `release`.
+
+The first version is **`0.1.0-preview.2`**, Tarol-Net's current release (SV-20); `CHANGELOG.md` has the `## [0.1.0]`
+section a `0.1.0-*` pre-release uses. Verified locally: `release.mjs version v0.1.0-preview.2`, `set-version`, `check`:
+7 packages, 0 problems; the notes list the 7 packages. The e2e job pins Tarol-Net `main` at `9b68afc` (BC-18 merged).

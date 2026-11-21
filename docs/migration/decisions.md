@@ -1,6 +1,6 @@
 # Owner decisions (SV-*)
 
-Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026-11-20). The reasoning and the measurements behind every question are in
+Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026-11-20, SV-19 … on 2026-11-21). The reasoning and the measurements behind every question are in
 [plan.md](plan.md) and the evaluation notes it links to.
 
 | # | Question | Owner's answer |
@@ -24,3 +24,5 @@ Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026
 | SV-16 | Browser login in the sample (BC-18: login v2 not running, authorize ends on a 404) | **A Tarol-Net PR from this session** (login v1 for the sample, no MFA-setup prompt); the e2e runs against its branch until it is merged (2026-11-20, [backend-fixes.md](backend-fixes.md)). |
 | SV-17 | BC-19 (201 `id` without `x-tarol-id`), BC-20 (export without schema), `/me` | **Record as BCs only**; the client types what the document says; no `/me` (the admin UI shows the 403 as a message). |
 | SV-18 | Size budget of `@clorat/tarol-admin` | **≤ 6 KB gzip** (without Svelte and the other `@clorat` packages); gzip and brotli recorded. |
+| SV-19 | Size budgets raised in steps 7 and 8 | **Confirmed** (2026-11-21): `Combobox` 3 KB (later 3.1 KB with the `item` snippet, step 12), all of `@clorat/tarol-design` 10 KB, `DetailLayout` with `QueryState` 2.5 KB; the measurements are in design.md §9–10. |
+| SV-20 | First release version | **The same version as Tarol-Net**: the first pre-release is `0.1.0-preview.2` (Tarol-Net's current one), cut with the Tag workflow (`tag.yml`, as in Tarol-Net); the repository is public (2026-11-21), so Actions run. |
