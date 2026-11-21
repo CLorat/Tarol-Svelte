@@ -4,6 +4,11 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+### Fixed
+
+* `@clorat/tarol-components`: `DataTable` keeps keyboard focus on the same row (by `rowKey`) when a live update re-sorts
+  or removes rows; before, focus fell to `<body>`.
+
 ## [0.1.0]
 
 The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
