@@ -44,7 +44,8 @@ Not on the wire as the reply suggests, or new gaps (recorded in changes.md as BC
 
 ## 2. Per BC: today, the change, the PR
 
-PRs are stacked in this order (each on the one before; retargeted to `main` before its base is merged). The branch of each
+The parts below were first opened as one PR each and then, at the owner's request (2026-11-21), combined into two:
+#15 (0, A1 … B6) and #25 (C, D, stacked on #15), with one commit per part. In this order: The branch of each
 is `ccr-b40caadf-18fp3u-<id>`; PR 0 is `ccr-b40caadf-18fp3u` itself.
 
 | PR | Branch suffix | Content |
