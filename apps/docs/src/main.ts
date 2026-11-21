@@ -6,7 +6,9 @@ import App from './App.svelte';
 import { signIn } from './auth.js';
 import { router } from './router.svelte.js';
 
-const oidc = await signIn();
+// the GitHub Pages build (SV-21) is the catalogue alone: no login, no push, no backend
+const pages = import.meta.env['VITE_TAROL_PAGES'] === '1';
+const oidc = pages ? undefined : await signIn();
 // the backend on its own origin (CORS); the docs build for the sample uses its API on :5080
 const baseUrl = (import.meta.env['VITE_TAROL_API'] as string | undefined) ?? 'http://localhost:5080';
 const client = createClient({ baseUrl, ...(oidc ? { tokens: oidc.provider } : {}) });

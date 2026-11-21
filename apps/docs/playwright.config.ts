@@ -16,6 +16,8 @@ export default defineConfig({
     { name: 'sample teardown', testMatch: /sample\.teardown\.ts/ },
     { name: 'artflow', testMatch: /artflow\.spec\.ts/, dependencies: ['sample'] },
     { name: 'catalogue', testMatch: /catalogue\.spec\.ts/ },
+    // SV-21: the GitHub Pages build (VITE_TAROL_PAGES=1, which the webServer's build inherits)
+    { name: 'pages', testMatch: /pages\.spec\.ts/ },
     // SV-12: baselines are made in the Linux CI container only (fonts and rendering differ elsewhere)
     { name: 'visual', testMatch: /visual\.spec\.ts/, snapshotPathTemplate: '{testDir}/__screenshots__/{arg}{ext}' },
   ],
