@@ -87,3 +87,19 @@ that no local run could, all fixed in that PR:
 
 `e2e` passed on the first run: the AppHost in Docker, the contract tests and the Playwright suite against Tarol-Net
 `9b68afc` [verified, run 44893866441]. CodeQL passed.
+
+## Node 24 actions (2026-11-21)
+
+The first runs warned "Node.js 20 is deprecated … being forced to run on Node.js 24" for `actions/upload-artifact`
+v4.6.2 (`ea165f8…`, in `ci.yml` `visual` and `release.yml` `pack`) and `actions/download-artifact` v5.0.0 (`634f93c…`,
+`release.yml` `publish`). Both move to the releases Tarol-Net's Dependabot PR #84 proposes, so the two repositories pin
+the same SHAs again:
+
+| Action | Tag | SHA (`git ls-remote --tags`, a lightweight tag: the commit) | `runs.using` |
+|---|---|---|---|
+| `actions/upload-artifact` | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | `node24` |
+| `actions/download-artifact` | v8.0.2 | `9000827ccba6bdab643e8b6fd33ac0654aef8333` | `node24` |
+
+[verified: the SHAs with `git ls-remote`, `runs.using` in each `action.yml` at that SHA]. The inputs used here (`name`,
+`path`, `retention-days`, `if-no-files-found`) are unchanged. A pull request runs `visual` and `pack` (upload);
+`download-artifact` runs only in `publish`, so it is first exercised by the next release [unverified until then].

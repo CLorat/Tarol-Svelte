@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { generate, GenerateError, type OpenApiDocument } from './generate.js';
 
 const usage = `usage: tarol-codegen <openapi.json | http(s)://…/openapi/v1.json> -o <out.ts> [--check]
@@ -44,6 +46,18 @@ export async function main(argv: readonly string[]): Promise<number> {
   return 0;
 }
 
-// run when executed, not when imported by a test
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').at(-1) ?? ''))
-  process.exitCode = await main(process.argv.slice(2));
+/**
+ * Whether this module is the program node runs, not a module a test imports. Installed, the program is the
+ * `node_modules/.bin/tarol-codegen` link (a symlink, or a shim's target), so compare the resolved paths, not the names.
+ */
+function invoked(): boolean {
+  const program = process.argv[1];
+  if (!program) return false;
+  try {
+    return realpathSync(program) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (invoked()) process.exitCode = await main(process.argv.slice(2));
