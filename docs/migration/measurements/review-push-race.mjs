@@ -38,6 +38,9 @@ const call = async (t, method, path, body, readAfter) => {
   return r.status === 204 ? null : r.json();
 };
 
+// the message's Tarol-Position, only when it has that shape (`<tx>.<pos>`): it comes from the network
+const position = (m) => (typeof m.position === 'string' && /^\d{1,20}\.\d{1,20}$/.test(m.position) ? m.position : undefined);
+
 const alice = await token('alice');
 const bob = await token('bob');
 const waiting = new Map();
@@ -52,7 +55,7 @@ push.subscribe('artflow.bid-placed', async (m) => {
     what === 'view'
       ? await call(bob, 'GET', `/auctions/${m.subject}`)
       : (
-          await call(bob, 'GET', '/auctions?sort=OpenedAt&limit=50', undefined, what === 'list-after' ? m.position : undefined)
+          await call(bob, 'GET', '/auctions?sort=OpenedAt&limit=50', undefined, what === 'list-after' ? position(m) : undefined)
         ).items.find((r) => r.id === m.subject);
   if (row && row.bids >= 1) fresh++;
   else stale++;
