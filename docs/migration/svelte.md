@@ -153,5 +153,7 @@ SV-24); `ChangeForm + FormField` 1.59 → **1.97 KB gzip** (budget 2 KB); the no
 stays on the input, axe 0 violations, 3 runs [verified]. Checks proven with deliberate violations: the version read at
 submit fails `edit.svelte.test.ts`; a 6rem notice (CLS 0.0197) fails `conflict.svelte.test.ts` [verified].
 
+Together with §9 (one pull request, SV-29): **3.33 KB gzip / 2.92 KB brotli** (budget 3.5 KB) [verified, `pnpm size`].
+
 Not covered by e2e: the sample has no change that edits a field of an existing aggregate (BC-26 in
 [changes.md](../backend/changes.md)); the component and unit tests cover the behaviour.

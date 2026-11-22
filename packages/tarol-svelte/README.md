@@ -55,7 +55,7 @@ A view by id names its stream: the generated `requests.auctionView({ auction })`
 `live: { topic, subject: null }` for a topic whose messages are about another stream (e.g. a saga's). A list has no
 subject and re-reads on every message. A burst of messages makes one read in flight and at most one after it.
 
-Size: 3.17 KB gzip / 2.79 KB brotli compiled (budget 3.5 KB, SV-26), without Svelte and `@clorat/tarol-client`. Plain Svelte 5 apps (SV-3); nothing touches
+Size: 3.33 KB gzip / 2.92 KB brotli compiled (budget 3.5 KB, SV-24 and SV-26), without Svelte and `@clorat/tarol-client`. Plain Svelte 5 apps (SV-3); nothing touches
 `window` at import time.
 
 Licence: AGPL-3.0-only, or a commercial licence from the copyright holder.
