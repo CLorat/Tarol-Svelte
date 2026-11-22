@@ -11,7 +11,7 @@
   const t = getMessages();
   const toasts = getToasts();
   const api = tarol(getTarol().client);
-  // every bid, by anyone, revalidates the open auction (an ETag read: a 304 when it was another auction's bid)
+  // a bid on this auction, by anyone, revalidates it; the request names its stream, so other auctions' bids are skipped
   const view = query<AuctionView>(() => requests.auctionView({ auction: id }), { live: 'artflow.bid-placed' });
   const bid = changeForm<{ auction: AuctionId; amount: number | null }>(
     (i) => requests.placeBid({ auction: i.auction, amount: i.amount ?? 0 }),

@@ -87,6 +87,8 @@ Report: `packages/tarol-svelte/api/tarol-svelte.api.md` (generated). `setTarol`,
 | "List my auctions with a load-more button" | `query(...)`, `.more()`, `.hasMore` | offset paging; `$:` reactive statements (Svelte 4) |
 | "Show a field error under the amount" | `form.errors.amount` | parsing the problem JSON by hand |
 | "Refresh when a bid comes in" | `list(…, { live: 'artflow.bid-placed' })` | polling with `setInterval` |
+| "Update the open auction when someone bids on it, not on other auctions" | `query(() => requests.auctionView({ auction: id }), { live: 'artflow.bid-placed' })` | `live()` + `$effect` comparing `subject`; a hand-written path without `subject` |
+| "Refresh on a topic whose messages are about another stream" | `live: { topic, subject: null }` | a subject filter that never matches |
 | "Edit with optimistic concurrency" | `changeForm(…, { expectedVersion: () => view.version })` | sending `If-Match` by hand |
 
 ## 8. Verification
@@ -98,3 +100,27 @@ Report: `packages/tarol-svelte/api/tarol-svelte.api.md` (generated). `setTarol`,
 * Size (compiled, without `svelte` and `@clorat/tarol-client`): **2.62 KB gzip / 2.29 KB brotli** (budget 3 KB)
   [verified].
 * publint and attw clean; API report generated; 0 undocumented members [verified].
+
+## 9. Live queries by subject (SV-24, 2026-11-21)
+
+From the design review ([../review/frontend-ease.md](../review/frontend-ease.md) §B): a live detail page re-read on
+**every** message of its topic (every bid on every auction), and a burst started one read per message.
+
+Public API and behaviour changes:
+
+* `ReadRequest.subject?: string` (new): the stream id a read shows. `@clorat/tarol-codegen` sets it for a **view** with one
+  path parameter that carries `x-tarol-id` (`requests.auctionView({ auction })` → `{ path, subject: auction }`); no other
+  request gets one.
+* `QueryOptions.live` takes `string | LiveTopic | readonly (string | LiveTopic)[]`; `LiveTopic { topic, subject? }` (new
+  type). **Behaviour change**: a query whose request has a `subject` now revalidates only for messages whose `subject`
+  equals it (the hub's subject is the stream id, `"D"` format, the same string as the id the route takes [verified on the
+  wire]); `subject: null` takes every message; an explicit `subject` filters a request that has none. Lists have no subject
+  and keep revalidating on every message.
+* **Behaviour change**: pushed messages and reconnects are coalesced: one read in flight and at most one queued after it,
+  instead of aborting and restarting a read per message (a burst of 10 → 2 reads).
+
+Measured: reads per 10 messages for other auctions 10 → 0 (unit test and e2e `a push for another auction does not re-read
+the open one`); size 2.89 → **3.04 KB gzip**, 2.54 → **2.67 KB brotli** (budget raised to 3.2 KB, SV-24) [verified]. Each new
+test was proven with a deliberate violation (no filter: 2 tests fail; no coalescing: 1 fails) [verified].
+
+Waits for BC-23: lists still re-read before the projection has caught up (no position in the message, §B.0 of the review).

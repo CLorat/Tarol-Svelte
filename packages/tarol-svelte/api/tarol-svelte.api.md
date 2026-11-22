@@ -80,6 +80,12 @@ export interface Live<T> {
 export function live<T = unknown>(topic: () => string | null, push?: PushClient): Live<T>;
 
 // @public
+export interface LiveTopic {
+    readonly subject?: string | null;
+    readonly topic: string;
+}
+
+// @public
 export interface Query<T> {
     readonly loading: boolean;
     patch(update: (value: T) => T): () => void;
@@ -96,7 +102,7 @@ export function query<T>(request: () => ReadRequest | null, options?: QueryOptio
 
 // @public
 export interface QueryOptions {
-    readonly live?: string | readonly string[];
+    readonly live?: string | LiveTopic | readonly (string | LiveTopic)[];
     readonly revalidateOnChange?: boolean;
     readonly revalidateOnFocus?: boolean;
     readonly tarol?: {
@@ -109,6 +115,7 @@ export interface QueryOptions {
 export interface ReadRequest {
     readonly path: string;
     readonly query?: Readonly<Record<string, QueryValue>>;
+    readonly subject?: string;
 }
 
 // @public

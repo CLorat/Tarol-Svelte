@@ -5,6 +5,8 @@ import type { ChangeOptions, ChangeRequest, QueryValue, Result, TarolClient } fr
 export interface ReadRequest {
   readonly path: string;
   readonly query?: Readonly<Record<string, QueryValue>>;
+  /** The stream a view by id shows: its live topics skip messages of other streams. */
+  readonly subject?: string;
 }
 
 const enc = encodeURIComponent;
