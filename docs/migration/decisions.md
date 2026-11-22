@@ -1,6 +1,6 @@
 # Owner decisions (SV-*)
 
-Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026-11-20, SV-19 … SV-27 on 2026-11-21). The reasoning and the measurements behind every question are in
+Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026-11-20, SV-19 … SV-27 on 2026-11-21, SV-28 on 2026-11-22). The reasoning and the measurements behind every question are in
 [plan.md](plan.md) and the evaluation notes it links to.
 
 | # | Question | Owner's answer |
@@ -33,3 +33,4 @@ Recorded as each answer arrived (SV-1 … SV-15 on 2026-11-19, SV-16 … on 2026
 | SV-25 | Backend changes from the review as Tarol-Net PRs | **BC-23** (revision and position in the pushed message) and **BC-25** (`x-tarol-topics` in the OpenAPI document) as Tarol-Net PRs from this session, one per BC; **BC-24** (a group per subject) is recorded only. |
 | SV-26 | Edit forms under live data (candidates 5a, 5b) | **`changeForm(…, { from })` with the FormField notice**: untouched fields follow the server, an edited field keeps the input and shows "changed meanwhile" with "Use the new value" / "Keep mine", and the submit sends the version the edit started from. +0.27 KB gzip on `@clorat/tarol-svelte` (its budget becomes **3.5 KB** together with SV-24); `ChangeForm + FormField` 1.84 of 2 KB. |
 | SV-27 | Apply push payloads to the cache without a request (candidate 3) | **Not now**: revisit when a screen needs it (a ticker, a chat); the revision guard from BC-23 is kept in mind. |
+| SV-28 | Combobox (with Field) over its budget after SV-26's three default messages (`ui.changed`, `ui.takeTheirs`, `ui.keepMine`) in the shared catalogue: 3.08 → 3.147 KB gzip, 47 B over 3.1 KB | **Raise the Combobox budget to 3.2 KB**; the messages stay in the one default catalogue (P7), measurement in [design.md](design.md). |
