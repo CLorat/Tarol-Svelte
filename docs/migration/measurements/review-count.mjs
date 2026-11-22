@@ -7,7 +7,12 @@ const dir = new URL('../../../apps/docs/src/review/', import.meta.url).pathname;
 const rows = [];
 for (const file of readdirSync(dir).sort()) {
   if (!/\.(svelte|ts)$/.test(file)) continue;
-  const text = readFileSync(join(dir, file), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  // drop HTML comments, repeated until none is left (a single pass can leave a comment formed by what it removed)
+  let text = readFileSync(join(dir, file), 'utf8');
+  for (let before = ''; before !== text; ) {
+    before = text;
+    text = text.replace(/<!--[\s\S]*?-->/g, '');
+  }
   const lines = text.split('\n').filter((l) => l.trim() !== '' && !l.trim().startsWith('//'));
   const imports = [...text.matchAll(/import\s+(type\s+)?(\{[^}]*\}|\S+)\s+from\s+'([^']+)'/g)];
   const names = new Set();
