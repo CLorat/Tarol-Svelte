@@ -19,8 +19,11 @@ description: >-
 3. Lists are keyset-paged: `items`, `hasMore`, `more()`. Never compute offsets.
 4. A read failure does not throw: check `violation` (`{ kind: 'error', code }` or `{ kind: 'invalid', errors }`). The last
    good `value`/`items` stay visible while revalidating.
-5. Live data: `list(…, { live: 'artflow.bid-placed' })` revalidates on each message and after a push reconnect. Queries also
-   revalidate on window focus and after this client's own changes; you never refresh by hand after a submit.
+5. Live data: `query(() => requests.auctionView({ auction: id }), { live: 'artflow.bid-placed' })` revalidates only for
+   messages whose `subject` is this auction: the generated request of a view by id carries `subject`. A `list(…, { live })`
+   revalidates on every message. Both revalidate after a push reconnect, coalesce bursts (one read in flight, one after it),
+   and revalidate on window focus and after this client's own changes; never refresh by hand or filter messages yourself.
+   For a topic published from another stream than the view's (a saga's), pass `live: { topic, subject: null }`.
 6. Forms: `changeForm(change, initial, { rules, expectedVersion })`. Bind inputs to `form.values.x`, call
    `form.touch('x')` on blur, show `form.error('x')`. Server 400 errors land on the field with the same path
    (`lines[1].quantity`), with the server's detail in `form.detail(path)` (`3..60`); errors no field shows, and coded
@@ -30,6 +33,11 @@ description: >-
    optimistic: (input) => view.patch((a) => ({ ...a, highest: input.amount })) })`. The patch shows at once; any failure
    (409 `Stream.VersionConflict`, 400, 403, a throw) rolls it back and reads again; success keeps it until the own-change
    revalidation replaces it. Return the rollback from `optimistic`, i.e. the result of `patch`.
+6b. Edit forms over a live view: `changeForm(rename, { title: '' }, { from: () => view.value, expectedVersion: () =>
+   view.version })`. The form takes the view's values for its own fields; fields the user has not touched follow the
+   server, an edited field keeps the input and `form.conflict('title')` gives `{ theirs }` when the server changed it
+   too (`FormField` shows it with "Use the new value" / "Keep mine"; or call `form.resolve(path, 'mine' | 'theirs')`).
+   The submit sends the version the edit started from, so a stale edit gets a 409 instead of overwriting.
 7. Codes are not messages: map `form.error(path)` and `violation.code` to text through the message catalogue
    (`@clorat/tarol-design`), never hard-code user text.
 
@@ -40,7 +48,8 @@ description: >-
   import { changeForm, query } from '@clorat/tarol-svelte';
 
   let { id }: { id: string } = $props();
-  const auction = query<AuctionView>(() => ({ path: `/auctions/${id}` }), { live: 'artflow.bid-placed' });
+  // the generated requests.auctionView({ auction: id }) builds the same request
+  const auction = query<AuctionView>(() => ({ path: `/auctions/${id}`, subject: id }), { live: 'artflow.bid-placed' });
   const bid = changeForm(
     (i: { amount: number }) => ({ method: 'POST', path: `/auctions/${id}/bids`, body: i }),
     { amount: 0 },
@@ -62,9 +71,14 @@ description: >-
 | calling `query()` inside an `onclick` | Svelte throws `lifecycle_outside_component` (context and runes need component initialisation) |
 | no `setTarol` above the component | `Error: tarol-svelte: call setTarol(client) in a parent component first` |
 | `live()` without a push connection | `Error: tarol-svelte: live() needs a push connection` |
+| `live()` plus an `$effect` comparing `message.subject` to re-read a view | unnecessary, and lossy: `live()` keeps only the last message of a burst; use `query(…, { live })` |
+| a hand-written `{ path: \`/auctions/${id}\` }` with `live` | every message of the topic re-reads it (no `subject`); use the generated request |
+| a saga's topic on a view without `subject: null` | its messages carry the saga's stream id, so the view never updates |
 | refetching after `submit()` | unnecessary: queries revalidate after own changes (with `Tarol-Read-After`) |
 | `{@html}` of server text | never; render text |
 | changing `view.value` by hand for an optimistic UI | `value` is read-only; use `view.patch(update)` and return its rollback from `optimistic` |
+| an edit form with `expectedVersion: () => view.version` but no `from` under a live view | the version is read at submit, after the live view moved on: an edit made on old values **overwrites** another user's change silently |
+| `from` with nested fields (`lines[1].quantity`) | only top-level fields are compared; a nested object counts as one value |
 | `optimistic` without `expectedVersion` | a concurrent change is not detected (no 409), so the patch may show a value that never existed |
 
 ## Notes

@@ -5,6 +5,6 @@ export type { Form, FormOptions } from './form.svelte.js';
 export { live } from './live.svelte.js';
 export type { Live } from './live.svelte.js';
 export { list, query } from './query.svelte.js';
-export type { List, Query, QueryOptions, ReadRequest } from './query.svelte.js';
+export type { List, LiveTopic, Query, QueryOptions, ReadRequest } from './query.svelte.js';
 export { check, isEmail, rulePath } from './rules.js';
 export type { Rule, Rules } from './rules.js';

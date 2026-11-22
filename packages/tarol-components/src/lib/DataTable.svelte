@@ -38,7 +38,7 @@
 
 <script lang="ts" generics="T">
   import { Button, getMessages } from '@clorat/tarol-design';
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
 
   let {
     list,
@@ -68,6 +68,29 @@
   let table = $state<HTMLTableElement>();
   let scroller = $state<HTMLDivElement>();
 
+  // the active row's key: a live update may move or re-sort rows under the keyboard user (frontend-ease.md §B, 5c)
+  let activeKey: unknown;
+  const keyAt = (row: number): unknown => {
+    const item = list.items[row - 1];
+    return row > 0 && item !== undefined ? rowKey(item) : undefined;
+  };
+  let focusWithin = false;
+  $effect.pre(() => {
+    // before every new set of rows is rendered (reading the rows tracks them)
+    focusWithin = list.items.length > 0 && !!table?.contains(document.activeElement);
+  });
+  $effect(() => {
+    const items = list.items; // runs after every new set of rows; the active cell is read, not tracked
+    untrack(() => {
+      if (activeKey === undefined || active.row === 0) return;
+      const index = items.findIndex((r) => rowKey(r) === activeKey);
+      const row = index < 0 ? Math.min(active.row, items.length) : index + 1;
+      // moving a focused row's node blurs it: put focus back on the same row (or the same place when it is gone)
+      if (focusWithin && !table?.contains(document.activeElement)) void move(row, active.col);
+      else if (row !== active.row) active = { row, col: active.col };
+    });
+  });
+
   const cellAt = (row: number, col: number): HTMLElement | undefined =>
     table?.querySelector<HTMLTableRowElement>(`tr[aria-rowindex="${String(row + 1)}"]`)?.cells[col];
 
@@ -87,6 +110,7 @@
   async function move(row: number, col: number): Promise<void> {
     const rows = list.items.length;
     active = { row: Math.max(0, Math.min(rows, row)), col: Math.max(0, Math.min(columns.length - 1, col)) };
+    activeKey = keyAt(active.row);
     if (virtual && scroller && active.row > 0) {
       // bring the row into the rendered window before focusing it
       const top = (active.row - 1) * rowHeight;
@@ -144,7 +168,10 @@
     onfocusin={(e) => {
       const cell = (e.target as HTMLElement).closest<HTMLTableCellElement>('td, th');
       const row = Number(cell?.parentElement?.getAttribute('aria-rowindex') ?? 0) - 1;
-      if (cell && row >= 0) active = { row, col: cell.cellIndex };
+      if (cell && row >= 0) {
+        active = { row, col: cell.cellIndex };
+        activeKey = keyAt(row);
+      }
     }}
   >
     <caption class="t-visually-hidden">{caption}</caption>

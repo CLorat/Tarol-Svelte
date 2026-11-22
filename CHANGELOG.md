@@ -4,6 +4,24 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+* `@clorat/tarol-svelte`: `changeForm(…, { from })` for edit forms over a live view: untouched fields follow the server,
+  edited ones keep the input and report `conflict(path)`; the submit sends the version the edit started from (SV-26).
+* `@clorat/tarol-components`: `FormField` shows a polite "changed meanwhile" notice with "Use the new value" / "Keep mine".
+
+### Changed
+
+* `@clorat/tarol-svelte`: a live query whose request names a `subject` revalidates only for messages of that stream, and
+  pushed messages are coalesced (one read in flight, one after it); `LiveTopic` and `ReadRequest.subject` are new
+  (SV-24).
+* `@clorat/tarol-codegen`: the request of a view by id carries `subject` (the `x-tarol-id` path parameter).
+
+### Fixed
+
+* `@clorat/tarol-components`: `DataTable` keeps keyboard focus on the same row (by `rowKey`) when a live update re-sorts
+  or removes rows; before, focus fell to `<body>`.
+
 ## [0.1.0]
 
 The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is

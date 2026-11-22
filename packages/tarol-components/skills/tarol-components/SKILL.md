@@ -24,6 +24,8 @@ description: >-
    rules>` per field. `path` is the backend's field path (`reserve`, `lines[1].quantity`); pass the field's `rules` so
    messages show the bounds; without them the bounds come from the server's 400 (`errorDetails`, `1..1000000`). Coded
    refusals (403, 409) appear above the submit button as an alert with their reference.
+   With `changeForm(…, { from: () => view.value })`, a FormField whose value changes on the server while the user edits
+   it shows a polite notice (`role="status"`) with "Use the new value" / "Keep mine"; input and focus stay.
 5. `AppShell title nav actions` gives the skip link and the landmarks; put pages in its children.
 5a. One aggregate's page: `<DetailLayout query={view} title={(a) => a.title}>` with snippets `children(a)`, `meta(a)`,
    `actions(a)`, `aside(a)`; it renders the `h1` and the loading/error states. Do not wrap it in `QueryState` again.
@@ -31,7 +33,9 @@ description: >-
    `minLength` (2), `debounce` (150 ms), `snippets` (default `true`). Hits are `SearchHit` (`type`, `id`, `aggregate`,
    `title`, `score`, `snippet?`, `highlights?`); the snippet is plain text with UTF-16 ranges: render your own with
    `highlight(snippet, highlights)` → `{ text, mark }[]` as text nodes and `<mark>`.
-5c. `DataTable` is a grid: keyboard navigation is built in; put at most one widget (a link or a button) in a cell.
+5c. `DataTable` is a grid: keyboard navigation is built in; put at most one widget (a link or a button) in a cell. It
+   remembers the active row by `rowKey`, so a live update that re-sorts or removes rows keeps keyboard focus on the same
+   row (or the same place): `rowKey` must be the row's id, never its index.
 6. All visible text comes from props (your labels) or the message catalogue; never literal text inside the components.
 
 ## Example

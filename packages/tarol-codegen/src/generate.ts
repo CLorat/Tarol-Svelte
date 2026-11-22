@@ -306,6 +306,8 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     'export interface ReadRequest {',
     '  readonly path: string;',
     '  readonly query?: Readonly<Record<string, QueryValue>>;',
+    '  /** The stream a view by id shows: its live topics skip messages of other streams. */',
+    '  readonly subject?: string;',
     '}',
     '',
     'const enc = encodeURIComponent;',
@@ -396,7 +398,12 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
         .filter(Boolean)
         .join(', ');
       const q = queryParams.length ? ', query' : '';
-      requests.push(`${summary}  ${o.name}: (${args}): ReadRequest => ({ path: ${url}${q} }),`);
+      // a view of one aggregate by its id names that stream, so live messages of other streams skip it (SV-24)
+      const id =
+        o.kind === 'view' && pathParams.length === 1 && pathParams[0]?.['x-tarol-id'] ? pathParams[0].name : '';
+      requests.push(
+        `${summary}  ${o.name}: (${args}): ReadRequest => ({ path: ${url}${q}${id ? `, subject: ${id}` : ''} }),`,
+      );
       const callArgs = [
         pathParams.length ? `p: ${pathType}` : '',
         queryParams.length ? `query${queryRequired ? '' : '?'}: ${queryType}` : '',

@@ -30,6 +30,7 @@ The backend opts in with `AddOpenApi(o => o.AddTarolEndpoints())` and `MapOpenAp
 | operation (`operationId` = C# type) | `requests.<name>`, `tarol(client).changes.<name>` or `.queries.<name>` |
 | `x-tarol-kind` (required: `creation`, `change`, `view`, `list`, `search`, `admin`, `me`) | the call's shape; nothing is guessed from the responses |
 | creation (201) / change (204) | `Result<Created>` / `Result<undefined>`; input = path members & body |
+| view by one `x-tarol-id` path parameter | its request also carries `subject: <id>`, the stream a live query filters messages by (SV-24) |
 | view / list (`{items, next}`) / search / `me` | `Result<View>` / `Result<Page<Row>>` / the search page; `<Op>Query` without `offset` (keyset only); required query values are required |
 | admin (`TarolAdmin…`) | GETs are reads, the others changes with their 200 type; query values such as `tenant` are part of the input; the subject export has no schema (BC-20) and is `unknown` |
 | `x-tarol-errors` | `<Op>Code` (a union of the declared codes) in `Result<T, <Op>Code>`, and `errors.<op>` (the list, e.g. to check a message catalogue); a code the backend builds at run time is not declared |

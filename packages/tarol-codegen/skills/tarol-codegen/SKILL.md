@@ -17,7 +17,8 @@ description: >-
    against a committed copy of the document: it exits 1 when the file is stale.
 3. Use the three exports:
    * `requests.<op>(…)` builds a `ReadRequest` or `ChangeRequest`: pass it to `list(() => requests.x(q))`,
-     `query(() => requests.y(p))`, `changeForm(requests.z, initial)` from `@clorat/tarol-svelte`.
+     `query(() => requests.y(p))`, `changeForm(requests.z, initial)` from `@clorat/tarol-svelte`. A view by id carries
+     `subject` (its stream id), so its `live` topics skip messages about other aggregates.
    * `tarol(client).changes.<op>(input, { key, expectedVersion })` and `.queries.<op>(…)` for code outside components.
    * `rules.<op>` for `changeForm(…, { rules })`: the backend's rules and codes per field path (`lines[].quantity`).
 4. Names are the backend's operation ids (its C# type names) in camelCase: `CreateAuction` → `createAuction`.
