@@ -198,3 +198,15 @@ without a decision.
 * **BC-23** (P1): the revision and the position in the pushed message.
 * **BC-24** (P2): subscribe to one subject.
 * **BC-25** (P1): UI topics in the OpenAPI document.
+* **BC-26** (P2): a change in the sample that edits a field, for an e2e of SV-26.
+
+### C.3 What was built (2026-11-22)
+
+| Item | Decision | Pull request | Status |
+|---|---|---|---|
+| Subject filter + coalescing | SV-24 | tarol-svelte [#35](https://github.com/CLorat/Tarol-Svelte/pull/35) | `pnpm verify` and e2e green |
+| DataTable keeps focus by key | (fix) | tarol-svelte [#36](https://github.com/CLorat/Tarol-Svelte/pull/36) | `pnpm verify` green |
+| Edit forms with `from` + FormField notice | SV-26, SV-28 | tarol-svelte [#37](https://github.com/CLorat/Tarol-Svelte/pull/37) | `pnpm verify` green; e2e waits for BC-26 |
+| BC-23 revision and position | SV-25 | Tarol-Net [#115](https://github.com/CLorat/Tarol-Net/pull/115) | CI green |
+| BC-25 `x-tarol-topics` | SV-25 | Tarol-Net [#116](https://github.com/CLorat/Tarol-Net/pull/116) | CI green |
+| Read-after for lists, skip known revisions; typed topics in codegen | SV-24, SV-25 | — | waits for #115 and #116 to merge and ship (the e2e runs against Tarol-Net `main`) |
