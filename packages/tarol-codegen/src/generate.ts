@@ -10,6 +10,22 @@ export interface OpenApiDocument {
   readonly paths?: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
   /** The reusable schemas. */
   readonly components?: { readonly schemas?: Readonly<Record<string, Schema>> };
+  /** The UI push topics (Tarol-Net BC-25): topic name → its contract version, stream, payload schema and rules. */
+  readonly 'x-tarol-topics'?: Readonly<Record<string, TopicDescription>>;
+}
+
+/** One topic of `x-tarol-topics`. */
+export interface TopicDescription {
+  /** The contract version the backend publishes. */
+  readonly version?: number;
+  /** The aggregate type whose id is the messages' `subject`. */
+  readonly stream?: string;
+  /** The payload's schema (usually a `$ref` to the contract record). */
+  readonly schema?: Schema;
+  /** Whether a rule lets someone subscribe. */
+  readonly subscribe?: boolean;
+  /** Whether a rule lets someone publish. */
+  readonly publish?: boolean;
 }
 
 /** One operation of the document. */
@@ -308,6 +324,8 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     '  readonly query?: Readonly<Record<string, QueryValue>>;',
     '  /** The stream a view by id shows: its live topics skip messages of other streams. */',
     '  readonly subject?: string;',
+    '  /** The aggregate type of `subject` (its `x-tarol-id`). */',
+    '  readonly stream?: string;',
     '}',
     '',
     'const enc = encodeURIComponent;',
@@ -399,11 +417,12 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
         .join(', ');
       const q = queryParams.length ? ', query' : '';
       // a view of one aggregate by its id names that stream, so live messages of other streams skip it (SV-24)
+      const aggregate = o.kind === 'view' && pathParams.length === 1 ? pathParams[0]?.['x-tarol-id'] : undefined;
       const id =
-        o.kind === 'view' && pathParams.length === 1 && pathParams[0]?.['x-tarol-id'] ? pathParams[0].name : '';
-      requests.push(
-        `${summary}  ${o.name}: (${args}): ReadRequest => ({ path: ${url}${q}${id ? `, subject: ${id}` : ''} }),`,
-      );
+        aggregate && pathParams[0]
+          ? `, subject: ${pathParams[0].name}, stream: ${JSON.stringify(pascal(aggregate))}`
+          : '';
+      requests.push(`${summary}  ${o.name}: (${args}): ReadRequest => ({ path: ${url}${q}${id} }),`);
       const callArgs = [
         pathParams.length ? `p: ${pathType}` : '',
         queryParams.length ? `query${queryRequired ? '' : '?'}: ${queryType}` : '',
@@ -458,6 +477,30 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     }
   }
 
+  // the UI push topics (BC-25): a typed name per topic, its stream for the subject filter, its payload as a type
+  const topicDoc = Object.entries(document['x-tarol-topics'] ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  if (topicDoc.length) {
+    const short = (t: string): string => camel(t.slice(t.indexOf('.') + 1));
+    const clash = (t: string): boolean => topicDoc.filter(([o]) => short(o) === short(t)).length > 1;
+    out.push(
+      '/** The UI push topics the backend describes (x-tarol-topics): `query(…, { live: topics.x })`, typed `PushedMessage<T>`. */',
+      `export const topics = {\n${topicDoc
+        .map(([name, t]) => {
+          const payload = t.schema ? ts(t.schema, `#/x-tarol-topics/${pointerPart(name)}/schema`) : 'unknown';
+          const stream = t.stream ? pascal(t.stream) : undefined;
+          const facts = [
+            t.version === undefined ? '' : `version ${String(t.version)}`,
+            stream ? `about a ${stream}` : '',
+            t.subscribe === true ? 'subscribable' : t.subscribe === false ? 'not subscribable' : '',
+            t.publish === true ? 'publishable' : '',
+          ].filter(Boolean);
+          return `  /** ${name}${facts.length ? ` (${facts.join(', ')})` : ''} */\n  ${clash(name) ? camel(name) : short(name)}: { topic: ${JSON.stringify(name)}${stream ? `, stream: ${JSON.stringify(stream)}` : ''} } as Topic<${payload}${stream ? `, ${JSON.stringify(stream)}` : ''}>,`;
+        })
+        .join('\n')}\n};`,
+      '',
+    );
+  }
+
   out.push(
     '/** Request builders: pass them to the runes (`list(() => requests.x(...))`, `changeForm(requests.y, …)`) or to the client. */',
     `export const requests = {\n${requests.join('\n')}\n};`,
@@ -500,6 +543,11 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     (n) => new RegExp(`\\b${n}\\b`).test(text.replace('%IMPORTS%', '')),
   );
   text = text.replace('%IMPORTS%', [...used, ...(ids.size ? ['Id'] : [])].join(', '));
+  if (topicDoc.length)
+    text = text.replace(
+      "from '@clorat/tarol-client';",
+      "from '@clorat/tarol-client';\nimport type { Topic } from '@clorat/tarol-client/push';",
+    );
   if (idTypes.length)
     text = text.replace('const enc = encodeURIComponent;', `${idTypes.join('\n')}\n\nconst enc = encodeURIComponent;`);
   return text;

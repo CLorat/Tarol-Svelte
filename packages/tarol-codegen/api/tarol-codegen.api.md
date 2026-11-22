@@ -33,6 +33,7 @@ export interface GenerateOptions {
 
 // @public
 export interface OpenApiDocument {
+    readonly 'x-tarol-topics'?: Readonly<Record<string, TopicDescription>>;
     readonly components?: {
         readonly schemas?: Readonly<Record<string, Schema>>;
     };
@@ -95,6 +96,15 @@ export interface Schema {
     readonly properties?: Readonly<Record<string, Schema>>;
     readonly required?: readonly string[];
     readonly type?: string | readonly string[];
+}
+
+// @public
+export interface TopicDescription {
+    readonly publish?: boolean;
+    readonly schema?: Schema;
+    readonly stream?: string;
+    readonly subscribe?: boolean;
+    readonly version?: number;
 }
 
 // (No @packageDocumentation comment for this package)

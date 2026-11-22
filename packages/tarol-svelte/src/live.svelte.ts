@@ -1,4 +1,4 @@
-import type { PushClient, PushedMessage } from '@clorat/tarol-client/push';
+import type { PushClient, PushedMessage, Topic } from '@clorat/tarol-client/push';
 import { getTarol } from './context.js';
 
 /** The reactive state of a push subscription. */
@@ -11,16 +11,18 @@ export interface Live<T> {
 
 /**
  * Subscribes to a push topic for the component's lifetime: one rune. `topic` may read `$state`; a change moves the
- * subscription. Needs a push connection in {@link setTarol} (or `push`).
+ * subscription. A generated `topics.<name>` types the message (`PushedMessage<BidPlacedV1>`). Needs a push connection in
+ * {@link setTarol} (or `push`).
  */
-export function live<T = unknown>(topic: () => string | null, push?: PushClient): Live<T> {
+export function live<T = unknown>(topic: () => string | Topic<T> | null, push?: PushClient): Live<T> {
   const p = push ?? getTarol().push;
   if (!p) throw new Error('tarol-svelte: live() needs a push connection: setTarol(client, connectPush(...))');
   let message = $state.raw<PushedMessage<T> | undefined>();
   let count = $state(0);
   $effect(() => {
-    const t = topic();
-    if (t === null) return;
+    const given = topic();
+    if (given === null) return;
+    const t = typeof given === 'string' ? given : given.topic;
     return p.subscribe<T>(t, (m) => {
       message = m;
       count++;

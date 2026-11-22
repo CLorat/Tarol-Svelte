@@ -119,6 +119,7 @@ export type QueryValue = string | number | boolean | null | undefined;
 // @public
 export interface ReadOptions {
     readonly query?: Readonly<Record<string, QueryValue>>;
+    readonly readAfter?: string | undefined;
     readonly signal?: AbortSignal;
 }
 

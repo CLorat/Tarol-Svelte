@@ -12,11 +12,16 @@
 
 const push = connectPush({ url: 'https://api.example.com/tarol/messages', tokens });
 setTarol(client, push);
-const auctions = list(() => requests.auctionSearch({}), { live: 'artflow.bid-placed' });`}
+// topics come from the backend's x-tarol-topics: a typo is a type error, the payload is typed
+const auctions = list(() => requests.auctionSearch({}), { live: topics.bidPlaced });
+const auction = query(() => requests.auctionView({ auction: id }), { live: topics.bidPlaced });`}
 />
 <p>
   A browser cannot set headers on a WebSocket, so the client sends the token as <code>?access_token=</code>; the hub
   reads it there only. When the token expires the hub closes the connection, and the client reconnects with a fresh token
   from the same provider. A refused topic arrives in <code>onRefused</code> as a code such as <code>Hub.Forbidden</code>.
-  The ArtFlow example's auction page revalidates on <code>artflow.bid-placed</code>.
+  A view by id reads again only for messages about its own aggregate, and skips a message whose revision it already
+  has (its own change); a list reads again after the message's position (<code>Tarol-Read-After</code>), so it never
+  shows the row from before the event. The ArtFlow example's list and auction page are live on
+  <code>topics.bidPlaced</code>.
 </p>

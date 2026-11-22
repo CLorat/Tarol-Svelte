@@ -322,6 +322,22 @@ test('a push update: a bid by bob updates ada’s open auction', async ({ page }
   await expect(page.getByTestId('bids')).toHaveText('1 bid'); // revalidated by the push, no reload
 });
 
+test('a push updates the auction list with the bid, read after its position (BC-23)', async ({ page }) => {
+  const { id } = await createAuction('alice');
+  const reads: (string | null)[] = [];
+  page.on('request', (r) => {
+    const url = new URL(r.url());
+    if (r.method() === 'GET' && url.origin === sample.api && url.pathname === '/auctions')
+      reads.push(r.headers()['tarol-read-after'] ?? null);
+  });
+  await signIn(page, 'ada', '/#/auctions');
+  const row = page.getByRole('row').filter({ hasText: `Auction ${id.slice(-6)}` });
+  await expect(row.getByRole('gridcell').nth(2)).toHaveText('0');
+  await api('bob', 'POST', `/auctions/${id}/bids`, { amount: 150 });
+  await expect(row.getByRole('gridcell').nth(2)).toHaveText('1'); // no reload, and not the row from before the bid
+  expect(reads.some((h) => h !== null && /^\d+\.\d+$/.test(h))).toBe(true);
+});
+
 test('a push for another auction does not re-read the open one (SV-24: the view names its stream)', async ({ page }) => {
   const { id } = await createAuction('alice');
   const other = await createAuction('alice');

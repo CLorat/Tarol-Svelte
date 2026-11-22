@@ -7,10 +7,11 @@
 import type { ChangeRequest } from '@clorat/tarol-client';
 import type { PushClient } from '@clorat/tarol-client/push';
 import type { PushedMessage } from '@clorat/tarol-client/push';
-import type { QueryValue } from '@clorat/tarol-client';
+import { QueryValue } from '@clorat/tarol-client';
 import type { Result } from '@clorat/tarol-client';
-import type { TarolClient } from '@clorat/tarol-client';
-import type { Violation } from '@clorat/tarol-client';
+import { TarolClient } from '@clorat/tarol-client';
+import type { Topic } from '@clorat/tarol-client/push';
+import { Violation } from '@clorat/tarol-client';
 
 // @public
 export function at(root: unknown, path: string): unknown;
@@ -82,10 +83,11 @@ export interface Live<T> {
 }
 
 // @public
-export function live<T = unknown>(topic: () => string | null, push?: PushClient): Live<T>;
+export function live<T = unknown>(topic: () => string | Topic<T> | null, push?: PushClient): Live<T>;
 
 // @public
 export interface LiveTopic {
+    readonly stream?: string;
     readonly subject?: string | null;
     readonly topic: string;
 }
@@ -120,6 +122,7 @@ export interface QueryOptions {
 export interface ReadRequest {
     readonly path: string;
     readonly query?: Readonly<Record<string, QueryValue>>;
+    readonly stream?: string;
     readonly subject?: string;
 }
 

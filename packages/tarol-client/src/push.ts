@@ -16,6 +16,26 @@ export interface PushedMessage<T = unknown> {
   readonly sender: string;
   /** The contract's JSON payload. */
   readonly data: T;
+  /**
+   * The stream's version after the event (a view's `ETag` version), or `null` for a client's publish and an older backend
+   * (Tarol-Net BC-23, `0.1.0-preview.5`).
+   */
+  readonly revision?: number | null;
+  /** The event's `Tarol-Position` (`<tx>.<pos>`), to read after it; `null` for a client's publish and an older backend. */
+  readonly position?: string | null;
+}
+
+/**
+ * A UI push topic as `@clorat/tarol-codegen` generates it from the backend's `x-tarol-topics`: its name, the aggregate its
+ * messages are about (their `subject` is that stream's id) and, as a type only, its payload. Pass it as a live topic.
+ */
+export interface Topic<T = unknown, S extends string = string> {
+  /** The topic, `<system>.<name>`. */
+  readonly topic: string;
+  /** The aggregate type whose id is the messages' `subject`, when the backend knows it. */
+  readonly stream?: S;
+  /** Never set: carries the payload type `T` for `PushedMessage<T>`. */
+  readonly payload?: T;
 }
 
 /** The connection state. */

@@ -70,15 +70,23 @@ describe('the sample (samples/Sagas /openapi/v1.json)', () => {
   });
 
   it('names the stream of a view by id (its x-tarol-id path parameter) as the request subject, and only there', () => {
-    expect(code).toContain('({ path: `/auctions/${enc(auction)}`, subject: auction })');
-    expect(code.match(/, subject: \w+ }\)/g)).toHaveLength(1);
+    expect(code).toContain('({ path: `/auctions/${enc(auction)}`, subject: auction, stream: "Auction" })');
+    expect(code.match(/, subject: \w+, stream: "\w+" }\)/g)).toHaveLength(1);
+  });
+
+  it('types the UI push topics of x-tarol-topics, with their stream and payload (BC-25)', () => {
+    expect(code).toContain("import type { Topic } from '@clorat/tarol-client/push';");
+    expect(code).toContain(
+      'bidPlaced: { topic: "artflow.bid-placed", stream: "Auction" } as Topic<BidPlacedV1, "Auction">,',
+    );
+    expect(code).toContain('/** artflow.bid-placed (version 1, about a Auction, subscribable) */');
   });
 
   it('compiles with strict settings, and its builders fit the Svelte runes', () => {
     const usage = `
 import { asId, createClient, type ClientCode } from '@clorat/tarol-client';
-import { changeForm, list, query } from '@clorat/tarol-svelte';
-import { errors, requests, rules, tarol, type PlaceBidCode } from './artflow.js';
+import { changeForm, list, live, query } from '@clorat/tarol-svelte';
+import { errors, requests, rules, tarol, topics, type PlaceBidCode } from './artflow.js';
 
 const api = tarol(createClient({ baseUrl: '/api' }));
 export async function run(): Promise<void> {
@@ -111,6 +119,13 @@ export function screen(): void {
   list(() => requests.auctionSearch({ settled: false }));
   query(() => requests.auctionView({ auction: asId<'Auction'>('01a1fa49-3098-785c-817a-9f7832ceea0e') }));
   changeForm(requests.createAuction, { reserve: 0 }, { rules: rules.createAuction });
+  list(() => requests.auctionSearch({}), { live: topics.bidPlaced });
+  const bids = live(() => topics.bidPlaced);
+  bids.message?.data.amount.toFixed(2); // the payload is typed
+  // @ts-expect-error not a member of BidPlacedV1
+  void bids.message?.data.bidder;
+  // @ts-expect-error not a topic of the backend
+  void topics.bidPlacd;
 }
 `;
     expect(typecheck({ 'artflow.ts': code, 'usage.ts': usage })).toEqual([]);
@@ -373,6 +388,22 @@ describe('Tarol extensions', () => {
     const email = changed['Signup']?.properties?.['email'] as Record<string, unknown>;
     email['x-tarol-email'] = 'any text with an @';
     expect(() => generate(doc(changed, paths))).toThrow(/x-tarol-email/);
+  });
+
+  it('names topics by their name after the system, and by the whole name when two systems share it', () => {
+    const t = generate({
+      ...doc({}),
+      'x-tarol-topics': {
+        'artflow.note-added': { publish: true },
+        'billing.note-added': { subscribe: true },
+        'artflow.chat': {},
+      },
+    });
+    expect(t).toContain('chat: { topic: "artflow.chat" } as Topic<unknown>,');
+    expect(t).toContain('artflowNoteAdded: { topic: "artflow.note-added" } as Topic<unknown>,');
+    expect(t).toContain('billingNoteAdded: { topic: "billing.note-added" } as Topic<unknown>,');
+    expect(t).toContain('/** artflow.note-added (publishable) */');
+    expect(generate(doc({}))).not.toContain('Topic');
   });
 
   it('imports only the client types it uses (no list and no creation here: no Page, no Created)', () => {

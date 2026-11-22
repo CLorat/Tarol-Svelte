@@ -157,3 +157,29 @@ Together with §9 (one pull request, SV-29): **3.33 KB gzip / 2.92 KB brotli** (
 
 Not covered by e2e: the sample has no change that edits a field of an existing aggregate (BC-26 in
 [changes.md](../backend/changes.md)); the component and unit tests cover the behaviour.
+
+## 11. The client side of BC-23 and BC-25 (2026-11-22, Tarol-Net `0.1.0-preview.5`)
+
+Tarol-Net #115 (BC-23) and #116 (BC-25) are released in `0.1.0-preview.5`; the e2e job pins its commit `380f177`.
+
+Public API and behaviour changes:
+
+* `@clorat/tarol-client`: `PushedMessage.revision?` and `.position?` (the backend's new members; `null` for a client's
+  publish and an older backend); `ReadOptions.readAfter` (a position read after too: the later of it and this client's own
+  is sent as `Tarol-Read-After`; a value that is not `<tx>.<pos>` is ignored, so pushed text cannot reach a header);
+  `Topic<T, S>` in `/push` (a type only).
+* `@clorat/tarol-svelte`: **behaviour**: a live list (and any live query) reads again after the message's `position`;
+  a coalesced read waits for the latest position of the messages it stands for. A live view skips a message whose
+  `revision` it already has (≤ its version, e.g. its own change). `ReadRequest.stream` and `LiveTopic.stream` (new): when
+  a topic's stream is another aggregate than the view's, the subject filter is off by default (its subject is another
+  stream's id). `live(() => topics.x)` takes a generated topic and types the message.
+* `@clorat/tarol-codegen`: `topics.<name>` from `x-tarol-topics` (`Topic<Payload, 'Stream'>`, the payload's schema as its
+  type, a doc comment with version, stream and rules); a view by id's request carries `stream` too. The fixture is the
+  sample's document at Tarol-Net `380f177` (new: `x-tarol-topics`, `BidPlacedV1`, nothing else changed [verified by a
+  diff]).
+
+Measured: the list e2e "a push updates the auction list with the bid, read after its position" passes, and fails without
+the position (the row stays at 0 bids, the 19-of-20 race of the review) [verified]; unit tests proven with deliberate
+violations (no revision skip, no position, no stream check, not the latest position: each fails its test) [verified].
+`@clorat/tarol-svelte` **3.50 KB gzip** / 3.08 KB brotli: at its 3.5 KB budget with no headroom (two compactions took
+it from 3.51); client core 2.24 KB (budget 3 KB), `/push` unchanged 1.51 KB [verified, `pnpm size`].
