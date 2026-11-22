@@ -34,6 +34,8 @@ export interface PushClient {
 export interface PushedMessage<T = unknown> {
     readonly data: T;
     readonly id: string;
+    readonly position?: string | null;
+    readonly revision?: number | null;
     readonly sender: string;
     readonly subject: string | null;
     readonly time: string;
@@ -56,6 +58,13 @@ export interface PushOptions {
 
 // @public
 export type PushState = 'connecting' | 'connected' | 'reconnecting' | 'closed';
+
+// @public
+export interface Topic<T = unknown, S extends string = string> {
+    readonly payload?: T;
+    readonly stream?: S;
+    readonly topic: string;
+}
 
 // (No @packageDocumentation comment for this package)
 

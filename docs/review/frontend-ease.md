@@ -207,6 +207,6 @@ without a decision.
 | Subject filter + coalescing | SV-24 | tarol-svelte [#35](https://github.com/CLorat/Tarol-Svelte/pull/35) | `pnpm verify` and e2e green |
 | DataTable keeps focus by key | (fix) | tarol-svelte [#36](https://github.com/CLorat/Tarol-Svelte/pull/36) | `pnpm verify` green |
 | Edit forms with `from` + FormField notice | SV-26, SV-28 | tarol-svelte [#37](https://github.com/CLorat/Tarol-Svelte/pull/37) | `pnpm verify` green; e2e waits for BC-26 |
-| BC-23 revision and position | SV-25 | Tarol-Net [#115](https://github.com/CLorat/Tarol-Net/pull/115) | CI green; on the wire (the sample built from its branch): messages carry `revision` (2 for the first bid, the view's ETag) and `position`; a list read with `Tarol-Read-After: <position>` right after the push is fresh **20 of 20** in two runs, without it 1 of 20 (`review-push-race.mjs list-after 20` / `list 20`) [verified] |
-| BC-25 `x-tarol-topics` | SV-25 | Tarol-Net [#116](https://github.com/CLorat/Tarol-Net/pull/116) | CI green |
-| Read-after for lists, skip known revisions; typed topics in codegen | SV-24, SV-25 | — | waits for #115 and #116 to merge and ship (the e2e runs against Tarol-Net `main`) |
+| BC-23 revision and position | SV-25 | Tarol-Net [#115](https://github.com/CLorat/Tarol-Net/pull/115) | **merged**; on the wire (the sample built from its branch): messages carry `revision` (2 for the first bid, the view's ETag) and `position`; a list read with `Tarol-Read-After: <position>` right after the push is fresh **20 of 20** in two runs, without it 1 of 20 (`review-push-race.mjs list-after 20` / `list 20`) [verified] |
+| BC-25 `x-tarol-topics` | SV-25 | Tarol-Net [#116](https://github.com/CLorat/Tarol-Net/pull/116) | **merged** |
+| Read-after for lists, skip known revisions; typed topics in codegen | SV-24, SV-25 | — | **built** on Tarol-Net `0.1.0-preview.5` (svelte.md §11); the list e2e is fresh after a push and fails without the position |

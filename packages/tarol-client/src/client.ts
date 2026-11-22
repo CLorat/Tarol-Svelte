@@ -1,4 +1,4 @@
-import { comparePositions } from './position.js';
+import { comparePositions, isPosition } from './position.js';
 import { fallbackCode, toViolation, type Failed, type Ok, type Result } from './result.js';
 
 /**
@@ -59,6 +59,11 @@ export interface ReadOptions {
   readonly query?: Readonly<Record<string, QueryValue>>;
   /** Aborts the request; an aborted call throws, as `fetch` does. */
   readonly signal?: AbortSignal;
+  /**
+   * Read after this `Tarol-Position` too (a pushed message's `position`), not only after this client's own changes: the
+   * later of the two is sent as `Tarol-Read-After`. A value that is not a position is ignored.
+   */
+  readonly readAfter?: string | undefined;
 }
 
 /** What a creation returns: the new aggregate's id and version 1. */
@@ -242,7 +247,13 @@ export function createClient(options: ClientOptions): TarolClient {
       const cached = cache.get(key);
       const headers: Record<string, string> = {};
       if (cached) headers['if-none-match'] = cached.etag;
-      if (position) headers['tarol-read-after'] = position;
+      const after =
+        o.readAfter !== undefined &&
+        isPosition(o.readAfter) &&
+        (position === null || comparePositions(o.readAfter, position) > 0)
+          ? o.readAfter
+          : position;
+      if (after) headers['tarol-read-after'] = after;
       const init: RequestInit = { method: 'GET' };
       if (o.signal) init.signal = o.signal;
       const answer = await send(target, init, headers);

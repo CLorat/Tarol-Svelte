@@ -4,11 +4,15 @@
   import { changeForm, list } from '@clorat/tarol-svelte';
   import { untrack } from 'svelte';
   import { router } from '../router.svelte.js';
-  import { requests, rules, type AuctionRow } from './api.js';
+  import { requests, rules, topics, type AuctionRow } from './api.js';
   import { euros, short } from './format.js';
 
   let sort = $state<'HighestBid' | 'OpenedAt' | undefined>('OpenedAt');
-  const auctions = list<AuctionRow>(() => requests.auctionSearch({ sort, limit: 5, count: true }));
+  // every bid can change a row (or the order): the list reads again after the bid's position (BC-23), so it never shows
+  // the row from before the bid
+  const auctions = list<AuctionRow>(() => requests.auctionSearch({ sort, limit: 5, count: true }), {
+    live: topics.bidPlaced,
+  });
   const columns: Column[] = [
     { key: 'id', header: 'Auction' },
     { key: 'reserve', header: 'Reserve', align: 'end' },

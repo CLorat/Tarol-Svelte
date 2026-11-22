@@ -19,11 +19,13 @@ description: >-
 3. Lists are keyset-paged: `items`, `hasMore`, `more()`. Never compute offsets.
 4. A read failure does not throw: check `violation` (`{ kind: 'error', code }` or `{ kind: 'invalid', errors }`). The last
    good `value`/`items` stay visible while revalidating.
-5. Live data: `query(() => requests.auctionView({ auction: id }), { live: 'artflow.bid-placed' })` revalidates only for
-   messages whose `subject` is this auction: the generated request of a view by id carries `subject`. A `list(…, { live })`
-   revalidates on every message. Both revalidate after a push reconnect, coalesce bursts (one read in flight, one after it),
-   and revalidate on window focus and after this client's own changes; never refresh by hand or filter messages yourself.
-   For a topic published from another stream than the view's (a saga's), pass `live: { topic, subject: null }`.
+5. Live data: `query(() => requests.auctionView({ auction: id }), { live: topics.bidPlaced })` (the generated `topics`)
+   revalidates only for messages whose `subject` is this auction (the generated request carries `subject` and `stream`),
+   and skips a message whose `revision` it already has (its own change). A `list(…, { live })` revalidates on every
+   message, read after the message's `position` (`Tarol-Read-After`), so it never shows the row from before the event.
+   Both revalidate after a push reconnect, coalesce bursts (one read in flight, one after it), and revalidate on window
+   focus and after this client's own changes; never refresh by hand or filter messages yourself. A topic whose `stream`
+   is another aggregate than the view's takes every message; for a hand-written topic pass `{ topic, subject: null }`.
 6. Forms: `changeForm(change, initial, { rules, expectedVersion })`. Bind inputs to `form.values.x`, call
    `form.touch('x')` on blur, show `form.error('x')`. Server 400 errors land on the field with the same path
    (`lines[1].quantity`), with the server's detail in `form.detail(path)` (`3..60`); errors no field shows, and coded
@@ -71,6 +73,7 @@ description: >-
 | calling `query()` inside an `onclick` | Svelte throws `lifecycle_outside_component` (context and runes need component initialisation) |
 | no `setTarol` above the component | `Error: tarol-svelte: call setTarol(client) in a parent component first` |
 | `live()` without a push connection | `Error: tarol-svelte: live() needs a push connection` |
+| a hand-typed topic string (`'artflow.bid-placd'`) | no type error; the hub refuses it (`Hub.Forbidden` in `onRefused`) and the page never updates: use `topics.<name>` |
 | `live()` plus an `$effect` comparing `message.subject` to re-read a view | unnecessary, and lossy: `live()` keeps only the last message of a burst; use `query(…, { live })` |
 | a hand-written `{ path: \`/auctions/${id}\` }` with `live` | every message of the topic re-reads it (no `subject`); use the generated request |
 | a saga's topic on a view without `subject: null` | its messages carry the saga's stream id, so the view never updates |

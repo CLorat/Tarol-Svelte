@@ -28,9 +28,9 @@ push.onReconnect(() => tarol.invalidate('/auctions')); // the hub has no replay:
 |---|---|
 | Changes | `Idempotency-Key` (new UUID, or yours to retry one intent); `If-Match` from `expectedVersion`; network failures retried with the same key and bytes |
 | Results | `Ok` (`value`, `version`, `position`, `replayed`, `stale`, `notModified`, `requestId`) or `Failed` (`violation`: `invalid` with field paths and their `details`, or `error` with the code; `requestId` from `Tarol-Request-Id` or the problem's `traceId`) |
-| Reads | ETag cache per tenant and URL, `Tarol-Read-After` after your own changes, waits out `Projection.Building` |
+| Reads | ETag cache per tenant and URL, `Tarol-Read-After` after your own changes (or a later `readAfter`, e.g. a pushed message's `position`), waits out `Projection.Building` |
 | Auth | a `TokenProvider` port; a 401 triggers one `refresh()` and one repeat |
-| Push | SignalR JSON protocol over WebSocket, the token in `?access_token=`; re-subscribes after every reconnect (also when the hub closes an expired token's connection); never stops reconnecting until `close()`; refusals as `HubRefusal` codes (`Hub.Forbidden`, `Hub.Topic`, `Auth.Tenant`) |
+| Push | SignalR JSON protocol over WebSocket, the token in `?access_token=`; re-subscribes after every reconnect (also when the hub closes an expired token's connection); never stops reconnecting until `close()`; refusals as `HubRefusal` codes (`Hub.Forbidden`, `Hub.Topic`, `Auth.Tenant`); messages carry `revision` and `position` (Tarol-Net `0.1.0-preview.5`); `Topic<T, S>` types the topics `@clorat/tarol-codegen` generates |
 
 Size (gzip): core 2.09 KB, `/push` 1.51 KB. No dependencies. ESM only.
 

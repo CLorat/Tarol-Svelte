@@ -1,4 +1,11 @@
-import type { Page, QueryValue, Result, TarolClient, Violation } from '@clorat/tarol-client';
+import {
+  comparePositions,
+  type Page,
+  type QueryValue,
+  type Result,
+  type TarolClient,
+  type Violation,
+} from '@clorat/tarol-client';
 import type { PushClient } from '@clorat/tarol-client/push';
 import { getTarol } from './context.js';
 
@@ -13,12 +20,22 @@ export interface ReadRequest {
    * the query only for messages with this `subject`.
    */
   readonly subject?: string;
+  /** The aggregate type of `subject` (e.g. `Auction`), from the id's `x-tarol-id`. */
+  readonly stream?: string;
 }
 
-/** A live topic with its subject filter, for {@link QueryOptions.live}. */
+/**
+ * A live topic with its subject filter, for {@link QueryOptions.live}. A generated `topics.<name>` (`Topic` of
+ * `@clorat/tarol-client/push`) is one.
+ */
 export interface LiveTopic {
   /** The topic, `<system>.<name>`. */
   readonly topic: string;
+  /**
+   * The aggregate type the topic's messages are about. When it differs from the request's `stream`, the subject filter
+   * is off by default: the messages' subject is another stream's id.
+   */
+  readonly stream?: string;
   /**
    * Revalidate only for messages of this stream id. Default: the request's `subject`, when it has one. `null`: every
    * message of the topic (e.g. a topic published from another stream than the one the query shows).
@@ -91,8 +108,11 @@ export interface List<T> {
 }
 
 interface Source<T> {
-  load(signal: AbortSignal): Promise<Result<T>>;
+  load(signal: AbortSignal, readAfter?: string): Promise<Result<T>>;
   readonly subject?: string | undefined;
+  readonly stream?: string | undefined;
+  /** `true` when the value read already has this stream revision (a pushed message it need not read again for). */
+  known?(revision: number): boolean;
 }
 
 /** Runs the shared loop: re-read on argument change, focus, own change and push topic; abort the previous read. */
@@ -106,14 +126,14 @@ function track<T>(
   let current: Source<T> | null = null;
   let controller: AbortController | undefined;
 
-  const run = async (): Promise<void> => {
+  const run = async (readAfter?: string): Promise<void> => {
     const s = current;
     if (!s) return;
     controller?.abort();
     const c = (controller = new AbortController());
     setLoading(true);
     try {
-      const r = await s.load(c.signal);
+      const r = await s.load(c.signal, readAfter);
       if (!c.signal.aborted) apply(r);
     } catch (error) {
       if (!c.signal.aborted) throw error;
@@ -122,12 +142,15 @@ function track<T>(
     }
   };
 
-  // pushed messages: one read in flight and at most one queued after it, never one read per message of a burst
+  // pushed messages: one read in flight and at most one queued after it, never one read per message of a burst; the
+  // queued read waits for the latest position of the messages it stands for (Tarol-Read-After, BC-23)
   let busy = false;
   let again = false;
+  let after: string | undefined;
   // a function, so the check after an await is not narrowed away by the compiler (as push.ts `closed()`)
   const queued = (): boolean => again;
-  const coalesced = async (): Promise<void> => {
+  const coalesced = async (position?: string): Promise<void> => {
+    if (position && !(after && comparePositions(position, after) < 0)) after = position;
     if (busy) {
       again = true;
       return;
@@ -136,7 +159,9 @@ function track<T>(
     try {
       do {
         again = false;
-        await run();
+        const p = after;
+        after = undefined;
+        await run(p);
       } while (queued());
     } finally {
       busy = false;
@@ -175,11 +200,15 @@ function track<T>(
             : live;
     if (tarol.push && topics.length > 0) {
       for (const t of topics) {
-        const spec = typeof t === 'string' ? { topic: t } : t;
+        const spec: LiveTopic = typeof t === 'string' ? { topic: t } : t;
         offs.push(
           tarol.push.subscribe(spec.topic, (m) => {
-            const subject = spec.subject === undefined ? current?.subject : spec.subject;
-            if (subject == null || m.subject === subject) void coalesced();
+            const other = spec.stream !== undefined && current?.stream !== undefined && spec.stream !== current.stream;
+            const subject = spec.subject === undefined ? (other ? null : current?.subject) : spec.subject;
+            if (subject != null && m.subject !== subject) return;
+            // the cache already has this revision (e.g. this client's own change): nothing to read (BC-23)
+            if (subject != null && m.revision != null && current?.known?.(m.revision)) return;
+            void coalesced(m.position ?? undefined);
           }),
         );
       }
@@ -190,7 +219,7 @@ function track<T>(
     };
   });
 
-  return run;
+  return () => run();
 }
 
 /**
@@ -213,7 +242,10 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
       return r
         ? {
             subject: r.subject,
-            load: (signal) => tarol.client.read<T>(r.path, r.query ? { query: r.query, signal } : { signal }),
+            stream: r.stream,
+            known: (revision) => version !== undefined && revision <= version,
+            load: (signal, readAfter) =>
+              tarol.client.read<T>(r.path, { ...(r.query ? { query: r.query } : {}), signal, readAfter }),
           }
         : null;
     },
@@ -281,14 +313,18 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
   let stale = $state(false);
   let last: ReadRequest | null = null;
 
-  const read = (r: ReadRequest, signal: AbortSignal, after?: string) =>
-    tarol.client.read<Page<T>>(r.path, { query: after === undefined ? { ...r.query } : { ...r.query, after }, signal });
+  const read = (r: ReadRequest, signal: AbortSignal, after?: string, readAfter?: string) =>
+    tarol.client.read<Page<T>>(r.path, {
+      query: after === undefined ? { ...r.query } : { ...r.query, after },
+      signal,
+      readAfter,
+    });
 
   const refresh = track<Page<T>>(
     tarol,
     () => {
       const r = (last = request());
-      return r ? { subject: r.subject, load: (signal) => read(r, signal) } : null;
+      return r ? { subject: r.subject, load: (signal, readAfter) => read(r, signal, undefined, readAfter) } : null;
     },
     options,
     (r) => {

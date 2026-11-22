@@ -1612,7 +1612,7 @@
           {
             "name": "kind",
             "in": "path",
-            "description": "reactions, jobs, messages, \u2026",
+            "description": "reactions, jobs, messages, …",
             "required": true,
             "schema": {
               "type": "string"
@@ -2520,6 +2520,24 @@
           }
         }
       },
+      "BidPlacedV1": {
+        "required": ["auction", "amount", "at"],
+        "type": "object",
+        "properties": {
+          "auction": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "CreateAuction": {
         "required": ["reserve"],
         "type": "object",
@@ -2732,5 +2750,16 @@
     {
       "name": "Tarol.Admin"
     }
-  ]
+  ],
+  "x-tarol-topics": {
+    "artflow.bid-placed": {
+      "version": 1,
+      "stream": "Auction",
+      "schema": {
+        "$ref": "#/components/schemas/BidPlacedV1"
+      },
+      "subscribe": true,
+      "publish": false
+    }
+  }
 }

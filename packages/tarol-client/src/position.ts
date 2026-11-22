@@ -14,3 +14,8 @@ function parse(p: string): [bigint, bigint] | null {
   const m = /^(\d+)\.(\d+)$/.exec(p);
   return m?.[1] !== undefined && m[2] !== undefined ? [BigInt(m[1]), BigInt(m[2])] : null;
 }
+
+/** `true` for a `Tarol-Position` value: `<tx>.<pos>`, both decimal integers. */
+export function isPosition(p: string): boolean {
+  return /^\d{1,20}\.\d{1,20}$/.test(p);
+}

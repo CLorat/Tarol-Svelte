@@ -56,8 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      # Tarol-Net #109 (BC-18, the sample's login page) on top of fe0a2bd; the merge commit once it is merged
-      TAROL_NET_COMMIT: 9b68afc22e71cc8ccabd2f219f0a4b9b06287fdd
+      # Tarol-Net v0.1.0-preview.5 (BC-23 revision and position in the pushed message, BC-25 x-tarol-topics)
+      TAROL_NET_COMMIT: 380f1779d025fac358790265dd88b574b42c5c24
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
