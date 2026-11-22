@@ -261,3 +261,11 @@ the row is gone, focus stays at the same index. An update in place never moved f
 
 Verified: `packages/tarol-components/test/live.test.ts` (re-sort with axe, in place, removed row), 3 runs green; DataTable
 3.10 → **3.31 KB gzip** (budget 6 KB) [verified].
+
+## 12. Messages of the edit-form notice (SV-26, SV-28, 2026-11-22)
+
+`FormField`'s "changed meanwhile" notice (SV-26, [svelte.md](svelte.md) §10) adds three messages to the shared catalogue,
+de and en: `ui.changed` (`{theirs}`), `ui.takeTheirs`, `ui.keepMine`. Every entry that bundles the catalogue grows by
+about 60 B gzip: ThemeRoot 2.75 → 2.81 KB (budget 3 KB), and Combobox (with Field) 3.08 → **3.147 KB**, 47 B over its
+3.1 KB budget [verified, `pnpm size`]. The owner raised the Combobox budget to **3.2 KB** (SV-28) rather than moving the
+texts out of the one catalogue (P7).

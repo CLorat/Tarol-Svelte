@@ -832,7 +832,7 @@
   "FormField": {
     "package": "@clorat/tarol-components",
     "name": "FormField",
-    "doc": "One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is the client rule's or the server's code, as a message from the catalogue with the bounds of the client rule, or of the server's detail (`errorDetails`, `1..1000000`) when the field has no client rule for the code.",
+    "doc": "One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is the client rule's or the server's code, as a message from the catalogue with the bounds of the client rule, or of the server's detail (`errorDetails`, `1..1000000`) when the field has no client rule for the code. When the form has the option `from`, a value that changes on the server while the user edits the field shows a polite notice with \"Use the new value\" / \"Keep mine\"; the input and the focus stay as they are.",
     "extends": "",
     "props": [
       {

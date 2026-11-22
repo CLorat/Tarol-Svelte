@@ -4,6 +4,12 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+* `@clorat/tarol-svelte`: `changeForm(…, { from })` for edit forms over a live view: untouched fields follow the server,
+  edited ones keep the input and report `conflict(path)`; the submit sends the version the edit started from (SV-26).
+* `@clorat/tarol-components`: `FormField` shows a polite "changed meanwhile" notice with "Use the new value" / "Keep mine".
+
 ### Changed
 
 * `@clorat/tarol-svelte`: a live query whose request names a `subject` revalidates only for messages of that stream, and

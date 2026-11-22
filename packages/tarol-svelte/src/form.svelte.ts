@@ -18,6 +18,13 @@ export interface FormOptions<T, I = unknown> {
    * fails (a 409 `Stream.VersionConflict` included) or throws; on success the own-change revalidation replaces the patch.
    */
   readonly optimistic?: (input: I) => (() => void) | undefined;
+  /**
+   * The server's current values of an edit form, usually the live view (`from: () => view.value`); only the input's own
+   * top-level fields are read. Fields the user has not changed follow them; a field the user changed keeps the input and
+   * reports {@link Form.conflict} when the server's value changes too. The submit sends the `expectedVersion` the edit
+   * started from (a 409 rather than a silent overwrite) until the user changes nothing or resolves every conflict (SV-26).
+   */
+  readonly from?: () => Partial<I> | undefined;
 }
 
 /** The reactive state of a form bound to one backend change. */
@@ -42,6 +49,10 @@ export interface Form<I, T> {
   validate(): boolean;
   /** Checks, then sends the change. The idempotency key is kept while the input is unchanged, so a retry is safe. */
   submit(): Promise<Result<T> | undefined>;
+  /** The server's newer value of a top-level field the user changed (option `from`), or `undefined`. */
+  conflict(path: string): { readonly theirs: unknown } | undefined;
+  /** Ends a conflict: keep the user's input (`mine`) or take the server's value (`theirs`). */
+  resolve(path: string, choice: 'mine' | 'theirs'): void;
   /** Puts the values back and clears errors. */
   reset(values?: I): void;
 }
@@ -101,6 +112,38 @@ export function changeForm<I extends object, T = undefined>(
   let formError = $state<Violation | undefined>();
   let pending = $state(false);
   let sent: { body: string; key: string } | undefined;
+  // option `from` (SV-26): the server values the input is based on, and the version they had
+  const from = options.from;
+  const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+  let base: unknown;
+  let baseVersion: number | undefined;
+  let conflicts = $state<Readonly<Record<string, { readonly theirs: unknown }>>>({});
+  if (from) {
+    $effect.pre(() => {
+      const next = from();
+      const version = options.expectedVersion?.();
+      if (next === undefined) return;
+      const old = base;
+      const input = values as Record<string, unknown>;
+      let dirty = false;
+      let found = conflicts;
+      for (const k of Object.keys(input)) {
+        if (!(k in next)) continue;
+        const theirs = $state.snapshot(at(next, k));
+        if (same(input[k], theirs)) {
+          if (k in found) found = without(found, k); // the server has the user's value now (e.g. after the save)
+        } else if (old === undefined || same(input[k], at(old, k)))
+          input[k] = theirs; // untouched: follow
+        else {
+          dirty = true;
+          if (!same(theirs, at(old, k))) found = { ...found, [k]: { theirs } };
+        }
+      }
+      conflicts = found;
+      base = $state.snapshot(next);
+      if (!dirty) baseVersion = version;
+    });
+  }
 
   const checkPath = (path: string): void => {
     const code = check(at(values, path), rules[rulePath(path)] ?? []);
@@ -151,7 +194,7 @@ export function changeForm<I extends object, T = undefined>(
       formError = undefined;
       let rollback = options.optimistic?.(input);
       try {
-        const version = options.expectedVersion?.();
+        const version = from ? baseVersion : options.expectedVersion?.();
         const r = await client.change<T>(
           change(input),
           version === undefined ? { key: sent.key } : { key: sent.key, expectedVersion: version },
@@ -187,8 +230,19 @@ export function changeForm<I extends object, T = undefined>(
         pending = false;
       }
     },
+    conflict: (path) => conflicts[path],
+    resolve(path, choice) {
+      const c = conflicts[path];
+      if (!c) return;
+      if (choice === 'theirs') (values as Record<string, unknown>)[path] = c.theirs;
+      conflicts = without(conflicts, path);
+      // the user decided with the server's newer state in view: submit against it
+      if (Object.keys(conflicts).length === 0) baseVersion = options.expectedVersion?.();
+    },
     reset(next) {
       values = structuredClone(next ?? initial);
+      conflicts = {};
+      base = undefined; // the next `from` value is taken as it is
       clientErrors = {};
       serverErrors = {};
       serverDetails = {};

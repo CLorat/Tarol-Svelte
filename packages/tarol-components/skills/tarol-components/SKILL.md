@@ -24,6 +24,8 @@ description: >-
    rules>` per field. `path` is the backend's field path (`reserve`, `lines[1].quantity`); pass the field's `rules` so
    messages show the bounds; without them the bounds come from the server's 400 (`errorDetails`, `1..1000000`). Coded
    refusals (403, 409) appear above the submit button as an alert with their reference.
+   With `changeForm(…, { from: () => view.value })`, a FormField whose value changes on the server while the user edits
+   it shows a polite notice (`role="status"`) with "Use the new value" / "Keep mine"; input and focus stay.
 5. `AppShell title nav actions` gives the skip link and the landmarks; put pages in its children.
 5a. One aggregate's page: `<DetailLayout query={view} title={(a) => a.title}>` with snippets `children(a)`, `meta(a)`,
    `actions(a)`, `aside(a)`; it renders the `h1` and the loading/error states. Do not wrap it in `QueryState` again.

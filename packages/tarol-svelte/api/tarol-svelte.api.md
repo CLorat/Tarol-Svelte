@@ -23,6 +23,9 @@ export function check(value: unknown, rules: readonly Rule[]): string | null;
 
 // @public
 export interface Form<I, T> {
+    conflict(path: string): {
+        readonly theirs: unknown;
+    } | undefined;
     detail(path: string): string | undefined;
     error(path: string): string | undefined;
     readonly errors: Readonly<Record<string, readonly string[]>>;
@@ -30,6 +33,7 @@ export interface Form<I, T> {
     readonly pending: boolean;
     readonly requestId: string | undefined;
     reset(values?: I): void;
+    resolve(path: string, choice: 'mine' | 'theirs'): void;
     submit(): Promise<Result<T> | undefined>;
     touch(path: string): void;
     validate(): boolean;
@@ -40,6 +44,7 @@ export interface Form<I, T> {
 export interface FormOptions<T, I = unknown> {
     readonly client?: TarolClient;
     readonly expectedVersion?: () => number | undefined;
+    readonly from?: () => Partial<I> | undefined;
     readonly onSuccess?: (result: Extract<Result<T>, {
         ok: true;
     }>) => void;

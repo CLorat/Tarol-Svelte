@@ -78,7 +78,7 @@
     {
       "name": "Combobox (with Field)",
       "path": ".size/combobox.js",
-      "limit": "3.1 kB",
+      "limit": "3.2 kB",
       "gzip": true
     },
     {

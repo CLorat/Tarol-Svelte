@@ -2,10 +2,11 @@
   @component
   One field of a `changeForm(...)`, bound by its backend field path (`reserve`, `lines[1].quantity`). The error shown is
   the client rule's or the server's code, as a message from the catalogue with the bounds of the client rule, or of the
-  server's detail (`errorDetails`, `1..1000000`) when the field has no client rule for the code.
+  server's detail (`errorDetails`, `1..1000000`) when the field has no client rule for the code. When the form has the option `from`, a value that changes on the server while the user edits the field shows a polite notice with "Use the new
+  value" / "Keep mine"; the input and the focus stay as they are.
 -->
 <script lang="ts">
-  import { getMessages, NumberField, TextField } from '@clorat/tarol-design';
+  import { Button, getMessages, NumberField, TextField } from '@clorat/tarol-design';
   import { at, type Form, type Rule } from '@clorat/tarol-svelte';
   import { setAt } from './paths.js';
 
@@ -39,45 +40,83 @@
         ? t(code, { min: rule.min, max: rule.max })
         : t(code, { min: bounds?.[1], max: bounds?.[2] }),
   );
+  // the field binds a text or a number input, so the server's value is a string, a number or null
+  const conflict = $derived(form.conflict(path));
 </script>
 
-{#if type === 'number'}
-  <NumberField
-    {label}
-    {hint}
-    {error}
-    {required}
-    bind:value={
-      () => at(form.values, path) as number | null,
-      (v) => {
-        setAt(form.values, path, v);
-        // once a field shows an error it is checked while typing, so the error is gone before the blur: otherwise the
-        // blur of a click on submit removes the message, the button moves up and the click is lost
-        if (code !== undefined) form.touch(path);
+<!-- one block: the form's gap stays between fields, and the empty live region below the field takes no room -->
+<div class="t-form-field">
+  {#if type === 'number'}
+    <NumberField
+      {label}
+      {hint}
+      {error}
+      {required}
+      bind:value={
+        () => at(form.values, path) as number | null,
+        (v) => {
+          setAt(form.values, path, v);
+          // once a field shows an error it is checked while typing, so the error is gone before the blur: otherwise the
+          // blur of a click on submit removes the message, the button moves up and the click is lost
+          if (code !== undefined) form.touch(path);
+        }
       }
-    }
-    onblur={() => {
-      form.touch(path);
-    }}
-  />
-{:else}
-  <TextField
-    {label}
-    {hint}
-    {error}
-    {required}
-    {type}
-    bind:value={
-      () => (at(form.values, path) as string | null) ?? '',
-      (v) => {
-        setAt(form.values, path, v);
-        // once a field shows an error it is checked while typing, so the error is gone before the blur: otherwise the
-        // blur of a click on submit removes the message, the button moves up and the click is lost
-        if (code !== undefined) form.touch(path);
+      onblur={() => {
+        form.touch(path);
+      }}
+    />
+  {:else}
+    <TextField
+      {label}
+      {hint}
+      {error}
+      {required}
+      {type}
+      bind:value={
+        () => (at(form.values, path) as string | null) ?? '',
+        (v) => {
+          setAt(form.values, path, v);
+          // once a field shows an error it is checked while typing, so the error is gone before the blur: otherwise the
+          // blur of a click on submit removes the message, the button moves up and the click is lost
+          if (code !== undefined) form.touch(path);
+        }
       }
-    }
-    onblur={() => {
-      form.touch(path);
-    }}
-  />
-{/if}
+      onblur={() => {
+        form.touch(path);
+      }}
+    />
+  {/if}
+  <!-- the value changed on the server while the user edits it (SV-26): keep the input, say so politely, let them choose -->
+  <div role="status" class="t-field-changed">
+    {#if conflict}
+      <span>{t('ui.changed', { theirs: (conflict.theirs ?? '') as string | number })}</span>
+      <Button
+        variant="secondary"
+        onclick={() => {
+          form.resolve(path, 'theirs');
+        }}
+      >
+        {t('ui.takeTheirs')}
+      </Button>
+      <Button
+        variant="secondary"
+        onclick={() => {
+          form.resolve(path, 'mine');
+        }}
+      >
+        {t('ui.keepMine')}
+      </Button>
+    {/if}
+  </div>
+</div>
+
+<style>
+  /* one line of small text with the two buttons inline: the content below moves by as little as possible (CLS) */
+  .t-field-changed {
+    font-size: var(--t-text-sm);
+  }
+
+  .t-field-changed :global(button) {
+    margin-inline-start: var(--t-space-2);
+  }
+</style>

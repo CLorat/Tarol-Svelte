@@ -45,13 +45,13 @@
     {
       "name": "svelte bindings (compiled, without svelte and tarol-client)",
       "path": ".size/bundle.js",
-      "limit": "3.2 kB",
+      "limit": "3.5 kB",
       "gzip": true
     },
     {
       "name": "svelte bindings (brotli)",
       "path": ".size/bundle.js",
-      "limit": "3.2 kB",
+      "limit": "3.5 kB",
       "brotli": true
     }
   ],

@@ -43,6 +43,7 @@ views and keyset lists, forms bound to backend changes with field errors on the 
 | `query(() => request, options)` | a view: `value`, `version`, `loading`, `violation`, `stale`, `refresh()` |
 | `list(() => request, options)` | a keyset list: `items`, `total`, `hasMore`, `more()`, `refresh()`; a filter change starts at page 1 |
 | `changeForm(change, initial, options)` | `values` (bindable), `errors` by backend field path, `formError`, `pending`, `touch()`, `submit()`; `optimistic: (input) => view.patch(…)` shows the result at once and rolls back on a failure (409 included) |
+| `changeForm(…, { from: () => view.value })` | an edit form over a live view: untouched fields follow the server, an edited field keeps the input and reports `conflict(path)` / `resolve(path, 'mine' \| 'theirs')`; the submit sends the version the edit started from (SV-26) |
 | `query(…).patch(update)`, `list(…).patch(update)` | show a value before the backend answers; return the rollback |
 | `live(() => topic)` | the latest push `message` on a topic and a `count` |
 
@@ -54,7 +55,7 @@ A view by id names its stream: the generated `requests.auctionView({ auction })`
 `live: { topic, subject: null }` for a topic whose messages are about another stream (e.g. a saga's). A list has no
 subject and re-reads on every message. A burst of messages makes one read in flight and at most one after it.
 
-Size: 3.04 KB gzip / 2.67 KB brotli compiled (budget 3.2 KB, SV-24), without Svelte and `@clorat/tarol-client`. Plain Svelte 5 apps (SV-3); nothing touches
+Size: 3.17 KB gzip / 2.79 KB brotli compiled (budget 3.5 KB, SV-26), without Svelte and `@clorat/tarol-client`. Plain Svelte 5 apps (SV-3); nothing touches
 `window` at import time.
 
 Licence: AGPL-3.0-only, or a commercial licence from the copyright holder.
