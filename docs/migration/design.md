@@ -247,3 +247,17 @@ on the option would be dead code (it was, as a no-op, in the first build).
 | "An auction's page with actions" | `<DetailLayout query title>` + `actions` snippet with `MenuButton` | an own `h1` and loading code around it |
 | "A search box in the header" | `<SearchBox label onselect>` | `{@html}` of snippets; polling; no debounce |
 | "Keyboard access to the table" | nothing: `DataTable` is a grid | own `keydown` handlers; two buttons in a cell |
+
+## 11. DataTable under live updates (2026-11-21)
+
+From the design review ([../review/frontend-ease.md](../review/frontend-ease.md) §B, 5c): a live update that re-sorted the
+rows (another user's bid moves an auction up a `HighestBid` list) moved the focused row's DOM node, which **blurs it**:
+keyboard focus fell to `<body>`, and the active cell index then pointed at another row [verified, `live.test.ts` against
+`main`'s DataTable: 2 of 3 tests fail].
+
+Behaviour change (a fix, no public API change): `DataTable` keeps the active row's `rowKey`. After every new set of rows it
+moves the active cell to that row's new index, and puts focus back on it when the update took focus out of the grid. When
+the row is gone, focus stays at the same index. An update in place never moved focus and still does not.
+
+Verified: `packages/tarol-components/test/live.test.ts` (re-sort with axe, in place, removed row), 3 runs green; DataTable
+3.10 → **3.31 KB gzip** (budget 6 KB) [verified].

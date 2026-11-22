@@ -31,7 +31,9 @@ description: >-
    `minLength` (2), `debounce` (150 ms), `snippets` (default `true`). Hits are `SearchHit` (`type`, `id`, `aggregate`,
    `title`, `score`, `snippet?`, `highlights?`); the snippet is plain text with UTF-16 ranges: render your own with
    `highlight(snippet, highlights)` → `{ text, mark }[]` as text nodes and `<mark>`.
-5c. `DataTable` is a grid: keyboard navigation is built in; put at most one widget (a link or a button) in a cell.
+5c. `DataTable` is a grid: keyboard navigation is built in; put at most one widget (a link or a button) in a cell. It
+   remembers the active row by `rowKey`, so a live update that re-sorts or removes rows keeps keyboard focus on the same
+   row (or the same place): `rowKey` must be the row's id, never its index.
 6. All visible text comes from props (your labels) or the message catalogue; never literal text inside the components.
 
 ## Example

@@ -11,6 +11,11 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
   (SV-24).
 * `@clorat/tarol-codegen`: the request of a view by id carries `subject` (the `x-tarol-id` path parameter).
 
+### Fixed
+
+* `@clorat/tarol-components`: `DataTable` keeps keyboard focus on the same row (by `rowKey`) when a live update re-sorts
+  or removes rows; before, focus fell to `<body>`.
+
 ## [0.1.0]
 
 The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
