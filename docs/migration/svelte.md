@@ -88,6 +88,7 @@ Report: `packages/tarol-svelte/api/tarol-svelte.api.md` (generated). `setTarol`,
 | "Show a field error under the amount" | `form.errors.amount` | parsing the problem JSON by hand |
 | "Refresh when a bid comes in" | `list(…, { live: 'artflow.bid-placed' })` | polling with `setInterval` |
 | "Edit with optimistic concurrency" | `changeForm(…, { expectedVersion: () => view.version })` | sending `If-Match` by hand |
+| "An edit form on a live page that must not overwrite another user's change" | `changeForm(…, { from: () => view.value, expectedVersion: () => view.version })`, `FormField` | `expectedVersion` alone (read at submit); copying `view.value` into `initial` by hand |
 
 ## 8. Verification
 
@@ -98,3 +99,30 @@ Report: `packages/tarol-svelte/api/tarol-svelte.api.md` (generated). `setTarol`,
 * Size (compiled, without `svelte` and `@clorat/tarol-client`): **2.62 KB gzip / 2.29 KB brotli** (budget 3 KB)
   [verified].
 * publint and attw clean; API report generated; 0 undocumented members [verified].
+
+## 10. Edit forms under live data (SV-26, 2026-11-21)
+
+From the design review ([../review/frontend-ease.md](../review/frontend-ease.md) §B, 5a/5b): `expectedVersion` is read at
+submit, so under a live view (which revalidates after another user's change) an edit made on old values was sent with
+the **new** version and overwrote that change silently [verified: `edit.svelte.test.ts`, last test].
+
+Public API and behaviour changes (additive; without `from` nothing changes):
+
+* `FormOptions.from?: () => Partial<I> | undefined` (new): the server's current values. Only the input's own top-level
+  fields are read. Untouched fields follow the server; an edited field keeps the input; when the server's value of an
+  edited field changes too, `form.conflict(path)` returns `{ theirs }`. A field the server now has with the user's value
+  (e.g. after the own save) is clean again.
+* With `from`, the submit sends the `expectedVersion` the current edit started from (the version of the last `from` value
+  without edited fields), so a stale edit gets 409 `Stream.VersionConflict`; resolving every conflict moves it to the
+  current version.
+* `Form.conflict(path)`, `Form.resolve(path, 'mine' | 'theirs')` (new); `reset()` also drops conflicts.
+* `@clorat/tarol-components` `FormField`: a `role="status"` region under the field shows `ui.changed` with two buttons,
+  `ui.takeTheirs` and `ui.keepMine` (new message ids, de and en).
+
+Measured: `@clorat/tarol-svelte` 2.89 → **3.17 KB gzip** / 2.54 → **2.79 KB brotli** (budget raised to 3.5 KB together with
+SV-24); `ChangeForm + FormField` 1.59 → **1.96 KB gzip** (budget 2 KB); the notice: CLS **0.0072** (≤ 0.01, asserted), focus
+stays on the input, axe 0 violations, 3 runs [verified]. Checks proven with deliberate violations: the version read at
+submit fails `edit.svelte.test.ts`; a 6rem notice (CLS 0.0197) fails `conflict.svelte.test.ts` [verified].
+
+Not covered by e2e: the sample has no change that edits a field of an existing aggregate (BC-26 in
+[changes.md](../backend/changes.md)); the component and unit tests cover the behaviour.

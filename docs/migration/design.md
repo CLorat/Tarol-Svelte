@@ -247,3 +247,11 @@ on the option would be dead code (it was, as a no-op, in the first build).
 | "An auction's page with actions" | `<DetailLayout query title>` + `actions` snippet with `MenuButton` | an own `h1` and loading code around it |
 | "A search box in the header" | `<SearchBox label onselect>` | `{@html}` of snippets; polling; no debounce |
 | "Keyboard access to the table" | nothing: `DataTable` is a grid | own `keydown` handlers; two buttons in a cell |
+
+## 12. Messages of the edit-form notice (SV-26, SV-28, 2026-11-22)
+
+`FormField`'s "changed meanwhile" notice (SV-26, [svelte.md](svelte.md) §10) adds three messages to the shared catalogue,
+de and en: `ui.changed` (`{theirs}`), `ui.takeTheirs`, `ui.keepMine`. Every entry that bundles the catalogue grows by
+about 60 B gzip: ThemeRoot 2.75 → 2.81 KB (budget 3 KB), and Combobox (with Field) 3.08 → **3.147 KB**, 47 B over its
+3.1 KB budget [verified, `pnpm size`]. The owner raised the Combobox budget to **3.2 KB** (SV-28) rather than moving the
+texts out of the one catalogue (P7).

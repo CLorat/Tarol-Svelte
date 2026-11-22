@@ -30,6 +30,11 @@ description: >-
    optimistic: (input) => view.patch((a) => ({ ...a, highest: input.amount })) })`. The patch shows at once; any failure
    (409 `Stream.VersionConflict`, 400, 403, a throw) rolls it back and reads again; success keeps it until the own-change
    revalidation replaces it. Return the rollback from `optimistic`, i.e. the result of `patch`.
+6b. Edit forms over a live view: `changeForm(rename, { title: '' }, { from: () => view.value, expectedVersion: () =>
+   view.version })`. The form takes the view's values for its own fields; fields the user has not touched follow the
+   server, an edited field keeps the input and `form.conflict('title')` gives `{ theirs }` when the server changed it
+   too (`FormField` shows it with "Use the new value" / "Keep mine"; or call `form.resolve(path, 'mine' | 'theirs')`).
+   The submit sends the version the edit started from, so a stale edit gets a 409 instead of overwriting.
 7. Codes are not messages: map `form.error(path)` and `violation.code` to text through the message catalogue
    (`@clorat/tarol-design`), never hard-code user text.
 
@@ -65,6 +70,8 @@ description: >-
 | refetching after `submit()` | unnecessary: queries revalidate after own changes (with `Tarol-Read-After`) |
 | `{@html}` of server text | never; render text |
 | changing `view.value` by hand for an optimistic UI | `value` is read-only; use `view.patch(update)` and return its rollback from `optimistic` |
+| an edit form with `expectedVersion: () => view.version` but no `from` under a live view | the version is read at submit, after the live view moved on: an edit made on old values **overwrites** another user's change silently |
+| `from` with nested fields (`lines[1].quantity`) | only top-level fields are compared; a nested object counts as one value |
 | `optimistic` without `expectedVersion` | a concurrent change is not detected (no 409), so the patch may show a value that never existed |
 
 ## Notes
