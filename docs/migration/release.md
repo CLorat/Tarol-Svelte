@@ -118,3 +118,10 @@ is cut to keep the versions equal (SV-20), and the `e2e` pin `9b68afc` stays rig
 ships the codegen bin fix (#28), and is the first release with the `consumer` job (#32). Before the tag, the
 `[Unreleased]` entries move into `[0.1.0]` as "in 0.1.0-preview.3" parts, which the release notes use; `release.mjs
 check 0.1.0-preview.3`: 7 packages, 0 problems [verified].
+
+## 0.1.0-preview.5 (2026-11-22)
+
+Built against Tarol-Net `0.1.0-preview.5` (`380f177`, BC-23 and BC-25), which the `e2e` job now pins; there is no
+tarol-svelte `0.1.0-preview.4` (SV-20: the next real release takes Tarol-Net's version). Shipped in the same pull request
+as the work it releases (SV-29). `release.mjs check 0.1.0-preview.5` after `set-version`: 7 packages, 0 problems
+[verified]. The environment `release` has no required reviewer, which the owner accepted (SV-30).

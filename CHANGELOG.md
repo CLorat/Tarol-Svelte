@@ -4,30 +4,38 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
-### Added
+## [0.1.0]
+
+The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
+`0.1.0-preview.2` (2026-11-21), the version of Tarol-Net it is built and tested against (SV-20); there is no
+`0.1.0-preview.1` here. The "in 0.1.0-preview.N" parts list what each pre-release added; `0.1.0-preview.3` is built
+against Tarol-Net `0.1.0-preview.3`, `0.1.0-preview.5` against Tarol-Net `0.1.0-preview.5` (there is no tarol-svelte
+`0.1.0-preview.4`).
+
+### Added in 0.1.0-preview.5
+
+* `@clorat/tarol-codegen`: typed `topics` from the backend's `x-tarol-topics` (Tarol-Net BC-25); `live: topics.bidPlaced`
+  and `live(() => topics.bidPlaced)` check the name and type the payload. `@clorat/tarol-client`: `PushedMessage.revision`
+  and `.position`, `ReadOptions.readAfter`, the type `Topic`.
 
 * `@clorat/tarol-svelte`: `changeForm(…, { from })` for edit forms over a live view: untouched fields follow the server,
   edited ones keep the input and report `conflict(path)`; the submit sends the version the edit started from (SV-26).
 * `@clorat/tarol-components`: `FormField` shows a polite "changed meanwhile" notice with "Use the new value" / "Keep mine".
 
-### Changed
+### Changed in 0.1.0-preview.5
+
+* `@clorat/tarol-svelte`: live lists read again after the pushed message's position (`Tarol-Read-After`), so they never
+  show the row from before the event; a live view skips a message whose revision it already has (Tarol-Net BC-23).
 
 * `@clorat/tarol-svelte`: a live query whose request names a `subject` revalidates only for messages of that stream, and
   pushed messages are coalesced (one read in flight, one after it); `LiveTopic` and `ReadRequest.subject` are new
   (SV-24).
 * `@clorat/tarol-codegen`: the request of a view by id carries `subject` (the `x-tarol-id` path parameter).
 
-### Fixed
+### Fixed in 0.1.0-preview.5
 
 * `@clorat/tarol-components`: `DataTable` keeps keyboard focus on the same row (by `rowKey`) when a live update re-sorts
   or removes rows; before, focus fell to `<body>`.
-
-## [0.1.0]
-
-The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
-`0.1.0-preview.2` (2026-11-21), the version of Tarol-Net it is built and tested against (SV-20); there is no
-`0.1.0-preview.1` here. The "in 0.1.0-preview.N" parts list what each pre-release added; `0.1.0-preview.3` is built
-against Tarol-Net `0.1.0-preview.3`.
 
 ### Added in 0.1.0-preview.3
 
