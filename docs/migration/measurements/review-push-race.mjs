@@ -1,6 +1,7 @@
 // Measures what a UI client sees when it re-reads right after a push (docs/review/frontend-ease.md §B). Needs the sample
 // (`ARTFLOW_STAY_UP=1 samples/Sagas/apphost.sh`) and a built tarol-client (`pnpm build`).
-// usage: node docs/migration/measurements/review-push-race.mjs <list|view> [count=20] [delay ms before the read=0]
+// usage: node docs/migration/measurements/review-push-race.mjs <list|view|list-after> [count=20] [delay ms before the read=0]
+// list-after sends `Tarol-Read-After: <the message's position>` (BC-23, Tarol-Net #115)
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -23,10 +24,15 @@ async function token(user) {
   });
   return (await r.json()).access_token;
 }
-const call = async (t, method, path, body) => {
+const call = async (t, method, path, body, readAfter) => {
   const r = await fetch(api + path, {
     method,
-    headers: { authorization: `Bearer ${t}`, 'content-type': 'application/json', 'idempotency-key': crypto.randomUUID() },
+    headers: {
+      authorization: `Bearer ${t}`,
+      'content-type': 'application/json',
+      'idempotency-key': crypto.randomUUID(),
+      ...(readAfter ? { 'tarol-read-after': readAfter } : {}),
+    },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   return r.status === 204 ? null : r.json();
@@ -45,7 +51,9 @@ push.subscribe('artflow.bid-placed', async (m) => {
   const row =
     what === 'view'
       ? await call(bob, 'GET', `/auctions/${m.subject}`)
-      : (await call(bob, 'GET', '/auctions?sort=OpenedAt&limit=50')).items.find((r) => r.id === m.subject);
+      : (
+          await call(bob, 'GET', '/auctions?sort=OpenedAt&limit=50', undefined, what === 'list-after' ? m.position : undefined)
+        ).items.find((r) => r.id === m.subject);
   if (row && row.bids >= 1) fresh++;
   else stale++;
   waiting.get(m.subject)?.();
