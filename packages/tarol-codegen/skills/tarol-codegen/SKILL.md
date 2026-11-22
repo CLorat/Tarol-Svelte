@@ -18,7 +18,10 @@ description: >-
 3. Use the three exports:
    * `requests.<op>(…)` builds a `ReadRequest` or `ChangeRequest`: pass it to `list(() => requests.x(q))`,
      `query(() => requests.y(p))`, `changeForm(requests.z, initial)` from `@clorat/tarol-svelte`. A view by id carries
-     `subject` (its stream id), so its `live` topics skip messages about other aggregates.
+     `subject` (its stream id) and `stream`, so its `live` topics skip messages about other aggregates.
+   * `topics.<name>` from the backend's `x-tarol-topics` (Tarol-Net `0.1.0-preview.5`): `live: topics.bidPlaced` and
+     `live(() => topics.bidPlaced)` are checked names with a typed payload (`PushedMessage<BidPlacedV1>`); the name is
+     the part after the system (`artflow.bid-placed` → `bidPlaced`), or the whole name when two systems share it.
    * `tarol(client).changes.<op>(input, { key, expectedVersion })` and `.queries.<op>(…)` for code outside components.
    * `rules.<op>` for `changeForm(…, { rules })`: the backend's rules and codes per field path (`lines[].quantity`).
 4. Names are the backend's operation ids (its C# type names) in camelCase: `CreateAuction` → `createAuction`.

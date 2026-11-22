@@ -28,7 +28,9 @@ description: >-
 7. Push: `connectPush({ url, tokens })` from `@clorat/tarol-client/push`. Subscriptions survive reconnects. The hub has no
    replay, so refetch in `onReconnect`. Topics are `<system>.<name>`. A refused `Subscribe` or `publish` gives a
    `HubRefusal` `{ code, detail, message }` with `Hub.Forbidden`, `Hub.Topic`, `Auth.Tenant`, `Hub.Disconnected` or
-   `Hub.Error`; translate the `code`, never show or parse `message`.
+   `Hub.Error`; translate the `code`, never show or parse `message`. A forwarded message carries `revision` (the stream
+   version after the event, a view's version) and `position` (its `Tarol-Position`); pass that as
+   `read(path, { readAfter: m.position })` to read a list after the event, not before it (a projection lags the push).
 
 ## Example
 

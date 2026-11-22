@@ -7,6 +7,8 @@ export interface ReadRequest {
   readonly query?: Readonly<Record<string, QueryValue>>;
   /** The stream a view by id shows: its live topics skip messages of other streams. */
   readonly subject?: string;
+  /** The aggregate type of `subject` (its `x-tarol-id`). */
+  readonly stream?: string;
 }
 
 const enc = encodeURIComponent;

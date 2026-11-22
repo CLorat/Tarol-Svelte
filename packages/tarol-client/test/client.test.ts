@@ -327,6 +327,26 @@ describe('reads', () => {
     expect(r).toMatchObject({ ok: true, stale: true });
   });
 
+  it('reads after a given position (a pushed message), the later of it and the own one, and ignores a non-position', async () => {
+    const b = backend(
+      ok(200, page),
+      ok(204, undefined, { 'tarol-position': '10.2' }),
+      ok(200, page),
+      ok(200, page),
+      ok(200, page),
+    );
+    const c = client(b);
+    await c.read('/auctions', { readAfter: '7.1' });
+    expect(b.calls[0]?.headers['tarol-read-after']).toBe('7.1');
+    await c.change({ method: 'POST', path: '/a' });
+    await c.read('/auctions', { readAfter: '9.9' }); // older than the own change
+    expect(b.calls[2]?.headers['tarol-read-after']).toBe('10.2');
+    await c.read('/auctions', { readAfter: '11.1' });
+    expect(b.calls[3]?.headers['tarol-read-after']).toBe('11.1');
+    await c.read('/auctions', { readAfter: '11.1\r\nx-evil: 1' });
+    expect(b.calls[4]?.headers['tarol-read-after']).toBe('10.2');
+  });
+
   it('waits for Retry-After while a projection is building, then answers', async () => {
     const sleep = vi.fn(() => Promise.resolve());
     const b = backend(

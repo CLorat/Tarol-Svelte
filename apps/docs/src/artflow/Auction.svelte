@@ -3,7 +3,7 @@
   import { getMessages, getToasts, MenuButton } from '@clorat/tarol-design';
   import { changeForm, getTarol, query } from '@clorat/tarol-svelte';
   import { untrack } from 'svelte';
-  import { requests, rules, tarol, type AuctionId, type AuctionView } from './api.js';
+  import { requests, rules, tarol, topics, type AuctionId, type AuctionView } from './api.js';
   import { euros, short } from './format.js';
 
   const props: { id: AuctionId } = $props();
@@ -12,7 +12,7 @@
   const toasts = getToasts();
   const api = tarol(getTarol().client);
   // a bid on this auction, by anyone, revalidates it; the request names its stream, so other auctions' bids are skipped
-  const view = query<AuctionView>(() => requests.auctionView({ auction: id }), { live: 'artflow.bid-placed' });
+  const view = query<AuctionView>(() => requests.auctionView({ auction: id }), { live: topics.bidPlaced });
   const bid = changeForm<{ auction: AuctionId; amount: number | null }>(
     (i) => requests.placeBid({ auction: i.auction, amount: i.amount ?? 0 }),
     { auction: id, amount: null },
