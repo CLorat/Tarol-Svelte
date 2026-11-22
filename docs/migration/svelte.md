@@ -117,10 +117,13 @@ Public API and behaviour changes (additive; without `from` nothing changes):
   current version.
 * `Form.conflict(path)`, `Form.resolve(path, 'mine' | 'theirs')` (new); `reset()` also drops conflicts.
 * `@clorat/tarol-components` `FormField`: a `role="status"` region under the field shows `ui.changed` with two buttons,
-  `ui.takeTheirs` and `ui.keepMine` (new message ids, de and en).
+  `ui.takeTheirs` and `ui.keepMine` (new message ids, de and en). The field and its region are one block
+  (`.t-form-field`), so the empty region takes no room: the visual baselines are unchanged (FormField and ChangeForm
+  examples 147 px, as on `main`; 163 px with the region as a separate flex item, which failed the `visual` job)
+  [verified].
 
 Measured: `@clorat/tarol-svelte` 2.89 → **3.17 KB gzip** / 2.54 → **2.79 KB brotli** (budget raised to 3.5 KB together with
-SV-24); `ChangeForm + FormField` 1.59 → **1.96 KB gzip** (budget 2 KB); the notice: CLS **0.0072** (≤ 0.01, asserted), focus
+SV-24); `ChangeForm + FormField` 1.59 → **1.97 KB gzip** (budget 2 KB); the notice: CLS **0.0072** (≤ 0.01, asserted), focus
 stays on the input, axe 0 violations, 3 runs [verified]. Checks proven with deliberate violations: the version read at
 submit fails `edit.svelte.test.ts`; a 6rem notice (CLS 0.0197) fails `conflict.svelte.test.ts` [verified].
 
