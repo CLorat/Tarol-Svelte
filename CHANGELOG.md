@@ -11,6 +11,11 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
   (`side`) is unchanged.
 * `@clorat/tarol-design`: the catalogue key `AlreadyExists` (en, de).
 
+### Fixed
+
+* `@clorat/tarol-design`: `Field` (and so `TextField`, `NumberField`, `DateField`, `FormField`) puts a space between the label
+  and the required marker: "Vorname (Pflichtfeld)", not "Vorname(Pflichtfeld)" (TS-5).
+
 ### Changed
 
 * `@clorat/tarol-codegen`: an operation without `x-tarol-kind` (an app's plain endpoint) is skipped with a warning and named

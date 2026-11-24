@@ -38,7 +38,8 @@
 
 <div class="t-field">
   <label for={id}>
-    {label}{#if required}<span class="t-required"> ({t('ui.required')})</span>{/if}
+    <!-- the space as an expression: Svelte drops whitespace at the start of an element's content (TS-5) -->
+    {label}{#if required}{' '}<span class="t-required">({t('ui.required')})</span>{/if}
   </label>
   {@render control({
     id,

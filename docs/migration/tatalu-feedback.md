@@ -50,3 +50,13 @@ no idempotency, no ETag), so a typed builder would promise more than the backend
 
 Public API: `GenerateOptions.strict`, `GenerateOptions.onWarning` (API report regenerated); CLI flag `--strict`. Behaviour
 change: a document with such an operation now generates (it failed before). **[verified]** `test/generate.test.ts`.
+
+## TS-5: the space before „(Pflichtfeld)“
+
+**Finding confirmed.** `Field.svelte:41` had `<span class="t-required"> (…)</span>`: Svelte drops whitespace at the start of
+an element's content, so the label read "Title(Pflichtfeld)" in the DOM **[verified]** (the new assertion in
+`primitives.test.ts` failed with exactly that text). The finding says the accessible name was fine; the test does not
+depend on it (`getByLabelText(/Title/)` matches either way).
+
+**Change.** The space is an expression before the span (`{' '}`), which Svelte keeps; the span's text is `(Pflichtfeld)`.
+Behaviour: the visible label gains the space. No API change.
