@@ -64,3 +64,6 @@ marker after a space) and `tarol-components/test/components.test.ts` (a 400 `{ "
 box, axe, the click clears it, the other box binds `true`).
 
 Public API: `Checkbox` (export of `@clorat/tarol-design`, API report regenerated); `FormField`'s `type` gains `checkbox`.
+
+Size: with `Checkbox` the tarol-design "everything" bundle is 10.18 kB gzip, over its 10 kB budget; the owner raised that
+budget (and "Combobox (with Field)") by 50 % (SV-31).
