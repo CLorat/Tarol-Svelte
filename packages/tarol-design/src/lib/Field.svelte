@@ -38,8 +38,8 @@
 
 <div class="t-field">
   <label for={id}>
-    <!-- a no-break space: Svelte drops leading whitespace (also `&#32;`), and the marker never wraps alone (TS-5) -->
-    {label}{#if required}&nbsp;<span class="t-required">({t('ui.required')})</span>{/if}
+    <!-- a no-break space: Svelte drops a leading space (also `&#32;`), keeps this one; the marker never wraps alone (TS-5) -->
+    {label}{#if required}<span class="t-required">&nbsp;({t('ui.required')})</span>{/if}
   </label>
   {@render control({
     id,
