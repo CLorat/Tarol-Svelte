@@ -61,5 +61,7 @@ depend on it (`getByLabelText(/Title/)` matches either way).
 **Change.** A no-break space at the start of the span's text (`<span class="t-required">&nbsp;(…)</span>`): Svelte keeps it (a leading space and `&#32;` are both dropped,
 tried), the lint rule `svelte/no-useless-mustaches` refuses `{' '}`, and the marker never wraps onto a line of its own. The
 span's text is ` (Pflichtfeld)` with that space. Size: the space as its own node before the span put tarol-design's
-"everything" bundle 14 B over its 10 kB budget; inside the span it is 9.74 kB **[verified]** (`pnpm size`).
+"everything" bundle 14 B over its 10 kB budget; inside the span it is 9.74 kB **[verified]** (`pnpm size`). The "Combobox (with Field)" budget is still 2 B over;
+the literal U+00A0, `font-weight: 400` and a CSS margin instead of the space were measured and are not smaller. Raising
+that budget is the owner's decision (PR).
 Behaviour: the visible label gains the space. No API change.
