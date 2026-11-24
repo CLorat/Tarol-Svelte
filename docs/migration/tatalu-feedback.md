@@ -58,5 +58,7 @@ an element's content, so the label read "Title(Pflichtfeld)" in the DOM **[verif
 `primitives.test.ts` failed with exactly that text). The finding says the accessible name was fine; the test does not
 depend on it (`getByLabelText(/Title/)` matches either way).
 
-**Change.** The space is an expression before the span (`{' '}`), which Svelte keeps; the span's text is `(Pflichtfeld)`.
+**Change.** A no-break space before the span (`&nbsp;`): Svelte keeps it (a leading space and `&#32;` are both dropped,
+tried), the lint rule `svelte/no-useless-mustaches` refuses `{' '}`, and the marker never wraps onto a line of its own. The
+span's text is `(Pflichtfeld)`.
 Behaviour: the visible label gains the space. No API change.

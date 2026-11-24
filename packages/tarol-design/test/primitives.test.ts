@@ -62,7 +62,7 @@ describe('fields and buttons', () => {
     render(Form, { locale: 'de' });
     await expect.element(page.getByText('(Pflichtfeld)')).toBeInTheDocument();
     // TS-5: a space between the label and the marker in the DOM ("Title (Pflichtfeld)", not "Title(Pflichtfeld)")
-    expect(document.querySelector('label')?.textContent?.trim()).toBe('Title (Pflichtfeld)');
+    expect(document.querySelector('label')?.textContent.trim()).toBe('Title\u00a0(Pflichtfeld)');
     expect(document.querySelector('.t-root')?.getAttribute('lang')).toBe('de');
   });
 });

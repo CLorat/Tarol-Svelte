@@ -13,8 +13,8 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Fixed
 
-* `@clorat/tarol-design`: `Field` (and so `TextField`, `NumberField`, `DateField`, `FormField`) puts a space between the label
-  and the required marker: "Vorname (Pflichtfeld)", not "Vorname(Pflichtfeld)" (TS-5).
+* `@clorat/tarol-design`: `Field` (and so `TextField`, `NumberField`, `DateField`, `FormField`) puts a (no-break) space between
+  the label and the required marker: "Vorname (Pflichtfeld)", not "Vorname(Pflichtfeld)" (TS-5).
 
 ### Changed
 
