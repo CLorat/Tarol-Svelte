@@ -67,3 +67,20 @@ Public API: `Checkbox` (export of `@clorat/tarol-design`, API report regenerated
 
 Size: with `Checkbox` the tarol-design "everything" bundle is 10.18 kB gzip, over its 10 kB budget; the owner raised that
 budget (and "Combobox (with Field)") by 50 % (SV-31); `FormField type="checkbox"` puts tarol-components "ChangeForm + FormField" at 2.04 kB, over 2 kB, raised by the same 50 % to 3 kB (SV-32).
+
+## TS-5: the space before „(Pflichtfeld)“
+
+**Finding confirmed.** `Field.svelte:41` had `<span class="t-required"> (…)</span>`: Svelte drops whitespace at the start of
+an element's content, so the label read "Title(Pflichtfeld)" in the DOM **[verified]** (the new assertion in
+`primitives.test.ts` failed with exactly that text). The finding says the accessible name was fine; the test does not
+depend on it (`getByLabelText(/Title/)` matches either way).
+
+**Change.** A no-break space at the start of the span's text (`<span class="t-required">&nbsp;(…)</span>`): Svelte keeps it (a leading space and `&#32;` are both dropped,
+tried), the lint rule `svelte/no-useless-mustaches` refuses `{' '}`, and the marker never wraps onto a line of its own. The
+span's text is ` (Pflichtfeld)` with that space. Size: the space as its own node before the span put tarol-design's
+"everything" bundle 14 B over its 10 kB budget; inside the span it is 9.74 kB **[verified]** (`pnpm size`). The "Combobox (with Field)" budget is still 2 B over;
+the literal U+00A0, `font-weight: 400` and a CSS margin instead of the space were measured and are not smaller. Raising
+that budget is the owner's decision (PR).
+Behaviour: the visible label gains the space. No API change.
+
+Size decision: the owner raised "Combobox (with Field)" (and "everything") by 50 % (SV-31).

@@ -14,6 +14,11 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
   `checked`). `@clorat/tarol-components`: `FormField type="checkbox"` binds a boolean member by path, touched on the change,
   with the server's error of its path (TS-4).
 
+### Fixed
+
+* `@clorat/tarol-design`: `Field` (and so `TextField`, `NumberField`, `DateField`, `FormField`) puts a (no-break) space between
+  the label and the required marker: "Vorname (Pflichtfeld)", not "Vorname(Pflichtfeld)" (TS-5).
+
 ### Changed
 
 * `@clorat/tarol-codegen`: an operation without `x-tarol-kind` (an app's plain endpoint) is skipped with a warning and named
