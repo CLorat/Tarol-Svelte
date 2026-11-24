@@ -35,3 +35,18 @@ an app's own `X.Y` text still wins.
 Behaviour change: a code `X.Y` that is not in any catalogue but whose `Y` is (for example an app code `Order.Required`) now
 shows `Y`'s text instead of `error.generic`. **[verified]** `test/messages.test.ts` (red before: `ChildDayCare.NotFound` read
 "Etwas ist schiefgelaufen."). Public API: no new export (the catalogue objects gain a key; the API report lists them).
+
+## TS-3: tarol-codegen and plain operations
+
+**Change.** An operation without `x-tarol-kind` is not a Tarol entry (Tatalu's anonymous sign-up `POST /konto/registrierung`
+calls the identity provider and has no tenant). It is skipped before any other check (a plain ASP.NET endpoint often has no
+`operationId` either), reported through `GenerateOptions.onWarning` (the CLI writes `tarol-codegen: warning: #/paths/…:
+skipped, no x-tarol-kind (not a Tarol entry)` to stderr) and named in the header comment of the generated module, so a
+reviewer sees it. `strict: true` / `--strict` keeps the old error. The rest of the output is byte-identical (the test
+compares it with the document without the operation).
+
+Not done: `--plain` (a typed request builder from `requestBody`). A plain endpoint has no Tarol contract (no problem codes,
+no idempotency, no ETag), so a typed builder would promise more than the backend states; the app keeps its few lines.
+
+Public API: `GenerateOptions.strict`, `GenerateOptions.onWarning` (API report regenerated); CLI flag `--strict`. Behaviour
+change: a document with such an operation now generates (it failed before). **[verified]** `test/generate.test.ts`.

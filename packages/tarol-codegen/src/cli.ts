@@ -4,15 +4,17 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { generate, GenerateError, type OpenApiDocument } from './generate.js';
 
-const usage = `usage: tarol-codegen <openapi.json | http(s)://…/openapi/v1.json> -o <out.ts> [--check]
+const usage = `usage: tarol-codegen <openapi.json | http(s)://…/openapi/v1.json> -o <out.ts> [--check] [--strict]
 
   -o, --out   the file to write (one TypeScript module)
-  --check     do not write; exit 1 when the file differs from what the document generates (for CI)`;
+  --check     do not write; exit 1 when the file differs from what the document generates (for CI)
+  --strict    an operation without x-tarol-kind is an error (default: skipped with a warning)`;
 
 /** Runs the command line; returns the exit code. */
 export async function main(argv: readonly string[]): Promise<number> {
   const args = [...argv];
   const check = args.includes('--check');
+  const strict = args.includes('--strict');
   const o = Math.max(args.indexOf('-o'), args.indexOf('--out'));
   const out = o >= 0 ? args[o + 1] : undefined;
   const input = args.find((a, i) => !a.startsWith('-') && i !== o + 1);
@@ -25,6 +27,8 @@ export async function main(argv: readonly string[]): Promise<number> {
   try {
     code = generate(JSON.parse(text) as OpenApiDocument, {
       source: /^https?:\/\//.test(input) ? input : (input.split('/').at(-1) ?? input),
+      strict,
+      onWarning: (message) => process.stderr.write(`tarol-codegen: warning: ${message}\n`),
     });
   } catch (error) {
     if (error instanceof GenerateError) {

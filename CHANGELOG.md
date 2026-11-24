@@ -13,6 +13,10 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Changed
 
+* `@clorat/tarol-codegen`: an operation without `x-tarol-kind` (an app's plain endpoint) is skipped with a warning and named
+  in the header comment instead of failing the generation (TS-3); `--strict` / `GenerateOptions.strict` keeps the error.
+  New: `GenerateOptions.strict`, `GenerateOptions.onWarning`.
+
 * `@clorat/tarol-design`: `translator` falls back from an unknown `X.Y` to the generic `Y` before `error.generic` (TS-2):
   `ChildDayCare.NotFound` reads as `NotFound`'s text.
 

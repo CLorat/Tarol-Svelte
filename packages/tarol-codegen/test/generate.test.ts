@@ -410,11 +410,24 @@ describe('Tarol extensions', () => {
     expect(code).toMatch(/^import type \{ ChangeOptions, ChangeRequest, QueryValue, Result, TarolClient \} from/m);
   });
 
-  it('leaves TarolProblem to the client (its Violation) and requires x-tarol-kind', () => {
+  it('leaves TarolProblem to the client (its Violation)', () => {
     expect(code).not.toContain('TarolProblem');
-    const untyped: Record<string, unknown> = { ...post('Pay', 'Signup').post };
-    delete untyped['x-tarol-kind'];
-    expect(() => generate(doc(schemas, { '/pay': { post: untyped } }))).toThrow(/x-tarol-kind is required/);
+  });
+
+  it('skips an operation without x-tarol-kind with a warning, or refuses it with strict (TS-3)', () => {
+    const plain: Record<string, unknown> = { ...post('Pay', 'Signup').post };
+    delete plain['x-tarol-kind'];
+    delete plain['operationId']; // a plain ASP.NET endpoint often has neither
+    const warnings: string[] = [];
+    const out = generate(doc(schemas, { ...paths, '/konto/registrierung': { post: plain } }), {
+      onWarning: (m) => warnings.push(m),
+    });
+    expect(warnings).toEqual(['#/paths/~1konto~1registrierung/post: skipped, no x-tarol-kind (not a Tarol entry)']);
+    expect(out).toContain('// Not Tarol entries (no x-tarol-kind), not generated: POST /konto/registrierung.');
+    expect(out.replace(/^\/\/ Not Tarol entries.*\n/m, '')).toBe(code);
+    expect(() =>
+      generate(doc(schemas, { '/pay': { post: { ...plain, operationId: 'Pay' } } }), { strict: true }),
+    ).toThrow(/x-tarol-kind is required/);
   });
 
   it('compiles', () => {
