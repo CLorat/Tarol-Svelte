@@ -56,7 +56,8 @@ if (created.ok) {
 | an OpenAPI 3.0 document | `GenerateError: #/openapi: OpenAPI 3.0.x is not supported (3.1 or later)` |
 | a schema the generator cannot type exactly | `GenerateError` with its JSON pointer; fix the backend contract, do not patch the output |
 | passing a row's or a URL's `string` where an `AuctionId` is expected | TypeScript error; brand it once with `asId<'Auction'>(s)` (a view row's `Guid Id` carries no `x-tarol-id`) |
-| an operation without `x-tarol-kind` | `GenerateError: …/x-tarol-kind: x-tarol-kind is required` (not a Tarol document, or a hand-made one) |
+| an operation without `x-tarol-kind` (an app's plain endpoint) | skipped with `tarol-codegen: warning: … skipped, no x-tarol-kind` and named in the header comment; call it with your own code. With `--strict` (`{ strict: true }`): `GenerateError: …/x-tarol-kind: x-tarol-kind is required` |
+| hiding a plain endpoint from the document (`ExcludeFromDescription`) only to make the generator pass | not needed any more: it is skipped |
 | `bid.violation.code === 'Auction.NotSeller'` on a `PlaceBid` result | TypeScript error: not one of `PlaceBidCode` or the client's own codes |
 
 ## Notes

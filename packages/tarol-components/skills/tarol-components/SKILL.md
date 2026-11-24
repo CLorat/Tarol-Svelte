@@ -26,7 +26,9 @@ description: >-
    refusals (403, 409) appear above the submit button as an alert with their reference.
    With `changeForm(…, { from: () => view.value })`, a FormField whose value changes on the server while the user edits
    it shows a polite notice (`role="status"`) with "Use the new value" / "Keep mine"; input and focus stay.
-5. `AppShell title nav actions` gives the skip link and the landmarks; put pages in its children.
+5. `AppShell title nav actions` gives the skip link and the landmarks; put pages in its children. Below 40rem the nav
+   stacks above the page; `navPosition="bottom"` makes it a one-row bar at the bottom (thumb reach): give it a `<ul>` of
+   a few links (every target ≥ 44 px). Do not add your own fixed bottom nav next to `AppShell`.
 5a. One aggregate's page: `<DetailLayout query={view} title={(a) => a.title}>` with snippets `children(a)`, `meta(a)`,
    `actions(a)`, `aside(a)`; it renders the `h1` and the loading/error states. Do not wrap it in `QueryState` again.
 5b. Global search: `<SearchBox label onselect={(hit) => open(hit.type, hit.aggregate)} />`; `types`, `limit`,
@@ -64,6 +66,7 @@ description: >-
 |---|---|
 | `{#each auctions.items}` for thousands of rows | every row in the DOM; `DataTable` virtualizes above 200 |
 | `sort` held but not read by the list's request | the header changes, the data does not |
+| a hand-wired `<input type="checkbox">` for a consent | no server error on it, no `aria-invalid`: use `FormField type="checkbox"` |
 | `FormField path="Reserve"` (C# casing) | no error shown: server paths are camelCase (`reserve`) |
 | no `rules` on a FormField | the message has no bounds ("The value is out of range.") |
 | `getByRole('cell')` in tests of a DataTable | the cells are `gridcell`s (the table is a grid) |

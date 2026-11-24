@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import '../dist/tokens.css';
 import { expectAccessible } from './axe.js';
+import Consent from './fixtures/Consent.svelte';
 import DialogHost from './fixtures/DialogHost.svelte';
 import Form from './fixtures/Form.svelte';
 import ToastHost from './fixtures/ToastHost.svelte';
@@ -61,7 +62,38 @@ describe('fields and buttons', () => {
   it('German texts come from the de catalogue', async () => {
     render(Form, { locale: 'de' });
     await expect.element(page.getByText('(Pflichtfeld)')).toBeInTheDocument();
+    // TS-5: a space between the label and the marker in the DOM ("Title (Pflichtfeld)", not "Title(Pflichtfeld)")
+    expect(document.querySelector('label')?.textContent.trim()).toBe('Title\u00a0(Pflichtfeld)');
     expect(document.querySelector('.t-root')?.getAttribute('lang')).toBe('de');
+  });
+});
+
+describe('checkbox (TS-4)', () => {
+  const consent = () =>
+    JSON.parse(document.querySelector('[data-testid=consent]')?.textContent ?? '{}') as { terms: boolean };
+
+  it('is a labelled box with hint and error wired like every field, and passes axe', async () => {
+    render(Consent, { error: 'Accept the terms to go on.' });
+    const box = page.getByRole('checkbox', { name: /I accept the terms/ });
+    await expect.element(box).toHaveAttribute('aria-invalid', 'true');
+    await expect.element(box).toHaveAccessibleDescription('Read them first Accept the terms to go on.');
+    await expect.element(box).toBeRequired();
+    await expectAccessible();
+  });
+
+  it('binds checked from a click on the label and from the keyboard (Space)', async () => {
+    render(Consent);
+    await userEvent.click(document.querySelector('label')!);
+    expect(consent().terms).toBe(true);
+    expect(document.activeElement).toBe(page.getByRole('checkbox').element()); // the label click focuses the box
+    await userEvent.keyboard(' ');
+    expect(consent().terms).toBe(false);
+  });
+
+  it('shows the required marker after a space, in German too', () => {
+    render(Consent, { locale: 'de' });
+    expect(document.querySelector('label')?.textContent.trim()).toBe('I accept the terms\u00a0(Pflichtfeld)'); // a no-break space: Svelte keeps it, and the marker never wraps alone
+    expect(page.getByRole('checkbox').element().getBoundingClientRect().height).toBeGreaterThanOrEqual(20);
   });
 });
 

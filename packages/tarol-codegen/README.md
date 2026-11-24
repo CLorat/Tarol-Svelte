@@ -28,7 +28,7 @@ The backend opts in with `AddOpenApi(o => o.AddTarolEndpoints())` and `MapOpenAp
 | Backend | Generated |
 |---|---|
 | operation (`operationId` = C# type) | `requests.<name>`, `tarol(client).changes.<name>` or `.queries.<name>` |
-| `x-tarol-kind` (required: `creation`, `change`, `view`, `list`, `search`, `admin`, `me`) | the call's shape; nothing is guessed from the responses |
+| `x-tarol-kind` (`creation`, `change`, `view`, `list`, `search`, `admin`, `me`) | the call's shape; nothing is guessed from the responses. An operation without it is not a Tarol entry: skipped with a warning and named in the header (`--strict` / `{ strict: true }`: an error) |
 | creation (201) / change (204) | `Result<Created>` / `Result<undefined>`; input = path members & body |
 | view by one `x-tarol-id` path parameter | its request also carries `subject: <id>` and `stream: '<Aggregate>'`, the stream a live query filters messages by (SV-24) |
 | `x-tarol-topics` (Tarol-Net BC-25) | `topics.<name>: Topic<Payload, '<Stream>'>` with the payload's schema as its type, imported from `@clorat/tarol-client/push`; nothing without the extension |

@@ -6,7 +6,7 @@
   value" / "Keep mine"; the input and the focus stay as they are.
 -->
 <script lang="ts">
-  import { Button, getMessages, NumberField, TextField } from '@clorat/tarol-design';
+  import { Button, Checkbox, getMessages, NumberField, TextField } from '@clorat/tarol-design';
   import { at, type Form, type Rule } from '@clorat/tarol-svelte';
   import { setAt } from './paths.js';
 
@@ -17,8 +17,8 @@
     path: string;
     /** The visible label (the app's own text). */
     label: string;
-    /** `text` (default), `number`, `email`, `password`, `tel`, `url`. */
-    type?: 'text' | 'number' | 'email' | 'password' | 'tel' | 'url' | undefined;
+    /** `text` (default), `number`, `email`, `password`, `tel`, `url`, or `checkbox` (a boolean member, e.g. a consent). */
+    type?: 'text' | 'number' | 'email' | 'password' | 'tel' | 'url' | 'checkbox' | undefined;
     /** The field's rules: their bounds fill the message (`Enter between {min} and {max} characters.`). */
     rules?: readonly Rule[] | undefined;
     /** Help text. */
@@ -46,7 +46,22 @@
 
 <!-- one block: the form's gap stays between fields, and the empty live region below the field takes no room -->
 <div class="t-form-field">
-  {#if type === 'number'}
+  {#if type === 'checkbox'}
+    <!-- a box changes at once: it is touched on the change, not on the blur (TS-4) -->
+    <Checkbox
+      {label}
+      {hint}
+      {error}
+      {required}
+      bind:checked={
+        () => at(form.values, path) === true,
+        (v) => {
+          setAt(form.values, path, v);
+          form.touch(path);
+        }
+      }
+    />
+  {:else if type === 'number'}
     <NumberField
       {label}
       {hint}

@@ -1,6 +1,8 @@
 <!--
   @component
   The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark.
+  Below 40rem the navigation is stacked above the page (`navPosition="side"`, the default) or a one-row bar at the bottom
+  of the viewport, in thumb reach (`navPosition="bottom"`: its list items share the row, each target at least 44 px high).
 -->
 <script lang="ts">
   import { getMessages } from '@clorat/tarol-design';
@@ -11,20 +13,22 @@
     title: string;
     /** The navigation's accessible name (the app's own text); the nav is rendered when `nav` is set. */
     navLabel?: string | undefined;
-    /** Navigation links. */
+    /** Navigation links (a `<ul>` of links, or links). */
     nav?: Snippet | undefined;
+    /** Where the navigation goes below 40rem: stacked above the page (`side`, default) or a bar at the bottom (`bottom`). */
+    navPosition?: 'side' | 'bottom' | undefined;
     /** Header actions (user menu, sign-out). */
     actions?: Snippet | undefined;
     /** The page. */
     children: Snippet;
   }
 
-  let { title, navLabel, nav, actions, children }: Props = $props();
+  let { title, navLabel, nav, navPosition = 'side', actions, children }: Props = $props();
   const t = getMessages();
 </script>
 
 <a class="t-skip" href="#t-main">{t('ui.skip')}</a>
-<div class="t-shell" data-nav={nav ? '' : undefined}>
+<div class="t-shell" data-nav={nav ? navPosition : undefined}>
   <header class="t-shell-header">
     <span class="t-shell-title">{title}</span>
     {#if actions}<div class="t-shell-actions">{@render actions()}</div>{/if}
@@ -85,6 +89,42 @@
     .t-shell-nav {
       border-inline-end: 0;
       border-bottom: 1px solid var(--t-color-border);
+    }
+    /* bottom: the nav after the page in the grid, sticky at the viewport's bottom edge */
+    .t-shell[data-nav='bottom'] {
+      grid-template-rows: auto 1fr auto;
+    }
+    .t-shell[data-nav='bottom'] .t-shell-main {
+      grid-row: 2;
+    }
+    .t-shell[data-nav='bottom'] .t-shell-nav {
+      grid-row: 3;
+      position: sticky;
+      inset-block-end: 0;
+      z-index: 1; /* above the page, below dialogs and toasts */
+      padding: 0 0 env(safe-area-inset-bottom);
+      border-bottom: 0;
+      border-top: 1px solid var(--t-color-border);
+      background: var(--t-color-bg);
+    }
+    .t-shell[data-nav='bottom'] .t-shell-nav :global(ul) {
+      display: flex;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .t-shell[data-nav='bottom'] .t-shell-nav :global(li) {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .t-shell[data-nav='bottom'] .t-shell-nav :global(a) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 2.75rem;
+      padding-inline: var(--t-space-1);
+      text-align: center;
+      overflow-wrap: anywhere;
     }
   }
 </style>

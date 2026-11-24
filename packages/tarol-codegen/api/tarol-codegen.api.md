@@ -28,7 +28,9 @@ export class GenerateError extends Error {
 
 // @public
 export interface GenerateOptions {
+    readonly onWarning?: (message: string) => void;
     readonly source?: string;
+    readonly strict?: boolean;
 }
 
 // @public

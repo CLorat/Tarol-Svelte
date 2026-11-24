@@ -4,6 +4,30 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+* `@clorat/tarol-components`: `AppShell navPosition="bottom"` (TS-1, from Tatalu): below 40rem the navigation is a one-row,
+  sticky bar at the bottom of the viewport with targets of at least 44 px; above it, the side navigation. The default
+  (`side`) is unchanged.
+* `@clorat/tarol-design`: the catalogue key `AlreadyExists` (en, de).
+* `@clorat/tarol-design`: `Checkbox` (label, hint, error with `aria-describedby`/`aria-invalid`, required marker; binds
+  `checked`). `@clorat/tarol-components`: `FormField type="checkbox"` binds a boolean member by path, touched on the change,
+  with the server's error of its path (TS-4).
+
+### Fixed
+
+* `@clorat/tarol-design`: `Field` (and so `TextField`, `NumberField`, `DateField`, `FormField`) puts a (no-break) space between
+  the label and the required marker: "Vorname (Pflichtfeld)", not "Vorname(Pflichtfeld)" (TS-5).
+
+### Changed
+
+* `@clorat/tarol-codegen`: an operation without `x-tarol-kind` (an app's plain endpoint) is skipped with a warning and named
+  in the header comment instead of failing the generation (TS-3); `--strict` / `GenerateOptions.strict` keeps the error.
+  New: `GenerateOptions.strict`, `GenerateOptions.onWarning`.
+
+* `@clorat/tarol-design`: `translator` falls back from an unknown `X.Y` to the generic `Y` before `error.generic` (TS-2):
+  `ChildDayCare.NotFound` reads as `NotFound`'s text.
+
 ## [0.1.0]
 
 The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is

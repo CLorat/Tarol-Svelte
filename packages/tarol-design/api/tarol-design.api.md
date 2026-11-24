@@ -25,7 +25,15 @@ export type Catalogue = Readonly<Record<string, string>>;
 // Warning: (ae-forgotten-export) The symbol "Props_2" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const Combobox: Component<Props_2, {}, "value">;
+export const Checkbox: Component<Props_2, {}, "checked">;
+
+// @public
+export type Checkbox = ReturnType<typeof Checkbox>;
+
+// Warning: (ae-forgotten-export) The symbol "Props_3" needs to be exported by the entry point index.d.ts
+//
+// @public
+export const Combobox: Component<Props_3, {}, "value">;
 
 // @public
 export type Combobox = ReturnType<typeof Combobox>;
@@ -33,10 +41,10 @@ export type Combobox = ReturnType<typeof Combobox>;
 // @public
 export function createToasts(): Toasts;
 
-// Warning: (ae-forgotten-export) The symbol "Props_3" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_4" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const DateField: Component<Props_3, {}, "value">;
+export const DateField: Component<Props_4, {}, "value">;
 
 // @public
 export type DateField = ReturnType<typeof DateField>;
@@ -44,10 +52,10 @@ export type DateField = ReturnType<typeof DateField>;
 // @public
 export const de: Catalogue;
 
-// Warning: (ae-forgotten-export) The symbol "Props_4" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_5" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const Dialog: Component<Props_4, {}, "open">;
+export const Dialog: Component<Props_5, {}, "open">;
 
 // @public
 export type Dialog = ReturnType<typeof Dialog>;
@@ -55,10 +63,10 @@ export type Dialog = ReturnType<typeof Dialog>;
 // @public
 export const en: Catalogue;
 
-// Warning: (ae-forgotten-export) The symbol "Props_5" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_6" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const Field: Component<Props_5, {}, "">;
+export const Field: Component<Props_6, {}, "">;
 
 // @public
 export type Field = ReturnType<typeof Field>;
@@ -69,10 +77,10 @@ export function getMessages(): Translate;
 // @public
 export function getToasts(): Toasts;
 
-// Warning: (ae-forgotten-export) The symbol "Props_6" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_7" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const MenuButton: Component<Props_6, {}, "">;
+export const MenuButton: Component<Props_7, {}, "">;
 
 // @public
 export type MenuButton = ReturnType<typeof MenuButton>;
@@ -80,10 +88,10 @@ export type MenuButton = ReturnType<typeof MenuButton>;
 // @public
 export type MessageParams = Readonly<Record<string, string | number | undefined>>;
 
-// Warning: (ae-forgotten-export) The symbol "Props_7" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_8" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const NumberField: Component<Props_7, {}, "value">;
+export const NumberField: Component<Props_8, {}, "value">;
 
 // @public
 export type NumberField = ReturnType<typeof NumberField>;
@@ -94,42 +102,42 @@ export function setMessages(t: Translate): Translate;
 // @public
 export function setToasts(toasts: Toasts): Toasts;
 
-// Warning: (ae-forgotten-export) The symbol "Props_8" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_9" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const Skeleton: Component<Props_8, {}, "">;
+export const Skeleton: Component<Props_9, {}, "">;
 
 // @public
 export type Skeleton = ReturnType<typeof Skeleton>;
 
-// Warning: (ae-forgotten-export) The symbol "Props_9" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_10" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const Spinner: Component<Props_9, {}, "">;
+export const Spinner: Component<Props_10, {}, "">;
 
 // @public
 export type Spinner = ReturnType<typeof Spinner>;
 
-// Warning: (ae-forgotten-export) The symbol "Props_10" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_11" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const Tabs: Component<Props_10, {}, "selected">;
+export const Tabs: Component<Props_11, {}, "selected">;
 
 // @public
 export type Tabs = ReturnType<typeof Tabs>;
 
-// Warning: (ae-forgotten-export) The symbol "Props_11" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_12" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const TextField: Component<Props_11, {}, "value">;
+export const TextField: Component<Props_12, {}, "value">;
 
 // @public
 export type TextField = ReturnType<typeof TextField>;
 
-// Warning: (ae-forgotten-export) The symbol "Props_12" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "Props_13" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const ThemeRoot: Component<Props_12, {}, "">;
+export const ThemeRoot: Component<Props_13, {}, "">;
 
 // @public
 export type ThemeRoot = ReturnType<typeof ThemeRoot>;
