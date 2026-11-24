@@ -23,3 +23,14 @@ one row of equal items and every link at least 2.75rem (44 px) high. Above 40rem
 
 Public API: the `navPosition` prop, in `dist/AppShell.svelte.d.ts`; the API Extractor report shows `AppShell` as `Component<Props>` (the props type is not an export), so `pnpm api:update` leaves it unchanged. P1: no script, a few CSS rules (size in the PR). P6: axe in
 every case; the targets meet WCAG 2.5.8 (24 px) and the 44 px of Tatalu's NFR-UX-01.
+
+## TS-8: singleton views
+
+**Finding checked: no client change needed.** `tarol-codegen` builds a read's parameters from the operation's path
+parameters only (`generate.ts`, `pathParams`); an operation without one gets a call without arguments. With Tarol-Net TN-2
+(`[PerTenant]`, CLorat/Tarol-Net PR "primitives, changes: aggregates with one instance per tenant") the backend writes
+`GET /house` without `{id}`, and the generator emits `houseView: (): ReadRequest => ({ path: \`/house\` })` and
+`api.houseView()` **[verified]** (`test/generate.test.ts`, "a view of a per-tenant aggregate"; it also type-checks). An app
+then no longer brands the tenant id as the aggregate id (`asId<'ChildDayCare'>(session.tenant)` in Tatalu's `App.svelte`).
+
+No public API or behaviour change; the test pins the shape.

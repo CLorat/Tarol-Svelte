@@ -421,3 +421,37 @@ describe('Tarol extensions', () => {
     expect(typecheck({ 'api.ts': code })).toEqual([]);
   });
 });
+
+describe('a view of a per-tenant aggregate (TS-8, Tarol-Net TN-2)', () => {
+  const schemas: Record<string, Schema> = {
+    HouseView: {
+      type: 'object',
+      required: ['id', 'name'],
+      properties: { id: { type: 'string', format: 'uuid' }, name: { type: 'string' } },
+    },
+  };
+  // the document Tarol-Net writes for GET /house over a [PerTenant] House: no path parameter, x-tarol-kind view
+  const house = doc(schemas, {
+    '/house': {
+      get: {
+        operationId: 'HouseView',
+        'x-tarol-kind': 'view',
+        'x-tarol-errors': ['Auth.Forbidden', 'House.NotFound'],
+        responses: {
+          '200': { content: { 'application/json': { schema: { $ref: '#/components/schemas/HouseView' } } } },
+        },
+      },
+    },
+  });
+  const code = generate(house);
+
+  it('is a read without an id: requests.houseView() and api.houseView()', () => {
+    expect(code).toContain('houseView: (): ReadRequest => ({ path: `/house` }),');
+    expect(code).toContain('houseView: (): Promise<Result<HouseView, HouseViewCode>> => {');
+    expect(code).not.toContain('asId');
+  });
+
+  it('compiles', () => {
+    expect(typecheck({ 'api.ts': code })).toEqual([]);
+  });
+});
