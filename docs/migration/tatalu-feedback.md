@@ -66,4 +66,4 @@ box, axe, the click clears it, the other box binds `true`).
 Public API: `Checkbox` (export of `@clorat/tarol-design`, API report regenerated); `FormField`'s `type` gains `checkbox`.
 
 Size: with `Checkbox` the tarol-design "everything" bundle is 10.18 kB gzip, over its 10 kB budget; the owner raised that
-budget (and "Combobox (with Field)") by 50 % (SV-31).
+budget (and "Combobox (with Field)") by 50 % (SV-31); `FormField type="checkbox"` puts tarol-components "ChangeForm + FormField" at 2.04 kB, over 2 kB, raised by the same 50 % to 3 kB (SV-32).
