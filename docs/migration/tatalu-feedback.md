@@ -65,3 +65,5 @@ span's text is ` (Pflichtfeld)` with that space. Size: the space as its own node
 the literal U+00A0, `font-weight: 400` and a CSS margin instead of the space were measured and are not smaller. Raising
 that budget is the owner's decision (PR).
 Behaviour: the visible label gains the space. No API change.
+
+Size decision: the owner raised "Combobox (with Field)" (and "everything") by 50 % (SV-31).
