@@ -42,7 +42,7 @@
       bind:checked
     />
     <label for={id}>
-      {label}{#if required}&nbsp;<span class="t-required">({t('ui.required')})</span>{/if}
+      {label}{#if required}<span class="t-required">&nbsp;({t('ui.required')})</span>{/if}
     </label>
   </div>
   {#if hint}<p id="{id}-hint" class="t-hint">{hint}</p>{/if}
