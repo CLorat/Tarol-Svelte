@@ -50,3 +50,17 @@ no idempotency, no ETag), so a typed builder would promise more than the backend
 
 Public API: `GenerateOptions.strict`, `GenerateOptions.onWarning` (API report regenerated); CLI flag `--strict`. Behaviour
 change: a document with such an operation now generates (it failed before). **[verified]** `test/generate.test.ts`.
+
+## TS-4: a checkbox field
+
+**Change.** `@clorat/tarol-design` `Checkbox`: the box before its label (a click on the label toggles it), hint and error
+under it with the same ids as `Field` (`aria-describedby` = hint + error, `aria-invalid`, `aria-required` and `required`),
+the required marker after a space (TS-5's fault does not occur here), a 20 px box with 2 px for a ≥ 24 px target (WCAG 2.5.8).
+`@clorat/tarol-components` `FormField type="checkbox"` binds `at(form.values, path) === true` and writes a boolean; it is
+touched on the change (a box has no typing phase), so a server error on its path disappears at the click.
+
+**[verified]** `tarol-design/test/primitives.test.ts` (wiring, description, required, axe; label click and Space; the German
+marker after a space) and `tarol-components/test/components.test.ts` (a 400 `{ "consents.terms": ["Required"] }` lands on the
+box, axe, the click clears it, the other box binds `true`).
+
+Public API: `Checkbox` (export of `@clorat/tarol-design`, API report regenerated); `FormField`'s `type` gains `checkbox`.

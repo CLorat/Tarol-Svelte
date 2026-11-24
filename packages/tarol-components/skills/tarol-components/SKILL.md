@@ -66,6 +66,7 @@ description: >-
 |---|---|
 | `{#each auctions.items}` for thousands of rows | every row in the DOM; `DataTable` virtualizes above 200 |
 | `sort` held but not read by the list's request | the header changes, the data does not |
+| a hand-wired `<input type="checkbox">` for a consent | no server error on it, no `aria-invalid`: use `FormField type="checkbox"` |
 | `FormField path="Reserve"` (C# casing) | no error shown: server paths are camelCase (`reserve`) |
 | no `rules` on a FormField | the message has no bounds ("The value is out of range.") |
 | `getByRole('cell')` in tests of a DataTable | the cells are `gridcell`s (the table is a grid) |

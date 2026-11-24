@@ -1,4 +1,5 @@
 export { default as Button } from './Button.svelte';
+export { default as Checkbox } from './Checkbox.svelte';
 export { default as Combobox } from './Combobox.svelte';
 export { default as DateField } from './DateField.svelte';
 export { default as Dialog } from './Dialog.svelte';

@@ -10,6 +10,9 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
   sticky bar at the bottom of the viewport with targets of at least 44 px; above it, the side navigation. The default
   (`side`) is unchanged.
 * `@clorat/tarol-design`: the catalogue key `AlreadyExists` (en, de).
+* `@clorat/tarol-design`: `Checkbox` (label, hint, error with `aria-describedby`/`aria-invalid`, required marker; binds
+  `checked`). `@clorat/tarol-components`: `FormField type="checkbox"` binds a boolean member by path, touched on the change,
+  with the server's error of its path (TS-4).
 
 ### Changed
 
