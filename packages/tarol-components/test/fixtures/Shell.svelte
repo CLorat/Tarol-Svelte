@@ -2,7 +2,7 @@
   import { ThemeRoot } from '@clorat/tarol-design';
   import { AppShell } from '../../src/lib/index.js';
 
-  const props: { navPosition?: 'side' | 'bottom' } = $props();
+  const props: { navPosition?: 'side' | 'bottom' | undefined } = $props();
   const items = ['Today', 'Children', 'Attendance', 'Messages', 'More'];
 </script>
 

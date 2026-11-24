@@ -608,7 +608,7 @@
   "AppShell": {
     "package": "@clorat/tarol-components",
     "name": "AppShell",
-    "doc": "The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark.",
+    "doc": "The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark. Below 40rem the navigation is stacked above the page (`navPosition=\"side\"`, the default) or a one-row bar at the bottom of the viewport, in thumb reach (`navPosition=\"bottom\"`: its list items share the row, each target at least 44 px high).",
     "extends": "",
     "props": [
       {
@@ -633,7 +633,15 @@
         "optional": true,
         "bindable": false,
         "default": null,
-        "doc": "Navigation links."
+        "doc": "Navigation links (a `<ul>` of links, or links)."
+      },
+      {
+        "name": "navPosition",
+        "type": "'side' | 'bottom'",
+        "optional": true,
+        "bindable": false,
+        "default": "'side'",
+        "doc": "Where the navigation goes below 40rem: stacked above the page (`side`, default) or a bar at the bottom (`bottom`)."
       },
       {
         "name": "actions",
