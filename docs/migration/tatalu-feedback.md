@@ -55,7 +55,7 @@ change: a document with such an operation now generates (it failed before). **[v
 
 **Change.** `@clorat/tarol-design` `Checkbox`: the box before its label (a click on the label toggles it), hint and error
 under it with the same ids as `Field` (`aria-describedby` = hint + error, `aria-invalid`, `aria-required` and `required`),
-the required marker after a space (TS-5's fault does not occur here), a 20 px box with 2 px for a ≥ 24 px target (WCAG 2.5.8).
+the required marker after a no-break space (`&nbsp;`: Svelte keeps it, unlike a leading space or `{' '}`, which the lint rule `svelte/no-useless-mustaches` refuses), a 20 px box with 2 px for a ≥ 24 px target (WCAG 2.5.8).
 `@clorat/tarol-components` `FormField type="checkbox"` binds `at(form.values, path) === true` and writes a boolean; it is
 touched on the change (a box has no typing phase), so a server error on its path disappears at the click.
 

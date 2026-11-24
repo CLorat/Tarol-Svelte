@@ -163,6 +163,10 @@ describe('ChangeForm and FormField', () => {
       .toHaveAccessibleDescription('Enter a value between 1 and 1000000.');
   });
 
+  const consents = () =>
+    (JSON.parse(page.getByTestId('values').element().textContent) as { consents: { terms: boolean; photos: boolean } })
+      .consents;
+
   it('a checkbox field binds a boolean by path and gets the server error of its path (TS-4)', async () => {
     let sent = 0;
     const f = fakeClient(
@@ -179,10 +183,7 @@ describe('ChangeForm and FormField', () => {
     render(ConsentForm, { client: f.client });
     const terms = page.getByRole('checkbox', { name: /I accept the terms/ });
     await page.getByRole('checkbox', { name: 'Photos may be shared' }).click();
-    expect(JSON.parse(page.getByTestId('values').element().textContent).consents).toEqual({
-      terms: false,
-      photos: true,
-    });
+    expect(consents()).toEqual({ terms: false, photos: true });
     await page.getByRole('button', { name: 'Sign up' }).click();
     await expect.poll(() => sent).toBe(1);
     await expect.element(terms).toHaveAttribute('aria-invalid', 'true');
@@ -190,7 +191,7 @@ describe('ChangeForm and FormField', () => {
     await expectAccessible();
     await terms.click(); // touched on the change: the server's error is gone at once
     await expect.element(terms).not.toHaveAttribute('aria-invalid');
-    expect(JSON.parse(page.getByTestId('values').element().textContent).consents.terms).toBe(true);
+    expect(consents().terms).toBe(true);
   });
 
   it('shows the bounds of the server detail on a field without client rules', async () => {

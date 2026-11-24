@@ -88,9 +88,9 @@ describe('checkbox (TS-4)', () => {
     expect(consent().terms).toBe(false);
   });
 
-  it('shows the required marker after a space, in German too', async () => {
+  it('shows the required marker after a space, in German too', () => {
     render(Consent, { locale: 'de' });
-    expect(document.querySelector('label')?.textContent?.trim()).toBe('I accept the terms (Pflichtfeld)');
+    expect(document.querySelector('label')?.textContent.trim()).toBe('I accept the terms\u00a0(Pflichtfeld)'); // a no-break space: Svelte keeps it, and the marker never wraps alone
     expect(page.getByRole('checkbox').element().getBoundingClientRect().height).toBeGreaterThanOrEqual(20);
   });
 });
