@@ -84,3 +84,14 @@ that budget is the owner's decision (PR).
 Behaviour: the visible label gains the space. No API change.
 
 Size decision: the owner raised "Combobox (with Field)" (and "everything") by 50 % (SV-31).
+
+## TS-8: singleton views
+
+**Finding checked: no client change needed.** `tarol-codegen` builds a read's parameters from the operation's path
+parameters only (`generate.ts`, `pathParams`); an operation without one gets a call without arguments. With Tarol-Net TN-2
+(`[PerTenant]`, CLorat/Tarol-Net PR "primitives, changes: aggregates with one instance per tenant") the backend writes
+`GET /house` without `{id}`, and the generator emits `houseView: (): ReadRequest => ({ path: \`/house\` })` and
+`api.houseView()` **[verified]** (`test/generate.test.ts`, "a view of a per-tenant aggregate"; it also type-checks). An app
+then no longer brands the tenant id as the aggregate id (`asId<'ChildDayCare'>(session.tenant)` in Tatalu's `App.svelte`).
+
+No public API or behaviour change; the test pins the shape.
