@@ -46,6 +46,7 @@ export const de: Catalogue = {
   'Auth.Required': 'Bitte melden Sie sich erneut an.',
   'Auth.Forbidden': 'Dazu fehlt Ihnen die Berechtigung.',
   NotFound: 'Diesen Eintrag gibt es nicht (mehr).',
+  AlreadyExists: 'Diesen Eintrag gibt es schon.',
   'Stream.VersionConflict': 'Jemand anderes hat dies inzwischen geändert. Laden Sie neu und versuchen Sie es erneut.',
   'Idempotency.KeyReused': 'Diese Anfrage wurde bereits mit anderem Inhalt gesendet.',
   'Projection.Building': 'Die Liste wird neu aufgebaut. Versuchen Sie es gleich noch einmal.',

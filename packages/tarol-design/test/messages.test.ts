@@ -17,6 +17,16 @@ describe('messages', () => {
     expect(t('Required')).toBe('This field is required.');
   });
 
+  it('falls back from X.Y to the generic Y before error.generic (TS-2)', () => {
+    const t = translator({ 'Membership.NotFound': 'Diesen Zugang gibt es nicht.' }, de);
+    expect(t('ChildDayCare.NotFound')).toBe('Diesen Eintrag gibt es nicht (mehr).');
+    expect(t('Membership.NotFound')).toBe('Diesen Zugang gibt es nicht.'); // the app's own text wins
+    expect(t('ChildDayCare.AlreadyExists')).toBe('Diesen Eintrag gibt es schon.');
+    expect(translator(en)('Plot.AlreadyExists')).toBe('This item exists already.');
+    expect(t('Bid.TooLow')).toBe('Etwas ist schiefgelaufen.'); // no generic TooLow: error.generic
+    expect(t('Billing.Invoice.NotFound')).toBe('Diesen Eintrag gibt es nicht (mehr).');
+  });
+
   it('tries the app catalogue first and falls back to the generic text for unknown codes', () => {
     const t = translator({ 'Auction.NotSeller': 'Only the seller can settle.' }, de);
     expect(t('Auction.NotSeller')).toBe('Only the seller can settle.');

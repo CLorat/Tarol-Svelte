@@ -18,7 +18,8 @@ description: >-
    `density="compact"`.
 3. Texts: components never contain literal text. Pass the app's own labels as props; built-in texts and backend codes go
    through `getMessages()` (`t('Range', { min: 1, max: 10 })`). German: `<ThemeRoot locale="de" messages={de}>`; app
-   catalogues first: `messages={[myDe, de]}`.
+   catalogues first: `messages={[myDe, de]}`. A backend code `X.Y` that no catalogue has falls back to the generic `Y`
+   (`ChildDayCare.NotFound` → `NotFound`, `Plot.AlreadyExists` → `AlreadyExists`): add `X.Y` only for a better text.
 4. Fields: `TextField`/`NumberField` take `label`, `hint`, `error` (already translated) and `required`; label, hint and
    error are wired with `aria-describedby`/`aria-invalid`. `NumberField` binds `number | null`.
 5. Dialogs: `<Dialog bind:open title>` on the native `<dialog>`: focus moves in, Escape and backdrop close it (unless

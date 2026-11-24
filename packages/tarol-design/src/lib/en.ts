@@ -30,6 +30,7 @@ export const en: Catalogue = {
   'Auth.Required': 'Please sign in again.',
   'Auth.Forbidden': 'You are not allowed to do this.',
   NotFound: 'This item does not exist (any more).',
+  AlreadyExists: 'This item exists already.',
   'Stream.VersionConflict': 'Someone else changed this in the meantime. Reload and try again.',
   'Idempotency.KeyReused': 'This request was already sent with different content.',
   'Projection.Building': 'The list is being rebuilt. Try again in a moment.',

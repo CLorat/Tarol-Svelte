@@ -13,7 +13,10 @@ export type MessageParams = Readonly<Record<string, string | number | undefined>
 /** Turns a message id (or backend code) and its parameters into text. */
 export type Translate = (id: string, params?: MessageParams) => string;
 
-/** Builds a translator over catalogues tried in order; an unknown id falls back to `error.generic`, then to the id. */
+/**
+ * Builds a translator over catalogues tried in order. An unknown `X.Y` falls back to the generic `Y` (`ChildDayCare.NotFound`
+ * → `NotFound`, `Plot.AlreadyExists` → `AlreadyExists`), then to `error.generic`, then to the id.
+ */
 export function translator(...catalogues: Catalogue[]): Translate {
   return (id, params = {}) => {
     let key = id;
@@ -23,7 +26,9 @@ export function translator(...catalogues: Catalogue[]): Translate {
     if (!min && max) key = `${id}.max`;
     else if (min && !max) key = `${id}.min`;
     else if (!min && !max) key = `${id}.any`; // no bounds known: a text without placeholders, when the catalogue has one
-    const text = find(catalogues, key) ?? find(catalogues, id) ?? find(catalogues, 'error.generic') ?? id;
+    const dot = id.lastIndexOf('.');
+    const generic = dot > 0 && dot < id.length - 1 ? find(catalogues, id.slice(dot + 1)) : undefined;
+    const text = find(catalogues, key) ?? find(catalogues, id) ?? generic ?? find(catalogues, 'error.generic') ?? id;
     return text.replace(/\{(\w+)\}/g, (m, name: string) => {
       const v = params[name];
       return v === undefined ? m : String(v);

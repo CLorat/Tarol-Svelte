@@ -23,3 +23,15 @@ one row of equal items and every link at least 2.75rem (44 px) high. Above 40rem
 
 Public API: the `navPosition` prop, in `dist/AppShell.svelte.d.ts`; the API Extractor report shows `AppShell` as `Component<Props>` (the props type is not an export), so `pnpm api:update` leaves it unchanged. P1: no script, a few CSS rules (size in the PR). P6: axe in
 every case; the targets meet WCAG 2.5.8 (24 px) and the 44 px of Tatalu's NFR-UX-01.
+
+## TS-2: message fallback for `<Aggregate>.NotFound`
+
+**Change.** `translator` tries, in order: the code with its bound suffix (`.min`/`.max`/`.any`), the code, **the part after its
+last dot** (`ChildDayCare.NotFound` → `NotFound`), `error.generic`, the code itself. Tarol-Net answers `<Aggregate>.NotFound`
+and `<Aggregate>.AlreadyExists` (`ChangeEndpoints`, the generated `x-tarol-errors`); `NotFound` was in both catalogues,
+`AlreadyExists` is new in `en` and `de`. A code whose generic part has no text (`Bid.TooLow`) still reads `error.generic`;
+an app's own `X.Y` text still wins.
+
+Behaviour change: a code `X.Y` that is not in any catalogue but whose `Y` is (for example an app code `Order.Required`) now
+shows `Y`'s text instead of `error.generic`. **[verified]** `test/messages.test.ts` (red before: `ChildDayCare.NotFound` read
+"Etwas ist schiefgelaufen."). Public API: no new export (the catalogue objects gain a key; the API report lists them).

@@ -9,6 +9,12 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 * `@clorat/tarol-components`: `AppShell navPosition="bottom"` (TS-1, from Tatalu): below 40rem the navigation is a one-row,
   sticky bar at the bottom of the viewport with targets of at least 44 px; above it, the side navigation. The default
   (`side`) is unchanged.
+* `@clorat/tarol-design`: the catalogue key `AlreadyExists` (en, de).
+
+### Changed
+
+* `@clorat/tarol-design`: `translator` falls back from an unknown `X.Y` to the generic `Y` before `error.generic` (TS-2):
+  `ChildDayCare.NotFound` reads as `NotFound`'s text.
 
 ## [0.1.0]
 
