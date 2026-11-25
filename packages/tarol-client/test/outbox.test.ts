@@ -144,6 +144,28 @@ describe('outbox (TS-26, Tatalu FB-F17.3-1, FB-F05.1-3)', () => {
     expect(b.calls.map((c) => c.headers['idempotency-key'])).toEqual([entry?.key, entry?.key]);
   });
 
+  it('keeps a warning to confirm as failed; confirm(key) resends it with Tarol-Confirm and the same key (TS-33)', async () => {
+    const { b, outbox } = setup();
+    b.reply(
+      problem(409, {
+        code: 'DailyLog.AllergyWarning',
+        confirm: { code: 'DailyLog.AllergyWarning', args: { allergen: 'peanut' } },
+      }),
+    );
+    expect((await outbox.submit(note)).state).toBe('failed');
+    const [entry] = outbox.failed;
+    expect(entry?.violation).toMatchObject({
+      confirm: { code: 'DailyLog.AllergyWarning', args: { allergen: 'peanut' } },
+    });
+    b.reply(json(204, undefined));
+    await outbox.confirm(entry?.key ?? '');
+    expect(outbox.entries).toEqual([]);
+    expect(b.calls.map((c) => [c.headers['idempotency-key'], c.headers['tarol-confirm']])).toEqual([
+      [entry?.key, undefined],
+      [entry?.key, 'DailyLog.AllergyWarning'],
+    ]);
+  });
+
   it('pauses on 401 until a flush after sign-in, and retries a transient failure after its delay', async () => {
     vi.useFakeTimers();
     const { b, outbox } = setup();

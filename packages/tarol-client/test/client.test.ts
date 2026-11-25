@@ -190,6 +190,29 @@ describe('changes', () => {
     expect(!odd.ok && odd.violation).toEqual({ kind: 'error', code: 'X.Y', extensions: { reasons: 'not a list' } });
   });
 
+  it('reads a warning to confirm (Tarol-Net TN-37) as confirm, with its arguments (TS-33)', async () => {
+    const b = backend(
+      problem(409, {
+        code: 'Recipe.LargeFeast',
+        confirm: { code: 'Recipe.LargeFeast', args: { servings: '20', limit: '12' } },
+      }),
+      problem(409, { code: 'X.Y', confirm: { code: 'X.Y', args: { n: 1 } } }),
+    );
+    const r = await client(b).change({ method: 'PUT', path: '/recipes/r/feast', body: { servings: 20 } });
+    expect(!r.ok && r.violation).toEqual({
+      kind: 'error',
+      code: 'Recipe.LargeFeast',
+      confirm: { code: 'Recipe.LargeFeast', args: { servings: '20', limit: '12' } },
+    });
+    // anything but string arguments is not a confirmable warning: it stays an extension
+    const odd = await client(b).change({ method: 'PUT', path: '/recipes/r/feast', body: {} });
+    expect(!odd.ok && odd.violation).toEqual({
+      kind: 'error',
+      code: 'X.Y',
+      extensions: { confirm: { code: 'X.Y', args: { n: 1 } } },
+    });
+  });
+
   it('takes the request id from the problem when the header is not readable', async () => {
     const b = backend(problem(404, { code: 'Auction.NotFound', traceId: 'abc' }));
     const r = await client(b).change({ method: 'POST', path: '/x', body: {} });

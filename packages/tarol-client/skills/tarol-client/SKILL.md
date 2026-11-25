@@ -17,7 +17,9 @@ description: >-
 2. Every call returns `Result<T>`: check `r.ok`. Business failures are values: `r.violation.kind === 'invalid'`
    (`errors` maps backend field paths such as `lines[1].quantity` to codes such as `Range`) or `'error'` (`code` such as
    `Auction.NotSeller`, `Stream.VersionConflict`, `Idempotency.KeyReused`, `Auth.Required`, `Network`). A refusal's
-   `reasons` (codes, Tarol-Net TN-36) are message ids: translate each. `details` has the
+   `reasons` (codes, Tarol-Net TN-36) are message ids: translate each. A warning to confirm (TN-37) has
+   `confirm: { code, args }`: show `t(code, args)`, then send the same request with `headers: { 'tarol-confirm': code }`
+   (several comma-separated) and the same `key`. `details` has the
    same paths with each rule's `detail` (`{ reserve: [{ code: 'Range', detail: '1..1000000' }] }`). Only an aborted
    request throws. Show `r.requestId` (the backend's `Tarol-Request-Id`) with an error so users can quote it.
 3. Changes get an idempotency key automatically. To retry **the same user intent**, pass the same `key`; a replay
@@ -37,8 +39,8 @@ description: >-
 8. Offline (a PWA): `createOutbox({ client, store: idbStore('app'), scope: () => `${tenant}/${subject}` })` from
    `@clorat/tarol-client/outbox` (`idbStore` from `@clorat/tarol-client/idb`). `await outbox.submit(request, { label })`
    stores first, then sends; `state` is `sent` (with `result`), `queued` (offline, 5xx, 429: sent later with the **same**
-   key) or `failed` (a refusal; `outbox.failed[i].violation` keeps `code`, `detail` and `extensions.reasons` until
-   `retry(key)` or `discard(key)`). A 401 sets `needsSignIn`: `flush()` after the sign-in. `subscribe(listener)` for a UI.
+   key) or `failed` (a refusal; `outbox.failed[i].violation` keeps `code`, `detail`, `reasons` and `confirm` until
+   `retry(key)`, `confirm(key)` (a warning: resends with `Tarol-Confirm`) or `discard(key)`). A 401 sets `needsSignIn`: `flush()` after the sign-in. `subscribe(listener)` for a UI.
    Offline reads: `const reads = offlineReads({ store, scope, keep: (path) => path.startsWith('/children/') })`,
    `createClient({ fetch: reads.fetch })`; show `reads.savedAt(path)` ("as of …"). At sign-out call `outbox.clear()` and
    `reads.clear()`: the stores are unencrypted. `captureHeaders: true` (+ `device`) sends `Tarol-Device` and

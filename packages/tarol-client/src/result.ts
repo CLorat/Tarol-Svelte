@@ -82,10 +82,31 @@ export interface Problem<C extends string = string> {
    */
   readonly reasons?: readonly string[];
   /**
+   * A warning the caller may confirm (Tarol-Net TN-37): send the same request again with `Tarol-Confirm: <code>`
+   * (`changeForm`'s `confirm()`, the outbox's `confirm(key)`). `args` fill the warning's message. Absent for a refusal.
+   */
+  readonly confirm?: Confirmation;
+  /**
    * The problem's other members (RFC 9457 extensions), e.g. `failed` of `DataProtection.ErasureIncomplete`; absent when
    * there are none.
    */
   readonly extensions?: Readonly<Record<string, unknown>>;
+}
+
+/** A warning to confirm: its code (sent back in `Tarol-Confirm`) and the values of its message (`{ servings: '20' }`). */
+export interface Confirmation {
+  /** The warning's code, also the message id. */
+  readonly code: string;
+  /** The message's parameters, as strings; empty when there are none. */
+  readonly args: Readonly<Record<string, string>>;
+}
+
+/** A problem's `confirm` member when it has the TN-37 shape (a string code, string arguments), else `undefined`. */
+function confirmOf(value: unknown): Confirmation | undefined {
+  if (!isRecord(value) || typeof value['code'] !== 'string' || !isRecord(value['args'])) return undefined;
+  const args = value['args'];
+  if (!Object.values(args).every((v) => typeof v === 'string')) return undefined;
+  return { code: value['code'], args: args as Record<string, string> };
 }
 
 /**
@@ -166,12 +187,15 @@ export function toViolation(status: number, body: unknown): Violation {
     const r = body['reasons'];
     const reasons = Array.isArray(r) && r.every((x) => typeof x === 'string') ? r : undefined;
     if (reasons) known.add('reasons');
+    const confirm = confirmOf(body['confirm']);
+    if (confirm) known.add('confirm');
     const extra = Object.entries(body).filter(([k]) => !known.has(k));
     return {
       kind: 'error',
       code: code ?? title ?? fallbackCode(status),
       ...(detail === undefined ? {} : { detail }),
       ...(reasons === undefined ? {} : { reasons }),
+      ...(confirm === undefined ? {} : { confirm }),
       ...(extra.length > 0 ? { extensions: Object.fromEntries(extra) } : {}),
     };
   }

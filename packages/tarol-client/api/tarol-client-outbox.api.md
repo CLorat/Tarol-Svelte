@@ -55,6 +55,7 @@ export type OfflineTable = 'outbox' | 'reads';
 // @public
 export interface Outbox {
     clear(): Promise<void>;
+    confirm(key: string): Promise<void>;
     discard(key: string): Promise<void>;
     dispose(): void;
     readonly entries: readonly OutboxEntry[];
@@ -78,6 +79,7 @@ export interface Outbox {
 export interface OutboxEntry extends OfflineRecord {
     readonly attempts: number;
     readonly capturedAt: string;
+    readonly confirmed?: readonly string[];
     readonly label: string;
     readonly request: ChangeRequest<unknown>;
     readonly requestId?: string;
@@ -116,8 +118,8 @@ export type Submitted<T> = {
 
 // Warnings were encountered during analysis:
 //
-// src/outbox.ts:87:31 - (ae-forgotten-export) The symbol "Ok" needs to be exported by the entry point outbox.d.ts
-// src/outbox.ts:88:33 - (ae-forgotten-export) The symbol "Failed" needs to be exported by the entry point outbox.d.ts
+// src/outbox.ts:89:31 - (ae-forgotten-export) The symbol "Ok" needs to be exported by the entry point outbox.d.ts
+// src/outbox.ts:90:33 - (ae-forgotten-export) The symbol "Failed" needs to be exported by the entry point outbox.d.ts
 
 // (No @packageDocumentation comment for this package)
 

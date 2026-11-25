@@ -80,6 +80,8 @@ export interface OutboxEntry extends OfflineRecord {
   readonly requestId?: string;
   /** Attempts so far. */
   readonly attempts: number;
+  /** The warning codes the person confirmed for this entry (sent as `Tarol-Confirm`). */
+  readonly confirmed?: readonly string[];
 }
 
 /** What {@link Outbox.submit} reached on its first attempt. */
@@ -137,6 +139,11 @@ export interface Outbox {
   flush(): Promise<void>;
   /** Sends a refused entry again (same key: the server applies it at most once). */
   retry(key: string): Promise<void>;
+  /**
+   * Confirms the warning of a failed entry (its `violation.confirm`, Tarol-Net TN-37) and sends it again with
+   * `Tarol-Confirm` (every code confirmed for it so far) and the same key; does nothing for an entry without a warning.
+   */
+  confirm(key: string): Promise<void>;
   /** Drops an entry on purpose. */
   discard(key: string): Promise<void>;
   /** Removes every entry of the current scope (sign-out, revoke). */
@@ -227,6 +234,7 @@ export function createOutbox(options: OutboxOptions): Outbox {
           headers['tarol-captured-at'] = entry.capturedAt;
           if (options.device !== undefined) headers['tarol-device'] = options.device;
         }
+        if (entry.confirmed?.length) headers['tarol-confirm'] = entry.confirmed.join(', ');
         const r = await client.change(entry.request, { key: entry.key, headers });
         answers.set(entry.key, r);
         if (r.ok) {
@@ -330,10 +338,14 @@ export function createOutbox(options: OutboxOptions): Outbox {
     },
     flush,
     async retry(key) {
-      await replace(key, (e) => {
-        const { key: k, scope, label, request, capturedAt, sequence, attempts } = e;
-        return { key: k, scope, label, request, capturedAt, sequence, attempts, state: 'pending' };
-      });
+      await replace(key, (e) => pendingAgain(e, e.confirmed));
+      await flush();
+    },
+    async confirm(key) {
+      const v = entries.find((e) => e.key === key)?.violation;
+      const warning = v?.kind === 'error' ? v.confirm : undefined;
+      if (!warning) return;
+      await replace(key, (e) => pendingAgain(e, [...(e.confirmed ?? []), warning.code]));
       await flush();
     },
     discard: drop,
@@ -351,6 +363,22 @@ export function createOutbox(options: OutboxOptions): Outbox {
       if (listen) window.removeEventListener('online', onOnline);
       listeners.clear();
     },
+  };
+}
+
+/** The entry pending again, without its refusal, with the confirmed warning codes. */
+function pendingAgain(e: OutboxEntry, confirmed: readonly string[] | undefined): OutboxEntry {
+  const { key, scope, label, request, capturedAt, sequence, attempts } = e;
+  return {
+    key,
+    scope,
+    label,
+    request,
+    capturedAt,
+    sequence,
+    attempts,
+    state: 'pending',
+    ...(confirmed === undefined ? {} : { confirmed }),
   };
 }
 
