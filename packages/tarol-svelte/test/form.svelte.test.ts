@@ -313,3 +313,47 @@ describe('changeForm', () => {
     expect(at(initial, 'customer.name')).toBeUndefined();
   });
 });
+
+// Tarol-Net TN-37: a warning is a 409 with `confirm: { code, args }`; the same request again with `Tarol-Confirm: <code>`
+// (all confirmed codes, comma-separated) passes it. A refusal stores no idempotency key, so the key can stay.
+describe('a warning to confirm (TS-33)', () => {
+  const warn = (code: string, args: Record<string, string> = {}) => ({
+    ok: false as const,
+    status: 409,
+    violation: { kind: 'error' as const, code, confirm: { code, args } },
+  });
+
+  it('offers the warning, resends with Tarol-Confirm and the same key, and collects codes of the same input', async () => {
+    const f = fakeClient(() => okResult(1));
+    const answers = [warn('Order.Large', { lines: '2', limit: '1' }), warn('Order.Late'), okResult(undefined)];
+    f.answerChanges(() => answers.shift() ?? okResult(undefined));
+    const form = root(() => changeForm(placeOrder, initial, { client: f.client, rules }));
+    await form.submit();
+    expect(form.confirmation).toEqual({ code: 'Order.Large', args: { lines: '2', limit: '1' } });
+    await form.confirm();
+    expect(form.confirmation).toEqual({ code: 'Order.Late', args: {} });
+    const r = await form.confirm();
+    expect(r?.ok).toBe(true);
+    expect(form.confirmation).toBeUndefined();
+    expect(f.changes.map((c) => c.options?.headers?.['tarol-confirm'])).toEqual([
+      undefined,
+      'Order.Large',
+      'Order.Large, Order.Late',
+    ]);
+    expect(new Set(f.changes.map((c) => c.options?.key)).size).toBe(1);
+  });
+
+  it('a changed input is a new intent: new key, nothing confirmed; confirm() without a warning sends nothing', async () => {
+    const f = fakeClient(() => okResult(1));
+    f.answerChanges(() => warn('Order.Large'));
+    const form = root(() => changeForm(placeOrder, initial, { client: f.client, rules }));
+    expect(await form.confirm()).toBeUndefined();
+    await form.submit();
+    form.values.customer = 'Grace';
+    await form.submit();
+    expect(f.changes.map((c) => c.options?.headers?.['tarol-confirm'])).toEqual([undefined, undefined]);
+    expect(f.changes[0]?.options?.key).not.toBe(f.changes[1]?.options?.key);
+    form.reset();
+    expect(form.confirmation).toBeUndefined();
+  });
+});

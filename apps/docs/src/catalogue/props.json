@@ -952,7 +952,7 @@
   "ChangeForm": {
     "package": "@clorat/tarol-components",
     "name": "ChangeForm",
-    "doc": "A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that belongs to no field (403, 409, malformed body) is shown and announced above the button, with the request's reference (`Tarol-Request-Id`) for a user to quote; the reasons of a refusal (`reasons`) are listed under its message.",
+    "doc": "A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that belongs to no field (403, 409, malformed body) is shown and announced above the button, with the request's reference (`Tarol-Request-Id`) for a user to quote; the reasons of a refusal (`reasons`) are listed under its message, and a warning to confirm (Tarol-Net TN-37) gets a Confirm button that sends the same input again with `Tarol-Confirm`.",
     "extends": "",
     "props": [
       {

@@ -30,6 +30,7 @@ export const de: Catalogue = {
   'ui.weekOf': 'Woche ab {date}',
   'ui.entries': ', Einträge: {count}',
   'ui.noEntries': 'Keine Einträge.',
+  'ui.confirm': 'Bestätigen',
   Required: 'Dieses Feld ist erforderlich.',
   Range: 'Geben Sie einen Wert zwischen {min} und {max} ein.',
   'Range.min': 'Geben Sie mindestens {min} ein.',

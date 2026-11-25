@@ -325,6 +325,36 @@ describe('ChangeForm and FormField', () => {
     await expectAccessible();
   });
 
+  it('shows a warning to confirm with its arguments and resends with Tarol-Confirm on Confirm (TS-33, TN-37)', async () => {
+    const sent: (string | undefined)[] = [];
+    const f = fakeClient(0, (_, o) => {
+      sent.push(o?.headers?.['tarol-confirm']);
+      return o?.headers?.['tarol-confirm'] === 'Auction.HighReserve'
+        ? { ok: true, value: undefined, status: 204, replayed: false, stale: false, notModified: false }
+        : {
+            ok: false,
+            status: 409,
+            violation: {
+              kind: 'error',
+              code: 'Auction.HighReserve',
+              confirm: { code: 'Auction.HighReserve', args: { reserve: '900', limit: '500' } },
+            },
+          };
+    });
+    render(BidForm, {
+      client: f.client,
+      messages: { 'Auction.HighReserve': 'A reserve of {reserve} is above {limit}.' },
+    });
+    await userEvent.type(page.getByLabelText(/Title/), 'Irises');
+    await page.getByRole('button', { name: 'Create' }).click();
+    await expect.element(page.getByRole('alert').getByText('A reserve of 900 is above 500.')).toBeInTheDocument();
+    await expectAccessible();
+    await page.getByRole('button', { name: 'Confirm' }).click();
+    await expect.poll(() => sent).toEqual([undefined, 'Auction.HighReserve']);
+    await expect.poll(() => page.getByRole('alert').query()).toBeNull();
+    expect(page.getByRole('button', { name: 'Confirm' }).query()).toBeNull();
+  });
+
   it('announces a coded refusal above the button, in German with the de catalogue', async () => {
     const f = fakeClient(0, () => ({ ok: false, status: 403, violation: { kind: 'error', code: 'Auth.Forbidden' } }));
     render(BidForm, { client: f.client, locale: 'de' });

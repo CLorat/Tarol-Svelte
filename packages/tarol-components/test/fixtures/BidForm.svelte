@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { TarolClient } from '@clorat/tarol-client';
-  import { ThemeRoot, de } from '@clorat/tarol-design';
+  import { ThemeRoot, de, en, type Catalogue } from '@clorat/tarol-design';
   import { changeForm, type Rule } from '@clorat/tarol-svelte';
   import { untrack } from 'svelte';
   import { ChangeForm, FormField } from '../../src/lib/index.js';
 
   // clientRules: false leaves the reserve to the server (its Range comes back as a 400 with the bounds as detail)
-  const props: { client: TarolClient; locale?: 'en' | 'de'; clientRules?: boolean } = $props();
+  const props: { client: TarolClient; locale?: 'en' | 'de'; clientRules?: boolean; messages?: Catalogue } = $props();
   const local = untrack(() => props.clientRules ?? true);
   const rules: Record<string, readonly Rule[]> = {
     title: [
@@ -22,7 +22,10 @@
   );
 </script>
 
-<ThemeRoot locale={props.locale ?? 'en'} messages={props.locale === 'de' ? de : undefined}>
+<ThemeRoot
+  locale={props.locale ?? 'en'}
+  messages={[...(props.messages ? [props.messages] : []), props.locale === 'de' ? de : en]}
+>
   <main>
     <ChangeForm {form} submitLabel="Create">
       <FormField {form} path="title" label="Title" rules={rules['title']} required />
