@@ -403,8 +403,11 @@ Public API: `Oidc.revoke` (API report regenerated).
 ## Size
 
 `@clorat/tarol-svelte` "svelte bindings" (`query, list, changeForm, live, setTarol`) is over its 3.5 kB budget after TS-9,
-TS-12, TS-13, TS-14, TS-20 and TS-21 (the form and query features), measured below. Raising it is the owner's decision; the
-commit "svelte: raise the bindings budget" is separate so it can be dropped or changed.
+TS-12, TS-13, TS-14, TS-20 and TS-21 (the form and query features): **[verified]** `pnpm size` 3.50 kB gzip / 3.08 kB brotli
+on `main`, 4.02 kB gzip / 3.58 kB brotli now (+0.52 kB, 15 %). `action` (TS-15) is not in that bundle. Raising the budget is
+the owner's decision; the commit "svelte: raise the bindings budget (proposed)" sets both limits to 5.25 kB (+50 %, the
+step of SV-31/SV-32) and is separate so it can be dropped or changed. Proposed as SV-33, not recorded in
+[decisions.md](decisions.md) until the owner answers.
 
 ## Release notes 0.1.0-preview.6 (Tatalu)
 
