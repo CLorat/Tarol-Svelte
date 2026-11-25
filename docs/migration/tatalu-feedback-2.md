@@ -149,3 +149,33 @@ code, success clears it, key reuse; expected version, a second run while pending
 
 Public API: `action`, `Action`, `ActionOptions`, `RunOptions` (API report regenerated). Size: not in the measured
 "svelte bindings" bundle (an unused export is tree-shaken); a bundle of `action` alone is 728 B gzip (`gzip -9`, it pulls in the revalidation tracking), **[verified]** `eng/bundle-svelte.mjs dist/index.js … action`.
+
+## TS-16: `FormField` select, radio, date and time
+
+**Finding confirmed.** `FormField` had text-like types, `number` and (since TS-4) `checkbox`; no select, radio, date or
+time. Tatalu wrote `lib/ChoiceGroup.svelte` (radio buttons in a fieldset), `lib/SelectField.svelte` (a select over `Field`)
+and shows the row errors of its opening hours itself (`OpeningHoursEditor.svelte`).
+
+**Checked: per-row errors already worked.** `FormField` reads `form.error(path)` for any path, so `path="windows[3].to"`
+shows the server's `windows[3].to` error; what was missing was a time field for the row. The new test pins it.
+
+**Change.**
+
+* `@clorat/tarol-design` `Select` (label, hint, error over `Field`; the native `select` with a disabled empty first entry
+  `placeholder`; binds the chosen `value` or `null`) and `RadioGroup` (a `fieldset role="radiogroup"` named by its legend,
+  hint and error in `aria-describedby`, `aria-invalid`/`aria-required` on the group, an option `hint` describes its radio,
+  every option at least 44 px high, visible focus ring on the option); both generic over the value type
+  (`V extends string`), props types `SelectProps`, `RadioGroupProps`. `TextField` accepts `type="time"`.
+* `@clorat/tarol-components` `FormField type="select" | "radio"` with `options` (`{ value, label, hint? }`) and
+  `placeholder`, touched on the change (like a box); `type="date"` (`DateField`, ISO date or `null`) and `type="time"`
+  (`HH:mm`, `''` → `null`), touched on blur like a text field.
+
+**[verified]** `tarol-design/test/primitives.test.ts` "select and radio group (TS-16)" (name, description, required, `null`
+before a choice, arrow keys move the radio choice, 44 px rows, axe; red before: no export `RadioGroup`) and
+`tarol-components/test/components.test.ts` "select, radio, date and time fields bind by path; a row error lands on its
+row" (red before: no select was rendered, `selectOption` timed out), axe 0 violations.
+
+Public API: `Select`, `RadioGroup`, `SelectProps`, `RadioGroupProps` (design API report regenerated); `TextField`'s `type`
+gains `time`; `FormField`'s `type` gains `select`, `radio`, `date`, `time` and the props `options`, `placeholder` (in
+`dist/FormField.svelte.d.ts`; the report lists `FormField` as `Component<Props>`). Size **[verified]** (`pnpm size`):
+tarol-design "everything" 11.31 kB of 15 kB; tarol-components "ChangeForm + FormField" 2.3 kB of 3 kB.

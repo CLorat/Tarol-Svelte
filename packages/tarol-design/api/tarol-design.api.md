@@ -8,6 +8,7 @@ import { Component } from 'svelte';
 import { ComponentConstructorOptions } from 'svelte';
 import type { HTMLButtonAttributes } from 'svelte/elements';
 import type { HTMLInputAttributes } from 'svelte/elements';
+import type { HTMLSelectAttributes } from 'svelte/elements';
 import type { Snippet } from 'svelte';
 import { SvelteComponent } from 'svelte';
 
@@ -95,6 +96,50 @@ export const NumberField: Component<Props_8, {}, "value">;
 
 // @public
 export type NumberField = ReturnType<typeof NumberField>;
+
+// Warning: (ae-forgotten-export) The symbol "$$IsomorphicComponent" needs to be exported by the entry point index.d.ts
+//
+// @public
+export const RadioGroup: $$IsomorphicComponent;
+
+// @public
+export type RadioGroup<V extends string> = InstanceType<typeof RadioGroup<V>>;
+
+// @public
+export interface RadioGroupProps<V extends string> {
+    error?: string | undefined;
+    hint?: string | undefined;
+    label: string;
+    options: readonly {
+        readonly value: V;
+        readonly label: string;
+        readonly hint?: string | undefined;
+    }[];
+    required?: boolean | undefined;
+    value?: V | null | undefined;
+}
+
+// Warning: (ae-forgotten-export) The symbol "$$IsomorphicComponent_2" needs to be exported by the entry point index.d.ts
+//
+// @public
+export const Select: $$IsomorphicComponent_2;
+
+// @public
+export type Select<V extends string> = InstanceType<typeof Select<V>>;
+
+// @public
+export interface SelectProps<V extends string> extends Omit<HTMLSelectAttributes, 'value'> {
+    error?: string | undefined;
+    hint?: string | undefined;
+    label: string;
+    options: readonly {
+        readonly value: V;
+        readonly label: string;
+    }[];
+    placeholder?: string | undefined;
+    required?: boolean | undefined;
+    value?: V | null | undefined;
+}
 
 // @public
 export function setMessages(t: Translate): Translate;

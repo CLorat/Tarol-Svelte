@@ -1,6 +1,6 @@
 <!--
   @component
-  A labelled text input (`type` text, email, password, search, tel, url).
+  A labelled text input (`type` text, email, password, search, tel, url, or time: `HH:mm`, the browser's picker).
 -->
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements';
@@ -12,7 +12,7 @@
     /** The value (bindable). */
     value?: string | null | undefined;
     /** The input type. Default `text`. */
-    type?: 'text' | 'email' | 'password' | 'search' | 'tel' | 'url' | undefined;
+    type?: 'text' | 'email' | 'password' | 'search' | 'tel' | 'url' | 'time' | undefined;
     /** Help text under the input. */
     hint?: string | undefined;
     /** The error text, already translated. */

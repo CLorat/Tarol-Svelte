@@ -22,7 +22,9 @@ description: >-
    (`ChildDayCare.NotFound` → `NotFound`, `Plot.AlreadyExists` → `AlreadyExists`): add `X.Y` only for a better text.
 4. Fields: `TextField`/`NumberField` take `label`, `hint`, `error` (already translated) and `required`; label, hint and
    error are wired with `aria-describedby`/`aria-invalid`. `NumberField` binds `number | null`. `Checkbox` (a consent,
-   a yes/no setting) takes the same props and binds `checked`; the box comes before its label.
+   a yes/no setting) takes the same props and binds `checked`; the box comes before its label. `Select` (native select,
+   `placeholder`) and `RadioGroup` (a fieldset named by its legend, 44 px options) take `options={[{ value, label }]}` and
+   bind the value or `null`; `TextField type="time"` binds `HH:mm`.
 5. Dialogs: `<Dialog bind:open title>` on the native `<dialog>`: focus moves in, Escape and backdrop close it (unless
    `dismissible={false}`), focus returns to the opener. Put actions in the `footer` snippet.
 6. Toasts: `getToasts().show(text, { kind: 'success' | 'info' | 'error' })` inside a ThemeRoot; errors stay until dismissed

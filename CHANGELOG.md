@@ -6,6 +6,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Added
 
+* `@clorat/tarol-design`: `Select` and `RadioGroup` (generic over the value, `null` until chosen), `TextField type="time"`. `@clorat/tarol-components`: `FormField type="select" | "radio" | "date" | "time"` with `options` and `placeholder` (TS-16).
 * `@clorat/tarol-svelte`: `action(change, options)` for a change without a form: `run(input, { expectedVersion })`, `pending`, `violation`, `code`, `requestId`, `reset()` (TS-15).
 * `@clorat/tarol-svelte`: `changeForm(…, { awaitRevalidation: true })` resolves a successful submit after the queries its change revalidates have read again, so "Saved" shows the saved view and a next submit starts from it (TS-14).
 * `@clorat/tarol-svelte`: `Query.ready` and `List.ready`, `true` once the first value (page) arrived and never back to `false`; `loading` stays `true` on every revalidation (TS-13).

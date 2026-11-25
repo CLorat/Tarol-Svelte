@@ -6,6 +6,7 @@ import { expectAccessible } from './axe.js';
 import { fakeClient } from './fake.js';
 import type { Result } from '@clorat/tarol-client';
 import BidForm from './fixtures/BidForm.svelte';
+import ChoiceForm from './fixtures/ChoiceForm.svelte';
 import ConsentForm from './fixtures/ConsentForm.svelte';
 import Failing from './fixtures/Failing.svelte';
 import OrphanForm from './fixtures/OrphanForm.svelte';
@@ -214,6 +215,36 @@ describe('ChangeForm and FormField', () => {
     // the field that shows `note` has its own error, although the input has no value for it yet
     await expect.element(page.getByLabelText('Note')).toHaveAttribute('aria-invalid', 'true');
     expect(page.getByRole('alert').query()).toBeNull();
+  });
+
+  it('select, radio, date and time fields bind by path; a row error lands on its row (TS-16)', async () => {
+    const f = fakeClient(0, () => ({
+      ok: false,
+      status: 400,
+      violation: {
+        kind: 'invalid',
+        errors: { 'windows[1].to': ['Range'], setting: ['Required'] },
+        details: { 'windows[1].to': [{ code: 'Range' }], setting: [{ code: 'Required' }] },
+      },
+    }));
+    render(ChoiceForm, { client: f.client });
+    const read = () => JSON.parse(page.getByTestId('values').element().textContent) as Record<string, unknown>;
+    await userEvent.selectOptions(page.getByRole('combobox', { name: 'State' }), 'Hamburg');
+    await userEvent.fill(page.getByLabelText('Start'), '2026-12-01');
+    await userEvent.fill(page.getByLabelText('Until 1'), '11:30');
+    expect(read()).toMatchObject({ state: 'HH', setting: null, start: '2026-12-01' });
+    expect((read()['windows'] as { to: string }[])[0]?.to).toBe('11:30');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect.element(page.getByLabelText('Until 2')).toHaveAttribute('aria-invalid', 'true');
+    await expect.element(page.getByLabelText('Until 1')).not.toHaveAttribute('aria-invalid');
+    const group = page.getByRole('radiogroup', { name: 'Setting' });
+    await expect.element(group).toHaveAccessibleDescription('This field is required.');
+    await userEvent.click(page.getByRole('radio', { name: 'In rented rooms' }));
+    expect(read()['setting']).toBe('Rooms');
+    await expect.element(group).not.toHaveAttribute('aria-invalid'); // touched on the change
+    await userEvent.clear(page.getByLabelText('Start'));
+    expect(read()['start']).toBeNull();
+    await expectAccessible();
   });
 
   it('shows the bounds of the server detail on a field without client rules', async () => {

@@ -31,7 +31,7 @@ Default Svelte 5 components bound to Tarol data, built from `@clorat/tarol-desig
 | `DetailLayout` | the page of one aggregate over `query(...)`: `h1` from the value, `meta`, `actions` (e.g. a `MenuButton`), `aside`, with `QueryState`'s loading, error and stale states |
 | `SearchBox` | the global search over `MapTarolSearch` (`GET /search`): a server-side `Combobox`, debounced and aborting; the title and the snippet with its matches in `<mark>`, all as text (`highlight()` for your own rendering); `onselect(hit)` |
 | `QueryState` | loading skeletons (fixed height), empty text, error with the code's message and retry, stale note |
-| `ChangeForm` + `FormField` | a form over `changeForm(...)`: fields bound by backend path (`type="checkbox"` for a boolean such as a consent), errors as messages with the rule's bounds, refusals announced |
+| `ChangeForm` + `FormField` | a form over `changeForm(...)`: fields bound by backend path (`type="checkbox"` for a boolean such as a consent, `select`/`radio` with `options`, `date`, `time`), errors as messages with the rule's bounds, refusals announced |
 | `AppShell` | skip link, header, named navigation (side, or `navPosition="bottom"`: a bottom bar below 40rem), main landmark |
 
 Size (gzip, compiled, without Svelte and the other @clorat packages): DataTable 2.26 KB, ChangeForm + FormField 1.35 KB,

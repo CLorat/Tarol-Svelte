@@ -23,7 +23,10 @@ description: >-
 4. Forms: `const form = changeForm(...)`, then `<ChangeForm {form} submitLabel>` with `<FormField {form} path label
    rules>` per field. `path` is the backend's field path (`reserve`, `lines[1].quantity`); pass the field's `rules` so
    messages show the bounds; without them the bounds come from the server's 400 (`errorDetails`, `1..1000000`). Coded
-   refusals (403, 409) appear above the submit button as an alert with their reference.
+   refusals (403, 409) appear above the submit button as an alert with their reference. `type`: text, number, email,
+   password, tel, url, `checkbox` (boolean), `select`/`radio` with `options={[{ value, label }]}` (an enum member, `null`
+   until chosen; `placeholder` for a select), `date` (`YYYY-MM-DD`) and `time` (`HH:mm`), both `null` when empty. A row of
+   a list is a path too: `path="windows[{i}].to"` gets the server's `windows[3].to` error.
    With `changeForm(…, { from: () => view.value })`, a FormField whose value changes on the server while the user edits
    it shows a polite notice (`role="status"`) with "Use the new value" / "Keep mine"; input and focus stay.
 5. `AppShell title nav actions` gives the skip link and the landmarks; put pages in its children. Below 40rem the nav

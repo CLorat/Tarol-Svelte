@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import '../dist/tokens.css';
 import { expectAccessible } from './axe.js';
+import Choices from './fixtures/Choices.svelte';
 import Consent from './fixtures/Consent.svelte';
 import DialogHost from './fixtures/DialogHost.svelte';
 import Form from './fixtures/Form.svelte';
@@ -94,6 +95,36 @@ describe('checkbox (TS-4)', () => {
     render(Consent, { locale: 'de' });
     expect(document.querySelector('label')?.textContent.trim()).toBe('I accept the terms\u00a0(Pflichtfeld)'); // a no-break space: Svelte keeps it, and the marker never wraps alone
     expect(page.getByRole('checkbox').element().getBoundingClientRect().height).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe('select and radio group (TS-16)', () => {
+  it('a select is a labelled native select with a placeholder, binds the value or null, and passes axe', async () => {
+    render(Choices, { error: 'Choose one.' });
+    const select = page.getByRole('combobox', { name: /State/ });
+    await expect.element(select).toHaveAttribute('aria-invalid', 'true');
+    await expect.element(select).toHaveAccessibleDescription('Choose one.');
+    await expect.element(select).toBeRequired();
+    expect(values()['state']).toBeNull();
+    await userEvent.selectOptions(select, 'Schleswig-Holstein');
+    expect(values()['state']).toBe('SH');
+    await expectAccessible();
+  });
+
+  it('a radio group is a fieldset with a legend, hint and error, arrow keys move the choice, targets are 44 px', async () => {
+    render(Choices, { error: 'Choose one.' });
+    const group = page.getByRole('radiogroup', { name: /Setting/ });
+    await expect.element(group).toHaveAccessibleDescription('Where you care Choose one.');
+    await expect.element(group).toHaveAttribute('aria-invalid', 'true');
+    const home = page.getByRole('radio', { name: /At home/ });
+    await expect.element(home).toBeChecked();
+    await expect.element(home).toHaveAccessibleDescription('In your own flat');
+    home.element().focus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(values()['setting']).toBe('Rooms');
+    const row = page.getByText('In rented rooms').element().closest('label');
+    expect(row?.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    await expectAccessible();
   });
 });
 
