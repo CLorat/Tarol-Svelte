@@ -561,3 +561,62 @@ void tarol(createClient({ baseUrl: '/api' })).changes.registerChild(input);
     expect(typecheck({ 'api.ts': code, 'usage.ts': usage })).toEqual([]);
   });
 });
+
+describe('x-tarol-types and x-tarol-constants (TS-10, Tatalu FB-F02.6-2, FB-F13.5-1)', () => {
+  const schemas: Record<string, Schema> = {
+    MeaslesStatus: { type: 'string', enum: ['NotRequired', 'Missing', 'Sufficient', 'FollowUpDue', 'Expired'] },
+  };
+  const withExtras = (extra: Record<string, unknown>): OpenApiDocument => ({ ...doc(schemas), ...extra });
+
+  it('exports a type no operation references when x-tarol-types names it, and refuses a name that is no schema', () => {
+    const code = generate(withExtras({ 'x-tarol-types': ['MeaslesStatus'] }));
+    expect(code).toContain(
+      'export type MeaslesStatus = "NotRequired" | "Missing" | "Sufficient" | "FollowUpDue" | "Expired";',
+    );
+    expect(() => generate(withExtras({ 'x-tarol-types': ['Measles'] }))).toThrow(
+      '#/x-tarol-types/0: Measles is not in components.schemas',
+    );
+    expect(() => generate(withExtras({ 'x-tarol-types': 'MeaslesStatus' }))).toThrow(
+      '#/x-tarol-types: not a list of schema names',
+    );
+  });
+
+  it('writes x-tarol-constants as exported literals, sorted by name', () => {
+    const code = generate(
+      withExtras({
+        'x-tarol-constants': {
+          ProcessingAgreementVersion: '2026-03',
+          MaxChildren: 12,
+          Strict: true,
+          Weekdays: ['Mon', 'Tue'],
+        },
+      }),
+    );
+    expect(code).toContain(
+      [
+        '/** Backend constants (x-tarol-constants). */',
+        'export const MaxChildren = 12 as const;',
+        'export const ProcessingAgreementVersion = "2026-03" as const;',
+        'export const Strict = true as const;',
+        'export const Weekdays = ["Mon", "Tue"] as const;',
+      ].join('\n'),
+    );
+    expect(
+      typecheck({
+        'api.ts': code,
+        'usage.ts':
+          "import { ProcessingAgreementVersion } from './api.js';\nexport const v: '2026-03' = ProcessingAgreementVersion;\n",
+      }),
+    ).toEqual([]);
+  });
+
+  it('refuses a constant that is no identifier or no JSON literal', () => {
+    expect(() => generate(withExtras({ 'x-tarol-constants': { 'max-children': 1 } }))).toThrow(
+      '#/x-tarol-constants/max-children: not a PascalCase identifier',
+    );
+    expect(() => generate(withExtras({ 'x-tarol-constants': { Limits: { a: 1 } } }))).toThrow(
+      '#/x-tarol-constants/Limits: not a string, number, boolean or a list of them',
+    );
+    expect(() => generate(withExtras({ 'x-tarol-constants': { Rate: Number.NaN } }))).toThrow(/Rate/);
+  });
+});

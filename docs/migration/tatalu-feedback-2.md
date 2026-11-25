@@ -31,3 +31,22 @@ record while it is null" (red before: the submit returned `undefined`). The samp
 Behaviour change: a document that failed now generates; an `Option<Record>` type is a type alias `{…} | null` instead of an
 interface (code that `implements` or `extends` it must use the type alias); a nullable enum in a type array gains `| null`.
 No new export.
+
+## TS-10: `x-tarol-types` and `x-tarol-constants`
+
+**Contract** (defined by Tarol-Net round 2): the document root carries `x-tarol-types: string[]`, names of
+`components.schemas` entries the client must have although no operation references them (Tatalu: `MeaslesStatus`, the
+result of a domain function), and `x-tarol-constants: { [Name]: literal }` with a string, a finite number, a boolean or a
+list of these (Tatalu: `PrivacyDocuments.ProcessingAgreementVersion`).
+
+**Change.** The generator already exported every component schema; it now checks `x-tarol-types` (not a list →
+`GenerateError` at `#/x-tarol-types`; a name that is not a schema → at `#/x-tarol-types/<i>`), so a backend that lists a
+type it did not describe fails at generation, not in the app. Each constant becomes `export const <Name> = <literal> as
+const;` after a doc line `/** Backend constants (x-tarol-constants). */`, sorted by name; a name that is not PascalCase
+(`^[A-Z][A-Za-z0-9]*$`) or a value that is no literal (an object, `NaN`) is a `GenerateError` with its pointer.
+
+**[verified]** `tarol-codegen/test/generate.test.ts` "x-tarol-types and x-tarol-constants (TS-10 …)" (red before: the
+unknown type name and the constants were ignored), the constants type-check as literal types (`'2026-03'`).
+
+Public API: `OpenApiDocument['x-tarol-types']`, `OpenApiDocument['x-tarol-constants']`, the type `ConstantValue` (API
+report regenerated). Generated output: new `export const`s when the document has constants; otherwise byte-identical.

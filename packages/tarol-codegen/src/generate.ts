@@ -12,7 +12,17 @@ export interface OpenApiDocument {
   readonly components?: { readonly schemas?: Readonly<Record<string, Schema>> };
   /** The UI push topics (Tarol-Net BC-25): topic name → its contract version, stream, payload schema and rules. */
   readonly 'x-tarol-topics'?: Readonly<Record<string, TopicDescription>>;
+  /**
+   * Names of `components.schemas` entries the app needs although no operation references them (an enum a domain
+   * function returns); every schema is exported, this list makes the backend's intent checkable (Tarol-Net round 2).
+   */
+  readonly 'x-tarol-types'?: readonly string[];
+  /** Backend constants: PascalCase name → JSON literal (string, number, boolean or a list of them) (Tarol-Net round 2). */
+  readonly 'x-tarol-constants'?: Readonly<Record<string, ConstantValue>>;
 }
+
+/** The value of one `x-tarol-constants` entry. */
+export type ConstantValue = string | number | boolean | readonly (string | number | boolean)[];
 
 /** One topic of `x-tarol-topics`. */
 export interface TopicDescription {
@@ -354,6 +364,32 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     'const enc = encodeURIComponent;',
     '',
   );
+
+  // the extra types the backend wants exported (TS-10): every schema is, so only check that they exist
+  const extraTypes: unknown = document['x-tarol-types'];
+  if (extraTypes !== undefined) {
+    if (!Array.isArray(extraTypes)) throw new GenerateError('#/x-tarol-types', 'not a list of schema names');
+    for (const [i, n] of (extraTypes as unknown[]).entries())
+      if (typeof n !== 'string' || !(n in schemas))
+        throw new GenerateError(`#/x-tarol-types/${String(i)}`, `${String(n)} is not in components.schemas`);
+  }
+  // the backend's constants (TS-10): one exported literal each
+  const constants = Object.entries((document['x-tarol-constants'] ?? {}) as Readonly<Record<string, unknown>>).sort(
+    ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0),
+  );
+  if (constants.length) {
+    const literal = (v: unknown): boolean =>
+      typeof v === 'string' || typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v));
+    const lines = constants.map(([name, v]) => {
+      const pointer = `#/x-tarol-constants/${pointerPart(name)}`;
+      if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) throw new GenerateError(pointer, 'not a PascalCase identifier');
+      if (!literal(v) && !(Array.isArray(v) && v.every(literal)))
+        throw new GenerateError(pointer, 'not a string, number, boolean or a list of them');
+      const text = Array.isArray(v) ? `[${v.map((x) => JSON.stringify(x)).join(', ')}]` : JSON.stringify(v);
+      return `export const ${name} = ${text} as const;`;
+    });
+    out.push('/** Backend constants (x-tarol-constants). */', ...lines, '');
+  }
 
   // schema types (not the problem schema: the client maps problems to its Violation)
   for (const [name, s] of Object.entries(schemas)) {

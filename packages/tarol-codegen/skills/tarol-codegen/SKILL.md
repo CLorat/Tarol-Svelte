@@ -32,7 +32,10 @@ description: >-
 8. Nullable members are `T | null`: `oneOf`/`anyOf` of `{type: "null"}` and one schema (`PersonName?`, `Gender?`,
    `Option<PostalAddress>`) and a type array with `"null"` (`["null", "object"]` with members is `type X = {…} | null`). A
    nullable member has no `Required` rule; the rules of a nullable record's members are skipped while it is `null`.
-9. Results carry the operation's codes: `Result<undefined, PlaceBidCode>`; `r.violation.code === 'Bid.TooLow'` is checked
+9. Types and constants no operation uses come from the backend's document root: `x-tarol-types` (schema names; each is
+   exported as a type, an unknown name is a `GenerateError`) and `x-tarol-constants` (`export const Name = <literal> as
+   const;`). Import them from the generated file; never copy a backend enum or constant by hand.
+10. Results carry the operation's codes: `Result<undefined, PlaceBidCode>`; `r.violation.code === 'Bid.TooLow'` is checked
    by TypeScript. `errors.placeBid` lists them at run time.
 
 ## Example

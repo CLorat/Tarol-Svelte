@@ -6,6 +6,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Added
 
+* `@clorat/tarol-codegen`: `x-tarol-constants` (backend constants as `export const <Name> = <literal> as const`) and a check of `x-tarol-types` (schemas no operation references; an unknown name is a `GenerateError`) (TS-10). New: `OpenApiDocument["x-tarol-types"]`, `OpenApiDocument["x-tarol-constants"]`, `ConstantValue`.
 * `@clorat/tarol-components`: `AppShell navPosition="bottom"` (TS-1, from Tatalu): below 40rem the navigation is a one-row,
   sticky bar at the bottom of the viewport with targets of at least 44 px; above it, the side navigation. The default
   (`side`) is unchanged.

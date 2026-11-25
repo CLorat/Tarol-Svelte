@@ -26,3 +26,4 @@ Tatalu's waves 1 and 2 (`CLorat/Tatalu` `integration/welle-2`, on `0.1.0-preview
 | # | Pri | Change | Tatalu | Status |
 |---|---|---|---|---|
 | TS-9 | P0 | **Nullable schemas in `tarol-codegen`.** `oneOf`/`anyOf` of `{type: "null"}` and one schema (`$ref`, enum, object, primitive) is `T \| null`; a type array with `"null"` is `T \| null`, also `["null", "object"]` with members (`Option<Record>`); no `Required` rule for a nullable member; the form skips the rules of a nullable record's members while it is `null`. | FB-3, FB-F01.1-4, FB-F17.3-3, FB-F02.1-5, FB-F13.3-5, FB-F03.9-1, FB-F04.3-2, FB-F17.2-3 | closed: commit (to be filled) |
+| TS-10 | P0 | **`x-tarol-types` and `x-tarol-constants`.** The document root names schemas no operation uses (exported as types; an unknown name is a `GenerateError`) and constants (`export const <Name> = <literal> as const;`). | FB-F02.6-2, FB-F13.5-1 | closed: commit (to be filled); needs the Tarol-Net round 2 emitter |
