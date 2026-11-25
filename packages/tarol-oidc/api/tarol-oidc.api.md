@@ -33,6 +33,7 @@ export interface Oidc {
     logout(): Promise<void>;
     readonly provider: TokenProvider;
     restore(returnTo?: string): Promise<RestoreResult>;
+    revoke(): Promise<boolean>;
     session(): OidcSession | null;
     subscribe(listener: (session: OidcSession | null) => void): () => void;
 }

@@ -131,6 +131,12 @@ export interface Oidc {
   handleRedirect(url?: string): Promise<RedirectResult>;
   /** Forgets the tokens and redirects to the end-session endpoint (when the server has one). */
   logout(): Promise<void>;
+  /**
+   * Revokes the refresh token at the server (RFC 7009, "device lost", access withdrawn) and signs out here, without
+   * navigating; forgets the last session. `true` when the server revoked a token, `false` when there was none to revoke
+   * or the server has no revocation endpoint. The server's browser session is not ended: that is {@link Oidc.logout}.
+   */
+  revoke(): Promise<boolean>;
 }
 
 /** The share of the token's lifetime after which it is refreshed ahead of time. */
@@ -361,6 +367,21 @@ export function createOidc(options: OidcOptions): Oidc {
     navigate(url.href);
   };
 
+  const revoke = async (): Promise<boolean> => {
+    const current = tokens;
+    signOut();
+    remember(null);
+    if (!current?.refresh) return false;
+    const as = await discover();
+    if (!as.revocation_endpoint) return false;
+    const response = await oauth.revocationRequest(as, client, auth, current.refresh, {
+      ...http(),
+      additionalParameters: { token_type_hint: 'refresh_token' },
+    });
+    await oauth.processRevocationResponse(response);
+    return true;
+  };
+
   const provider: TokenProvider = {
     async token() {
       const current = tokens;
@@ -413,5 +434,6 @@ export function createOidc(options: OidcOptions): Oidc {
     },
     handleRedirect,
     logout,
+    revoke,
   };
 }

@@ -2,7 +2,7 @@
 name: tarol-oidc
 description: >-
   Use when adding login, logout, token refresh or the signed-in user's tenant and roles to a browser app on a Tarol
-  backend, especially one secured with Zitadel, also offline (PWA). Covers createOidc, handleRedirect, restore, lastSession, login, logout, session,
+  backend, especially one secured with Zitadel, also offline (PWA). Covers createOidc, handleRedirect, restore, lastSession, login, logout, revoke, session,
   subscribe, provider (a TokenProvider for createClient and connectPush) and the zitadel preset with zitadelTenant and
   zitadelRoles from @clorat/tarol-oidc. Do not install oidc-client-ts, store tokens in localStorage, or derive the tenant
   by hand.
@@ -28,6 +28,8 @@ description: >-
 7. Roles and tenant come from `oidc.session()` (`roles`, `tenant`); for UI decisions only, the backend checks again.
 8. A stronger or fresh sign-in before a sensitive step: `oidc.login({ returnTo, acr: 'mfa', maxAge: 300, prompt: 'login' })`
    (the callback refuses an ID token older than `maxAge`); `session.factors` is the token's `amr` (`['pwd', 'otp']`).
+9. `await oidc.revoke()` revokes the refresh token at the server and signs out here without navigating ("sign out this
+   device"); `logout()` also ends the server's browser session.
 
 ## Offline PWA
 

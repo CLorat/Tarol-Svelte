@@ -356,3 +356,20 @@ URL, a sign-in older than `maxAge` refused, a fresh one accepted, `factors` from
 
 Public API: `LoginOptions`, `OidcSession.factors`, `Oidc.login`'s parameter (API reports regenerated). Behaviour: none
 for `login(returnTo)`.
+
+## TS-25: `revoke()`
+
+**Finding confirmed.** The browser could not revoke its refresh token ("device lost", access withdrawn): `logout()` drops
+the tokens and visits the end-session endpoint, but a stolen refresh token stays valid until it expires.
+
+**Change.** `Oidc.revoke(): Promise<boolean>` signs out here at once (tokens dropped, `onSignOut`, last session
+forgotten), then, when there is a refresh token and the server announces a `revocation_endpoint`, revokes it
+(`token_type_hint=refresh_token`, `oauth4webapi`'s `revocationRequest`) and resolves `true`; otherwise `false`. It does not
+navigate and does not end the server's browser session (that is `logout()`); a network failure of the revocation rejects
+after the local sign-out. The access token is not revoked: it is short-lived, and many servers cannot revoke JWTs.
+
+**[verified]** `tarol-oidc/test/oidc.test.ts` "revoke (TS-25 …)": one revocation request with the refresh token and the
+hint, session and last session gone, `onSignOut` once, no navigation, no token request; without a refresh token `false`
+and no request (red before: `oidc.revoke is not a function`). The fake server gained a revocation endpoint.
+
+Public API: `Oidc.revoke` (API report regenerated).

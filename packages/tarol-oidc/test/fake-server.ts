@@ -6,6 +6,8 @@ export interface FakeServer {
   readonly fetch: typeof fetch;
   /** Every token endpoint request body, in order. */
   readonly tokenRequests: URLSearchParams[];
+  /** Every revocation request body (RFC 7009), in order. */
+  readonly revocations: URLSearchParams[];
   /** How many discovery documents were served. */
   discoveries: number;
   /** Lifetime of issued access tokens in seconds. */
@@ -50,6 +52,7 @@ export function fakeServer(issuer = 'https://auth.example.com'): FakeServer {
   const server: FakeServer = {
     issuer,
     tokenRequests: [],
+    revocations: [],
     discoveries: 0,
     expiresIn: 100,
     claims: {},
@@ -85,15 +88,21 @@ export function fakeServer(issuer = 'https://auth.example.com'): FakeServer {
           authorization_endpoint: `${issuer}/authorize`,
           token_endpoint: `${issuer}/token`,
           end_session_endpoint: `${issuer}/logout`,
+          revocation_endpoint: `${issuer}/revoke`,
           id_token_signing_alg_values_supported: ['RS256'],
           code_challenge_methods_supported: ['S256'],
           authorization_response_iss_parameter_supported: true,
         });
       }
-      if (url.pathname !== '/token') return new Response(null, { status: 404 });
+      if (url.pathname !== '/token' && url.pathname !== '/revoke') return new Response(null, { status: 404 });
       const body = new URLSearchParams(
         typeof init?.body === 'string' ? init.body : init?.body instanceof URLSearchParams ? init.body : '',
       );
+      if (url.pathname === '/revoke') {
+        server.revocations.push(body);
+        refreshTokens.delete(body.get('token') ?? '');
+        return new Response(null, { status: 200 });
+      }
       server.tokenRequests.push(body);
       if (server.gate) await server.gate;
       const clientId = body.get('client_id') ?? '';

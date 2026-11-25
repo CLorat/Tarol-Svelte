@@ -332,3 +332,30 @@ describe('a stronger sign-in (TS-24, Tatalu FB-F13.2-1)', () => {
     expect(oidc.session()?.factors).toEqual([]);
   });
 });
+
+describe('revoke (TS-25, Tatalu FB-F13.2-2)', () => {
+  it('revokes the refresh token at the server, signs out here and does not navigate', async () => {
+    const { oidc, signIn, server, navigations, signOuts } = setup({ lastSession: memoryStorage() });
+    await signIn();
+    const before = navigations.length;
+    const refresh = server.tokenRequests.length;
+    expect(await oidc.revoke()).toBe(true);
+    expect(server.revocations).toHaveLength(1);
+    expect(server.revocations[0]?.get('token')).toMatch(/^refresh-/);
+    expect(server.revocations[0]?.get('token_type_hint')).toBe('refresh_token');
+    expect(oidc.session()).toBeNull();
+    expect(oidc.lastSession()).toBeNull();
+    expect(signOuts).toHaveBeenCalledTimes(1);
+    expect(navigations).toHaveLength(before);
+    expect(server.tokenRequests).toHaveLength(refresh);
+  });
+
+  it('signs out here and reports false when there is nothing to revoke', async () => {
+    const { oidc, signIn, server } = setup();
+    server.issueRefresh = false;
+    await signIn();
+    expect(await oidc.revoke()).toBe(false);
+    expect(server.revocations).toHaveLength(0);
+    expect(oidc.session()).toBeNull();
+  });
+});
