@@ -57,7 +57,6 @@ description: >-
   import { changeForm, query } from '@clorat/tarol-svelte';
 
   let { id }: { id: string } = $props();
-  // the generated requests.auctionView({ auction: id }) builds the same request
   const auction = query<AuctionView>(() => ({ path: `/auctions/${id}`, subject: id }), { live: 'artflow.bid-placed' });
   const bid = changeForm(
     (i: { amount: number }) => ({ method: 'POST', path: `/auctions/${id}/bids`, body: i }),
@@ -82,7 +81,6 @@ description: >-
 | `live()` without a push connection | `Error: tarol-svelte: live() needs a push connection` |
 | a hand-typed topic string (`'artflow.bid-placd'`) | no type error; the hub refuses it (`Hub.Forbidden` in `onRefused`) and the page never updates: use `topics.<name>` |
 | `live()` plus an `$effect` comparing `message.subject` to re-read a view | unnecessary, and lossy: `live()` keeps only the last message of a burst; use `query(…, { live })` |
-| a hand-written `{ path: \`/auctions/${id}\` }` with `live` | every message of the topic re-reads it (no `subject`); use the generated request |
 | a saga's topic on a view without `subject: null` | its messages carry the saga's stream id, so the view never updates |
 | refetching after `submit()` | unnecessary: queries revalidate after own changes (with `Tarol-Read-After`); to show "Saved" only once they did (a next save starts from the new view), pass `awaitRevalidation: true` |
 | `{@html}` of server text | never; render text |

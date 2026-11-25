@@ -437,3 +437,24 @@ What Tatalu can change or remove when it moves to `0.1.0-preview.6` (and, where 
 Breaking for Tatalu: `restore()` resolves a value (ignoring it still works); `Option<Record>` types are type aliases, not
 interfaces; `changeForm`'s `initial` no longer narrows the input (a call that relied on it reports the mismatch); with
 `navPosition="bottom"` on a phone the window does not scroll.
+
+## Skill evaluation checklist
+
+Tasks to give an agent with only the shipped skills loaded; the expected answer uses the API named, and avoids the mistake.
+
+| Skill | Task | Expected API | Mistake to avoid |
+|---|---|---|---|
+| tarol-codegen | "The view has `Gender? Gender`; show '–' when unset" | the generated `gender: Gender \| null`, `?? '–'` | a hand-written enum or a cast; editing the generated file |
+| tarol-codegen | "Show the current agreement version from the backend" | `import { ProcessingAgreementVersion } from './api'` | copying the constant |
+| tarol-svelte | "Create the edit form once the view has loaded" | `{#if view.ready}` | `{#if !view.loading}` (recreated on every revalidation) |
+| tarol-svelte | "Show 'Saved' only when the page shows the new value" | `changeForm(…, { awaitRevalidation: true })` | `await view.refresh()` after submit |
+| tarol-svelte | "A button that makes a location the main one, with its error" | `action(requests.chooseMain)`, `run`, `pending`, `t(code)` | own `$state` for pending/refusal around `tarol(client).changes` |
+| tarol-svelte | "A required state picker that starts empty" | `changeForm(allowNull(requests.x), { state: null }, { rules })` | casting `null as State` |
+| tarol-svelte | "Keep the half-filled registration when the dialog closes" | `draft: 'registration'` | own `localStorage` code |
+| tarol-components | "A select of the federal state, radio buttons for the setting, opening hours per row" | `FormField type="select" \| "radio" \| "time" options path="windows[{i}].to"` | hand-wired `<select>`/`<input type=radio>` |
+| tarol-components | "Audit log of last week only" | `DataTable filter={(r) => …}` | a wrapper around `List` |
+| tarol-components | "Bottom navigation on phones" | `AppShell navPosition="bottom"`, `main.scrollTo` | a fixed bar next to `AppShell`; `window.scrollTo` |
+| tarol-design | "Merge the area catalogues" | `defineMessages(a, b, c)` | `{ ...a, ...b }` |
+| tarol-oidc | "Open the app offline" | `restore()` → `'offline'`, `lastSession: true`, `oidc.lastSession()` | persisting tokens; own `navigator.onLine` guard |
+| tarol-oidc | "Require a fresh sign-in with a second factor" | `login({ acr, maxAge, prompt: 'login' })`, `session.factors` | parsing `claims.amr` by hand |
+| tarol-oidc | "Sign out this device" | `oidc.revoke()` | `logout()` only (refresh token stays valid) |
