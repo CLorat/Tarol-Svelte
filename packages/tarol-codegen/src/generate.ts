@@ -54,7 +54,7 @@ export interface Operation {
   readonly responses?: Readonly<
     Record<string, { readonly content?: Readonly<Record<string, { readonly schema?: Schema }>> }>
   >;
-  /** The entry's kind: `creation`, `change`, `view`, `list`, `search`, `admin` or `me`. Required. */
+  /** The entry's kind: `creation`, `change`, `view`, `row` (one projection row, Tarol-Net TN-54), `list`, `search`, `admin` or `me`. Required. */
   readonly 'x-tarol-kind'?: string;
   /** The codes the operation can answer with, where the backend knows them statically. */
   readonly 'x-tarol-errors'?: readonly string[];
@@ -170,7 +170,7 @@ export class GenerateError extends Error {
   }
 }
 
-type Kind = 'creation' | 'change' | 'view' | 'list' | 'search' | 'admin' | 'me';
+type Kind = 'creation' | 'change' | 'view' | 'row' | 'list' | 'search' | 'admin' | 'me';
 
 /** The e-mail check `@clorat/tarol-svelte`'s `isEmail` implements (Tarol.Validations `Rules.Email`), as the backend states it. */
 export const emailRule =
@@ -337,6 +337,7 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
         kind,
         read:
           kind === 'view' ||
+          kind === 'row' ||
           kind === 'list' ||
           kind === 'search' ||
           kind === 'me' ||
@@ -694,7 +695,7 @@ function kindOf(op: Operation, pointer: string): Kind {
       `${pointer}/x-tarol-kind`,
       'x-tarol-kind is required (a Tarol backend emits it on every entry)',
     );
-  const kinds: readonly string[] = ['creation', 'change', 'view', 'list', 'search', 'admin', 'me'];
+  const kinds: readonly string[] = ['creation', 'change', 'view', 'row', 'list', 'search', 'admin', 'me'];
   if (!kinds.includes(declared)) throw new GenerateError(`${pointer}/x-tarol-kind`, `unknown kind ${declared}`);
   return declared as Kind;
 }
