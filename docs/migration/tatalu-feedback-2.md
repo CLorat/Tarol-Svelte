@@ -148,4 +148,4 @@ code, success clears it, key reuse; expected version, a second run while pending
 `awaitRevalidation`). Red before: `The requested module '/src/index.ts' does not provide an export named 'action'`.
 
 Public API: `action`, `Action`, `ActionOptions`, `RunOptions` (API report regenerated). Size: not in the measured
-"svelte bindings" bundle (an unused export is tree-shaken); `action` alone is about 0.5 kB gzip.
+"svelte bindings" bundle (an unused export is tree-shaken); a bundle of `action` alone is 728 B gzip (`gzip -9`, it pulls in the revalidation tracking), **[verified]** `eng/bundle-svelte.mjs dist/index.js … action`.
