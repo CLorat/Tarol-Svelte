@@ -193,8 +193,11 @@ it** for a power-of-ten step (what the backend's `decimal` reads: `0.1 + 0.2` is
 refused on both sides; `1e-7` has 7 places) and divides with a tolerance for any other step. `en`/`de` gain `Scale` ("The
 value has too many decimal places." / "Der Wert hat zu viele Nachkommastellen.").
 
-The backend's error code for a scale violation is **[unverified]**: TN-53 is not in Tarol-Net `main` (2f9b085). `Scale`
-follows the attribute-name convention (`[Range]` → `Range`); a backend that writes `x-tarol-rules` with another code wins.
+The backend's code is `Scale` **[verified by reading]** Tarol-Net `e147531` (branch `ccr-8972722e-gwv2vp`, not yet on
+`main`): `Tarol.Validations.Generators/Emitter.cs` emits code `Scale` with the digits as detail, and the OpenAPI emitter
+writes `multipleOf` and an `x-tarol-rules` item `{ rule: 'Scale', code: 'Scale', step: 0.01 }` (a JSON number). "Trailing
+zeros do not count" there, and a JSON number has none. The test "takes Scale from x-tarol-rules as Tarol-Net e147531 writes
+it" pins that shape.
 
 **[verified]** `tarol-codegen/test/generate.test.ts` "multipleOf as the client rule Scale (TS-29 …)" (red before: no
 `Scale` in the rules), `tarol-svelte/test/rules.test.ts` "checks Scale: a multiple of the step, without float noise".
@@ -209,8 +212,7 @@ Tarol-Net round 2 TN-36 writes `reasons` (`IReadOnlyList<string>`, `Tarol.Result
 
 **Change.** `Problem.reasons?: readonly string[]` when the member is a list of strings (else it stays in `extensions`);
 `ChangeForm` lists each translated reason under the refusal's message inside the alert; the outbox keeps them with the
-violation. The confirmation step (`Tarol-Confirm: <code>[, <code>]`, 409 with `confirm: { code, args }`) is not built: it
-waits for the backend part of TN-37 and the confirmed shape.
+violation. The confirmation step is part 2 below.
 
 **[verified]** `tarol-client/test/client.test.ts` "reads the reasons of a refusal (Tarol-Net TN-36) as codes, not as an
 extension (TS-33)", `tarol-components/test/components.test.ts` "lists the reasons of a refusal under its message, each
@@ -219,13 +221,49 @@ translated" (red before: `reasons` was an extension, no list).
 Behaviour change: a problem's `reasons` list moves from `extensions.reasons` to `reasons` (code that read
 `extensions.reasons` reads `reasons`). `ChangeForm`'s alert is a `<div role="alert">` with a `<p>` (was a `<p>`).
 
+## TS-33, part 2: the confirmation step (SV-36, Tarol-Net TN-37)
+
+**Contract** **[verified by reading]** Tarol-Net `61dfc8b` (branch `ccr-8972722e-gwv2vp`, not yet on `main`),
+`src/Changes/Tarol.Changes.AspNetCore/ChangeEndpoints.cs`: a confirmable warning is 409 with the problem members `code` and
+`confirm: { code, args }` (`args` always present, string values, may be empty); the request is sent again with
+`Tarol-Confirm: <code>` (several comma-separated, at most 16 codes and 1,024 characters, CORS-allowed). Only a successful
+append stores the idempotency key (`Tarol.Changes/ChangePipeline.cs`), so the confirmed request may keep the key.
+
+**Change.**
+
+* `@clorat/tarol-client`: `Problem.confirm?: Confirmation` (`{ code, args }`), the new type `Confirmation`; a `confirm`
+  member of another shape stays in `extensions`.
+* `@clorat/tarol-svelte` `changeForm`: `form.confirmation` is the last submit's warning; `form.confirm()` adds its code to
+  the codes confirmed for the input as sent and submits again with `headers: { 'tarol-confirm': codes.join(', ') }` and the
+  same key, so a second warning of the same input (`A`, then `B`) is confirmed as `A, B`. An input edited since the warning
+  is a new intent: a new key and no confirmed codes (the person sees the warnings of the new input). `undefined` without a
+  warning. `reset()` clears it with the violation.
+* `@clorat/tarol-components` `ChangeForm`: the warning's message is `t(code, args)`; inside the alert a secondary Confirm
+  button (`ui.confirm`, en "Confirm", de "Bestätigen") calls `form.confirm()`.
+* `@clorat/tarol-client/outbox`: a warning is kept as `failed` with its violation (incl. `confirm`); `outbox.confirm(key)`
+  records the code on the entry (`OutboxEntry.confirmed`) and sends it again with `Tarol-Confirm` and the same key;
+  `retry(key)` keeps the confirmed codes.
+* Not built: a confirmation step in `action()` (TS-15) — the same two members can be added there when a screen needs it.
+
+**[verified]** red first, then green: `tarol-client/test/client.test.ts` "reads a warning to confirm (Tarol-Net TN-37) as
+confirm, with its arguments (TS-33)"; `tarol-client/test/outbox.test.ts` "keeps a warning to confirm as failed;
+confirm(key) resends it with Tarol-Confirm and the same key"; `tarol-svelte/test/form.svelte.test.ts` "offers the warning,
+resends with Tarol-Confirm and the same key, and collects codes of the same input" and "a changed input is a new intent";
+`tarol-components/test/components.test.ts` "shows a warning to confirm with its arguments and resends with Tarol-Confirm on
+Confirm" (with axe).
+
+Public API: `Confirmation`, `Problem.confirm`, `Form.confirmation`, `Form.confirm()`, `Outbox.confirm(key)`,
+`OutboxEntry.confirmed` (API reports regenerated). Size **[verified]** `pnpm size`: core client 2.42 kB gzip (3 kB),
+outbox 1.46 kB (1.5 kB), svelte bindings 4.3 kB / 3.83 kB brotli (5.25 kB, the round-2 proposal), ChangeForm + FormField
+2.55 kB (3 kB), ThemeRoot 3.03 kB (3.25 kB, proposed SV-37).
+
 ## Open items
 
 * **TS-28 (`client.download`)**: waits for Tarol-Net file endpoints (TN-65); [files-and-decimals.md](../architecture/files-and-decimals.md).
 * **TS-30 (`ConflictCard`)**: waits for Tarol-Net's `FieldConflict<T>` shape; proposal unchanged (round-2 note).
 * **TS-31 (`idleLock`, `LockScreen`)**: not built this round (time went to the owner's offline decision); proposal unchanged
   (round-2 note): the timer and the screen in the packages, the unlock factor the app's.
-* **TS-33 part 2**: the confirmation step in `changeForm`/`action` against SV-36, after TN-37's backend part.
+* **TS-33**: a confirmation step in `action()`, when a screen needs it.
 * **TS-26 follow-ups**: `changeForm(…, { queue })`, a rune over `Outbox`, `client.prefetch`.
 * **Calendar visual baselines**: `apps/docs/e2e/__screenshots__/Calendar-*.png` do not exist; they are made in the CI
   container (`TAROL_VISUAL=1`, `pnpm visual --update-snapshots`), as SV-12 says, not here.
@@ -258,6 +296,7 @@ What Tatalu can change or remove when it moves to `0.1.0-preview.6`, in addition
 | TS-26/27 | `lib/offline/session.ts` (clearing at sign-out) | call `outbox.clear()` and `reads.clear()` next to `oidc.logout()`/`revoke()` |
 | TS-29 | `frontend/apps/web/src/screens/anwesenheit/account.ts` (integer fractions) | stays (it is arithmetic, not validation); amount inputs get the `Scale` rule once the backend writes `multipleOf` (Tarol-Net TN-53) |
 | TS-33 | screens that read `violation.extensions.reasons` (none found on `main`) | read `violation.reasons`; `ChangeForm` lists them |
+| TS-33 | `frontend/apps/web/src/screens/anwesenheit/actions.ts`, `ChildAttendance.svelte`, `SubstituteReview.svelte` (a second submit with `warningConfirmed`), `screens/planung/quota.ts` (`overflow()` parsing `detail` "Jugendamt\|Tage"), `Absences.svelte`, `YearPlan.svelte` (`confirmQuota`); backend `Tatalu.Anwesenheit/AttendanceMonth.cs`, `Handover.cs`, `Changes.cs`, `Tatalu.Planung/Absences.cs`, `AnnualPlan.cs`, `Changes.cs` (`warningConfirmed`, `ConfirmQuota` inputs) | with Tarol-Net TN-37: raise the confirmable warning with its args in the backend and drop the input flags; in the UI `form.confirmation` / `form.confirm()` (or ChangeForm's Confirm button), `outbox.confirm(key)` for queued changes; messages take the args (`{allowance}`, `{days}`) instead of parsing `detail` |
 
 Breaking for Tatalu: `Problem.reasons` instead of `extensions.reasons`; `ChangeForm`'s alert is a `div` (tests that select
 `p[role=alert]` change); the Combobox option type is named `ComboboxOption` in generated props docs.
@@ -274,19 +313,21 @@ Breaking for Tatalu: `Problem.reasons` instead of `extensions.reasons`; `ChangeF
 | tarol-client | "Notes must be saved offline and sent later, with the refusal's details shown" | `createOutbox({ client, store: idbStore('app'), scope })`, `submit`, `failed[i].violation.detail`/`.reasons`, `retry`, `discard` | an own IndexedDB queue; a new key per retry |
 | tarol-client | "The emergency card must open offline with its time" | `offlineReads({ store, scope, keep })`, `createClient({ fetch: reads.fetch })`, `savedAt(path)` | caching views in `localStorage` |
 | tarol-client | "Show why a contract cannot start" | `violation.reasons`, each through `t(code)` | parsing `detail` |
+| tarol-svelte | "Warn when the quota is exceeded and let the carer save anyway" | `form.confirmation` with `t(code, args)`, `form.confirm()` (or ChangeForm's Confirm) | a `confirmQuota` field in the input; a new idempotency key |
+| tarol-client | "A queued change came back with a warning" | `outbox.failed[i].violation.confirm`, `outbox.confirm(key)` | `discard` and capture again |
 | tarol-svelte | "Amounts have two decimal places" | the generated `Scale` rule from `multipleOf`; `check` | rounding the value before sending |
 
 ## Verification
 
-`pnpm verify` on this branch at `2f326b5`, and again at `83338af` (the last code-tree commit; format, build, lint, typecheck,
-test, size, package checks, API reports, eng tests): **exit 0** both times **[verified]**.
+`pnpm verify` (format, build, lint, typecheck, test, size, package checks, API reports, eng tests): **exit 0**
+**[verified]** at `2f326b5` and `83338af` (round 3), and again at `f4f01f0` after TS-33 part 2.
 
-* `pnpm test`: 28 test files passed, 3 skipped; 275 tests passed, 15 skipped (on `main` before this round: 246 passed, 15
-  skipped). The skipped tests are the existing ones that need the sample backend or a container (unchanged).
+* `pnpm test` at `f4f01f0`: 28 test files passed, 3 skipped; 281 tests passed, 15 skipped (on `main` before this round: 246
+  passed, 15 skipped). The skipped tests are the existing ones that need the sample backend or a container (unchanged).
 * `pnpm eng:test`: 20 passed, 0 failed (18 on `main`; + `typed-lint.test.mjs`).
 * `check-deps` 7 packages, 0 violations; `check-contrast` 30 pairs, 0 below the minimum; `check-text` 29 components, 0
   literal texts; publint and attw clean for the new subpaths; API Extractor reports regenerated with `pnpm api:update`
   (new: `tarol-client-outbox.api.md`, `tarol-client-idb.api.md`) and checked.
-* Size: every budget passes, with the proposed ThemeRoot budget (3.02 kB of 3.25 kB; it fails at 3 kB without `c2f323d`).
+* Size: every budget passes, with the proposed ThemeRoot budget (3.03 kB of 3.25 kB; it fails at 3 kB without `c2f323d`).
 * Not part of `verify`, run separately: `apps/docs` Playwright `catalogue` project, 68 tests, all passed after `e5710cd`
-  **[verified]**; the visual project was not run (baselines are made in the CI container).
+  **[verified]** (not re-run after TS-33 part 2); the visual project was not run (baselines are made in the CI container).
