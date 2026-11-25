@@ -112,6 +112,7 @@ export interface Problem<C extends string = string> {
     readonly detail?: string;
     readonly extensions?: Readonly<Record<string, unknown>>;
     readonly kind: 'error';
+    readonly reasons?: readonly string[];
 }
 
 // @public

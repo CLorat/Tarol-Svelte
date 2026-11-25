@@ -16,7 +16,8 @@ description: >-
    (`token()`, `tenant()`, optional `refresh()`); the tenant is part of every cache key.
 2. Every call returns `Result<T>`: check `r.ok`. Business failures are values: `r.violation.kind === 'invalid'`
    (`errors` maps backend field paths such as `lines[1].quantity` to codes such as `Range`) or `'error'` (`code` such as
-   `Auction.NotSeller`, `Stream.VersionConflict`, `Idempotency.KeyReused`, `Auth.Required`, `Network`). `details` has the
+   `Auction.NotSeller`, `Stream.VersionConflict`, `Idempotency.KeyReused`, `Auth.Required`, `Network`). A refusal's
+   `reasons` (codes, Tarol-Net TN-36) are message ids: translate each. `details` has the
    same paths with each rule's `detail` (`{ reserve: [{ code: 'Range', detail: '1..1000000' }] }`). Only an aborted
    request throws. Show `r.requestId` (the backend's `Tarol-Request-Id`) with an error so users can quote it.
 3. Changes get an idempotency key automatically. To retry **the same user intent**, pass the same `key`; a replay

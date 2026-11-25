@@ -77,6 +77,11 @@ export interface Problem<C extends string = string> {
   /** The backend's detail text, for logs; user messages come from the code. */
   readonly detail?: string;
   /**
+   * The codes of the reasons of a refusal (Tarol-Net `reasons`, e.g. `["Contract.NoLicense", "Contract.NoMeasles"]`):
+   * message ids, shown as a list under the code's message. Absent when the problem has none.
+   */
+  readonly reasons?: readonly string[];
+  /**
    * The problem's other members (RFC 9457 extensions), e.g. `failed` of `DataProtection.ErasureIncomplete`; absent when
    * there are none.
    */
@@ -158,11 +163,15 @@ export function toViolation(status: number, body: unknown): Violation {
       'errors',
       'errorDetails',
     ]);
+    const r = body['reasons'];
+    const reasons = Array.isArray(r) && r.every((x) => typeof x === 'string') ? r : undefined;
+    if (reasons) known.add('reasons');
     const extra = Object.entries(body).filter(([k]) => !known.has(k));
     return {
       kind: 'error',
       code: code ?? title ?? fallbackCode(status),
       ...(detail === undefined ? {} : { detail }),
+      ...(reasons === undefined ? {} : { reasons }),
       ...(extra.length > 0 ? { extensions: Object.fromEntries(extra) } : {}),
     };
   }

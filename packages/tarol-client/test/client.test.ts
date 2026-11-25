@@ -170,6 +170,26 @@ describe('changes', () => {
     });
   });
 
+  it('reads the reasons of a refusal (Tarol-Net TN-36) as codes, not as an extension (TS-33)', async () => {
+    const b = backend(
+      problem(409, {
+        code: 'Contract.CannotStart',
+        reasons: ['Contract.NoLicense', 'Contract.NoMeasles'],
+        hint: 1,
+      }),
+      problem(409, { code: 'X.Y', reasons: 'not a list' }),
+    );
+    const r = await client(b).change({ method: 'POST', path: '/contracts', body: {} });
+    expect(!r.ok && r.violation).toEqual({
+      kind: 'error',
+      code: 'Contract.CannotStart',
+      reasons: ['Contract.NoLicense', 'Contract.NoMeasles'],
+      extensions: { hint: 1 },
+    });
+    const odd = await client(b).change({ method: 'POST', path: '/contracts', body: {} });
+    expect(!odd.ok && odd.violation).toEqual({ kind: 'error', code: 'X.Y', extensions: { reasons: 'not a list' } });
+  });
+
   it('takes the request id from the problem when the header is not readable', async () => {
     const b = backend(problem(404, { code: 'Auction.NotFound', traceId: 'abc' }));
     const r = await client(b).change({ method: 'POST', path: '/x', body: {} });

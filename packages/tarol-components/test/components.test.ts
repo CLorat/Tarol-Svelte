@@ -306,6 +306,25 @@ describe('ChangeForm and FormField', () => {
       .toHaveTextContent('This item does not exist (any more). Reference: r-7 Try again');
   });
 
+  it('lists the reasons of a refusal under its message, each translated (TS-33, Tarol-Net TN-36)', async () => {
+    const f = fakeClient(0, () => ({
+      ok: false,
+      status: 409,
+      violation: { kind: 'error', code: 'Auth.Forbidden', reasons: ['Auth.Required', 'NotFound'] },
+    }));
+    render(BidForm, { client: f.client });
+    await userEvent.type(page.getByLabelText(/Title/), 'Irises');
+    await page.getByRole('button', { name: 'Create' }).click();
+    const alert = page.getByRole('alert');
+    await expect.element(alert.getByText('You are not allowed to do this.')).toBeInTheDocument();
+    const items = alert
+      .getByRole('listitem')
+      .elements()
+      .map((li) => li.textContent);
+    expect(items).toEqual(['Please sign in again.', 'This item does not exist (any more).']);
+    await expectAccessible();
+  });
+
   it('announces a coded refusal above the button, in German with the de catalogue', async () => {
     const f = fakeClient(0, () => ({ ok: false, status: 403, violation: { kind: 'error', code: 'Auth.Forbidden' } }));
     render(BidForm, { client: f.client, locale: 'de' });

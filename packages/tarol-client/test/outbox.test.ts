@@ -134,7 +134,7 @@ describe('outbox (TS-26, Tatalu FB-F17.3-1, FB-F05.1-3)', () => {
       kind: 'error',
       code: 'DailyLog.AllergyWarning',
       detail: 'peanut',
-      extensions: { reasons: ['Allergen.Peanut'] },
+      reasons: ['Allergen.Peanut'],
     });
     expect([entry?.status, entry?.requestId]).toEqual([409, 'req-7']);
     expect(outbox.pending).toBe(0);
