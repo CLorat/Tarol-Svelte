@@ -160,6 +160,24 @@ describe('changeForm', () => {
     expect(form.errors).toEqual({});
   });
 
+  it('skips the rules of members of a nullable record while it is null (TS-9, Option<PostalAddress>)', async () => {
+    interface Child {
+      name: string;
+      address: { street: string; city: string } | null;
+    }
+    const f = fakeClient(() => okResult(1));
+    const register = (input: Child): ChangeRequest => ({ method: 'POST', path: '/children', body: input });
+    const nested: Rules = {
+      'address.street': [{ rule: 'Required', code: 'Required' }],
+      'address.city': [{ rule: 'Required', code: 'Required' }],
+    };
+    const form = root(() => changeForm(register, { name: 'Mia', address: null }, { client: f.client, rules: nested }));
+    expect((await form.submit())?.ok).toBe(true);
+    form.values.address = { street: '', city: 'Kiel' };
+    expect(await form.submit()).toBeUndefined();
+    expect(form.errors).toEqual({ 'address.street': ['Required'] });
+  });
+
   it('reads values at backend paths', () => {
     expect(at(initial, 'lines[1].quantity')).toBe(2);
     expect(at(initial, 'lines[5].quantity')).toBeUndefined();

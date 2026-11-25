@@ -16,3 +16,13 @@ Priority: **P0** blocks Tatalu MVP stories; **P1** Tatalu ships with a workaroun
 | TS-6 | P2 | **German catalogue in the informal form.** `de` addresses the user formally („Geben Sie …“). Apps for a familiar audience (Tatalu speaks „du“) override every built-in key. A second catalogue `deDu` (same keys) would save that. | Tatalu overrides `Required`, `Range*`, `Length*`, `Email`, `Auth.*`, `Network`, … in `apps/web/src/lib/i18n/de.ts`. | `tarol-design/src/lib` |
 | TS-7 | P2 | **Testing helpers.** Every app needs a fake backend for the real `tarol-client` (a `fetch` that answers per method and path, problem JSON, list pages) and a render helper inside `ThemeRoot` + `setTarol`. Shipping them as `@clorat/tarol-svelte/testing` keeps app tests on the same contract as the package tests. | Tatalu wrote `apps/web/src/test/fake.ts`, `Harness.svelte`, `render.ts`. | `tarol-svelte` (subpath export) |
 | TS-8 | P2, closed: #46 (with Tarol-Net TN-2) | **Singleton views.** Together with Tarol-Net TN-2 (per-tenant aggregates): a generated `requests.<view>()` without an id for a per-tenant view, so an app does not brand the tenant id as the aggregate id (`asId<'ChildDayCare'>(session.tenant)` in Tatalu's `App.svelte`). | | `tarol-codegen` |
+
+## Round 2
+
+Tatalu's waves 1 and 2 (`CLorat/Tatalu` `integration/welle-2`, on `0.1.0-preview.5`) list the findings `FB-*` in its
+`docs/framework-befunde.md`. The ones for tarol-svelte are below; the step note is
+[docs/migration/tatalu-feedback-2.md](../migration/tatalu-feedback-2.md). Backend findings are in Tarol-Net (round 2).
+
+| # | Pri | Change | Tatalu | Status |
+|---|---|---|---|---|
+| TS-9 | P0 | **Nullable schemas in `tarol-codegen`.** `oneOf`/`anyOf` of `{type: "null"}` and one schema (`$ref`, enum, object, primitive) is `T \| null`; a type array with `"null"` is `T \| null`, also `["null", "object"]` with members (`Option<Record>`); no `Required` rule for a nullable member; the form skips the rules of a nullable record's members while it is `null`. | FB-3, FB-F01.1-4, FB-F17.3-3, FB-F02.1-5, FB-F13.3-5, FB-F03.9-1, FB-F04.3-2, FB-F17.2-3 | closed: commit (to be filled) |

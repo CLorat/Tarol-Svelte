@@ -468,3 +468,96 @@ describe('a view of a per-tenant aggregate (TS-8, Tarol-Net TN-2)', () => {
     expect(typecheck({ 'api.ts': code })).toEqual([]);
   });
 });
+
+describe('nullable schemas (TS-9, Tatalu FB-3, FB-F01.1-4, FB-F17.3-3, FB-F02.1-5, FB-F13.3-5)', () => {
+  const nul: Schema = { type: 'null' };
+  const schemas: Record<string, Schema> = {
+    PersonName: { type: 'string', minLength: 1, maxLength: 80 },
+    Gender: { enum: ['Female', 'Male', 'Diverse'] },
+    PostalAddress: {
+      type: 'object',
+      required: ['street', 'city'],
+      properties: { street: { type: 'string', minLength: 1 }, city: { type: 'string' } },
+    },
+    // Option<PostalAddress> as Tarol-Net writes it today: a type array with "null" and the record's members
+    OptionOfPostalAddress: {
+      type: ['null', 'object'],
+      required: ['street', 'city'],
+      properties: { street: { type: 'string' }, city: { type: 'string' } },
+    },
+    ChildView: {
+      type: 'object',
+      required: ['name', 'gender', 'address', 'status', 'previous', 'second', 'count'],
+      properties: {
+        name: { oneOf: [nul, { $ref: '#/components/schemas/PersonName' }] },
+        gender: { oneOf: [nul, { $ref: '#/components/schemas/Gender' }] },
+        address: { anyOf: [{ $ref: '#/components/schemas/PostalAddress' }, nul] },
+        status: { oneOf: [nul, { enum: ['Open', 'Closed'] }] },
+        previous: { $ref: '#/components/schemas/OptionOfPostalAddress' },
+        second: { type: ['string', 'null'], enum: ['A', 'B'] },
+        count: { oneOf: [nul, { type: 'integer' }] },
+        inline: {
+          type: ['null', 'object'],
+          properties: { at: { type: 'string', format: 'date-time' } },
+        },
+      },
+    },
+    RegisterChild: {
+      type: 'object',
+      required: ['name', 'address'],
+      properties: {
+        name: { oneOf: [nul, { $ref: '#/components/schemas/PersonName' }] },
+        address: { oneOf: [nul, { $ref: '#/components/schemas/PostalAddress' }] },
+        moved: { $ref: '#/components/schemas/OptionOfPostalAddress' },
+      },
+    },
+  };
+  const view = {
+    get: {
+      operationId: 'ChildView',
+      'x-tarol-kind': 'view',
+      responses: {
+        '200': { content: { 'application/json': { schema: { $ref: '#/components/schemas/ChildView' } } } },
+      },
+    },
+  };
+  const code = generate(doc(schemas, { '/children/x': view, '/children': post('RegisterChild', 'RegisterChild') }));
+
+  it('types oneOf/anyOf of null and one schema as T | null, for value types, enums, records and primitives', () => {
+    expect(code).toContain('  name: PersonName | null;');
+    expect(code).toContain('  gender: Gender | null;');
+    expect(code).toContain('  address: PostalAddress | null;');
+    expect(code).toContain('  status: "Open" | "Closed" | null;');
+    expect(code).toContain('  count: number | null;');
+  });
+
+  it('types a type array with "null" as T | null, also for an object with properties (Option<Record>)', () => {
+    expect(code).toMatch(/export type OptionOfPostalAddress = \{\n {2}street: string;\n {2}city: string;\n\} \| null;/);
+    expect(code).toContain('  previous: OptionOfPostalAddress;');
+    expect(code).toContain('  second: "A" | "B" | null;');
+    expect(code).toMatch(/ {2}inline\?: \{\n\s+at\?: string;\n\} \| null;/);
+  });
+
+  it('gives a nullable member no Required rule, and keeps the rules of its value type and of a nullable record', () => {
+    const r = /export const rules = (\{[\s\S]*?\}) as const;/.exec(code)?.[1] ?? '';
+    expect(r).toContain('"name": [{"rule":"Length","code":"Length","min":1,"max":80}]');
+    expect(r).not.toContain('"address": [');
+    expect(r).toContain(
+      '"address.street": [{"rule":"Required","code":"Required"}, {"rule":"NotEmpty","code":"Required"}]',
+    );
+    expect(r).not.toContain('"moved": [');
+  });
+
+  it('compiles, and null is accepted where the backend sends or accepts it', () => {
+    const usage = `
+import { tarol, type ChildView, type RegisterChildInput } from './api.js';
+import { createClient } from '@clorat/tarol-client';
+export const input: RegisterChildInput = { name: null, address: null, moved: null };
+export function show(v: ChildView): string {
+  return (v.name ?? '-') + (v.gender ?? '') + (v.address?.city ?? '') + (v.previous?.street ?? '');
+}
+void tarol(createClient({ baseUrl: '/api' })).changes.registerChild(input);
+`;
+    expect(typecheck({ 'api.ts': code, 'usage.ts': usage })).toEqual([]);
+  });
+});

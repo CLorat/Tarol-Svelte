@@ -74,7 +74,10 @@ function without<V>(record: Readonly<Record<string, V>>, key: string): Record<st
   return copy;
 }
 
-/** Every concrete path in `values` that has rules, e.g. `lines[0].quantity` and `lines[1].quantity` for `lines[].quantity`. */
+/**
+ * Every concrete path in `values` that has rules, e.g. `lines[0].quantity` and `lines[1].quantity` for `lines[].quantity`;
+ * not the members of a record that is `null`.
+ */
 function rulePaths(values: unknown, rules: Rules): string[] {
   const out: string[] = [];
   for (const key of Object.keys(rules)) {
@@ -88,9 +91,16 @@ function rulePaths(values: unknown, rules: Rules): string[] {
           return Array.isArray(arr) ? arr.map((_, j) => `${p}[${String(j)}]`) : [];
         });
     });
-    out.push(...paths);
+    // a member of a record that is null (`Option<Record>`, `T?`) has no value to check: null is valid (TS-9)
+    out.push(...paths.filter((p) => !nullParent(values, p)));
   }
   return out;
+}
+
+function nullParent(values: unknown, path: string): boolean {
+  const parts = path.match(/[^.[\]]+/g) ?? [];
+  for (let i = 1; i < parts.length; i++) if (at(values, parts.slice(0, i).join('.')) === null) return true;
+  return false;
 }
 
 /**
