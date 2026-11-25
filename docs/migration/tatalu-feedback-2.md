@@ -292,3 +292,19 @@ example and refuses `null` without `allowNull`).
 
 Public API: `allowNull`, `FormInput` (API report regenerated); `changeForm`'s `initial` is `NoInfer<I>`. Behaviour (types
 only): a call whose `initial` literal was narrower than the change's input and relied on that now reports the mismatch.
+
+## TS-22: `DataTable filter`
+
+**Finding confirmed.** List filters are equality only on the backend; a time range ("last week") is narrowed in the
+browser, and `DataTable` rendered `list.items` as they were, so Tatalu wrapped the `List` in its own object
+(`AuditLog.svelte`).
+
+**Change.** `DataTableProps.filter?: (row: T) => boolean`: the table renders, counts (`aria-rowcount`), navigates and
+virtualizes only the rows it keeps. `list.items`, `hasMore` and `more()` are untouched, so "load more" stays the list's
+(Tatalu loads older pages while they fall into the range). `QueryState`'s empty state still looks at the list, not the
+filter: when the filter keeps nothing, show your own text.
+
+**[verified]** `tarol-components/test/components.test.ts` "shows only the rows a filter keeps, with the grid row count over
+them" (red before: all five rows were rendered), axe 0 violations.
+
+Public API: `DataTableProps.filter` (API report regenerated). The server-side range filter is Tarol-Net round 2.

@@ -16,7 +16,8 @@ description: >-
 2. `DataTable` takes a `list(...)` result, `columns`, a `cell` snippet, `rowKey` and a `caption` (accessible name).
    Sorting: a column's `sort: { value, direction }` names the backend's `sort` enum member and its fixed direction;
    `bind:sort` to a `$state` that the list's request reads. Paging is "load more" (keyset); above 200 rows only the
-   visible rows are rendered.
+   visible rows are rendered. `filter={(row) => …}` narrows the shown rows in the browser (e.g. a time range the
+   backend's equality filters cannot express); paging stays the list's, so load more while the range needs it.
 3. Wrap reads in `QueryState state={…}`: it shows skeletons for the first read, the empty text, the violation's message
    with a retry and its reference (the request id a user can quote), and a stale note while the list catches up with
    your own write.

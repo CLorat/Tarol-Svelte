@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import '@clorat/tarol-design/tokens.css';
 import { expectAccessible } from './axe.js';
-import { fakeClient } from './fake.js';
+import { fakeClient, type Row } from './fake.js';
 import type { Result } from '@clorat/tarol-client';
 import BidForm from './fixtures/BidForm.svelte';
 import ChoiceForm from './fixtures/ChoiceForm.svelte';
@@ -103,6 +103,17 @@ describe('DataTable in QueryState and AppShell', () => {
     expect(document.activeElement?.tagName).toBe('A');
     await userEvent.keyboard('{Control>}{End}{/Control}');
     await expect.poll(() => document.activeElement?.closest('td')?.textContent.trim()).toBe(String(999 % 7));
+  });
+
+  it('shows only the rows a filter keeps, with the grid row count over them (TS-22)', async () => {
+    render(Table, { client: fakeClient(5).client, limit: 5, filter: (r: Row) => r.bids >= 3 });
+    await expect.element(page.getByRole('gridcell', { name: 'Auction 3' })).toBeVisible();
+    expect([...document.querySelectorAll('tbody tr')].map((r) => r.querySelector('td')?.textContent.trim())).toEqual([
+      'Auction 3',
+      'Auction 4',
+    ]);
+    expect(page.getByRole('grid').element().getAttribute('aria-rowcount')).toBe('3');
+    await expectAccessible();
   });
 
   it('has a skip link to the main landmark and a named navigation', async () => {

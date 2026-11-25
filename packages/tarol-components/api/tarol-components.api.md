@@ -55,6 +55,7 @@ export interface DataTableProps<T> {
     caption: string;
     cell: Snippet<[T, Column]>;
     columns: readonly Column[];
+    filter?: ((row: T) => boolean) | undefined;
     list: List<T>;
     maxHeight?: string | undefined;
     rowHeight?: number | undefined;

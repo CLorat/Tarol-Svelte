@@ -27,6 +27,11 @@
     sort?: string | undefined;
     /** Render only visible rows when there are more than this. Default 200 (docs/migration/design.md). */
     virtualizeAbove?: number | undefined;
+    /**
+     * Shows only the rows it keeps (a client-side narrowing the backend's equality filters cannot express, e.g. a time
+     * range); paging, `hasMore` and `more()` stay the list's. Default: every row.
+     */
+    filter?: ((row: T) => boolean) | undefined;
     /** The fixed row height in px used for virtual scrolling. Default 40. */
     rowHeight?: number | undefined;
     /** The height of the scroll area when virtualized. Default `70vh`. */
@@ -42,6 +47,7 @@
 
   let {
     list,
+    filter,
     columns,
     cell,
     rowKey,
@@ -51,17 +57,18 @@
     rowHeight = 40,
     maxHeight = '70vh',
   }: DataTableProps<T> = $props();
+  const rows = $derived(filter ? list.items.filter(filter) : list.items);
 
   const t = getMessages();
   let scrollTop = $state(0);
   let viewport = $state(0);
-  const virtual = $derived(list.items.length > virtualizeAbove);
+  const virtual = $derived(rows.length > virtualizeAbove);
   const overscan = 10;
   const first = $derived(virtual ? Math.max(0, Math.floor(scrollTop / rowHeight) - overscan) : 0);
   const last = $derived(
-    virtual ? Math.min(list.items.length, Math.ceil((scrollTop + viewport) / rowHeight) + overscan) : list.items.length,
+    virtual ? Math.min(rows.length, Math.ceil((scrollTop + viewport) / rowHeight) + overscan) : rows.length,
   );
-  const visible = $derived(list.items.slice(first, last));
+  const visible = $derived(rows.slice(first, last));
 
   // the active cell: row 0 is the header, rows 1… the data rows (aria-rowindex - 1)
   let active = $state({ row: 0, col: 0 });
@@ -71,16 +78,16 @@
   // the active row's key: a live update may move or re-sort rows under the keyboard user (frontend-ease.md §B, 5c)
   let activeKey: unknown;
   const keyAt = (row: number): unknown => {
-    const item = list.items[row - 1];
+    const item = rows[row - 1];
     return row > 0 && item !== undefined ? rowKey(item) : undefined;
   };
   let focusWithin = false;
   $effect.pre(() => {
     // before every new set of rows is rendered (reading the rows tracks them)
-    focusWithin = list.items.length > 0 && !!table?.contains(document.activeElement);
+    focusWithin = rows.length > 0 && !!table?.contains(document.activeElement);
   });
   $effect(() => {
-    const items = list.items; // runs after every new set of rows; the active cell is read, not tracked
+    const items = rows; // runs after every new set of rows; the active cell is read, not tracked
     untrack(() => {
       if (activeKey === undefined || active.row === 0) return;
       const index = items.findIndex((r) => rowKey(r) === activeKey);
@@ -108,8 +115,8 @@
   });
 
   async function move(row: number, col: number): Promise<void> {
-    const rows = list.items.length;
-    active = { row: Math.max(0, Math.min(rows, row)), col: Math.max(0, Math.min(columns.length - 1, col)) };
+    const count = rows.length;
+    active = { row: Math.max(0, Math.min(count, row)), col: Math.max(0, Math.min(columns.length - 1, col)) };
     activeKey = keyAt(active.row);
     if (virtual && scroller && active.row > 0) {
       // bring the row into the rendered window before focusing it
@@ -139,7 +146,7 @@
       ArrowRight: [row, col + 1],
       ArrowLeft: [row, col - 1],
       Home: e.ctrlKey ? [0, 0] : [row, 0],
-      End: e.ctrlKey ? [list.items.length, end] : [row, end],
+      End: e.ctrlKey ? [rows.length, end] : [row, end],
       PageDown: [row + 10, col],
       PageUp: [row - 10, col],
     };
@@ -162,7 +169,7 @@
     bind:this={table}
     class="t-table"
     role="grid"
-    aria-rowcount={list.items.length + 1}
+    aria-rowcount={rows.length + 1}
     aria-busy={list.loading || undefined}
     onkeydown={keydown}
     onfocusin={(e) => {
@@ -218,8 +225,7 @@
           {/each}
         </tr>
       {/each}
-      {#if last < list.items.length}<tr aria-hidden="true" style:height="{(list.items.length - last) * rowHeight}px"
-        ></tr>{/if}
+      {#if last < rows.length}<tr aria-hidden="true" style:height="{(rows.length - last) * rowHeight}px"></tr>{/if}
     </tbody>
   </table>
 </div>

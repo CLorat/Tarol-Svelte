@@ -932,6 +932,14 @@
         "doc": "Render only visible rows when there are more than this. Default 200 (docs/migration/design.md)."
       },
       {
+        "name": "filter",
+        "type": "((row: T) => boolean)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Shows only the rows it keeps (a client-side narrowing the backend's equality filters cannot express, e.g. a time range); paging, `hasMore` and `more()` stay the list's. Default: every row."
+      },
+      {
         "name": "rowHeight",
         "type": "number",
         "optional": true,
