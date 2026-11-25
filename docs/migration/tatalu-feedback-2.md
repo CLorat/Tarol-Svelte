@@ -213,3 +213,31 @@ horizontally and not vertically, End focuses the last tab inside the list's box,
 violations (red before: page 702 px wide; then list height 36 > 35 with the border).
 
 No API change.
+
+## TS-19: `AppShell` bottom bar, own scroll area
+
+**Checked against Tatalu's frame.** Tatalu's `App.svelte` wraps `AppShell` (without `nav`) in `.frame` (a flex column of
+`100dvh`) with `.frame-content` scrolling in itself and its `BottomNav` below it, with `env(safe-area-inset-bottom)`.
+#46 (TS-1) gave `AppShell` a bottom bar: one row, 44 px targets, the safe area, the last line of the page above the bar, no
+page scroll by the bar's height (the shell's rows are `auto 1fr auto` in `min-height: 100dvh`). What it did **not** cover:
+the bar was `position: sticky` over a document that scrolls, so in the middle of a scroll every line passes under the bar
+— the case behind Tatalu's axe `target-size` findings for covered buttons and Playwright's "intercepts pointer events".
+**[verified]** the new test below: the document was 3,797 px high at a 740 px viewport.
+
+**Change.** Below 40rem with `navPosition="bottom"` (and a `nav`): the shell is exactly `height: 100dvh` with rows
+`auto minmax(0, 1fr) auto`; `main` scrolls (`overflow-y: auto`, `overscroll-behavior: contain`) between the header and the
+bar; the bar is a plain grid row (no `sticky`, no `z-index`), padded by the safe area. Because `main` is now a scroll area,
+it is a tab stop in this mode (`tabindex="0"`, a focus ring inside it), so the arrow keys scroll it (axe
+`scrollable-region-focusable`); in the other modes it stays `tabindex="-1"` (the skip link's target). Above 40rem the
+side navigation is unchanged.
+
+Behaviour change: with `navPosition="bottom"` on a phone, `window` no longer scrolls; code that scrolls the page uses the
+main landmark (`document.querySelector('main')?.scrollTo(…)`, or `element.scrollIntoView()`, which works either way).
+`main` is a tab stop in `bottom` mode also on a wide screen (one extra tab stop; it is not a scroll area there).
+
+**[verified]** `tarol-components/test/shell.test.ts` "navPosition="bottom": the page scrolls in its own area above the
+bar …" (document height ≤ viewport, `main` scrolls, at mid-scroll `main` ends where the bar begins, bar at the viewport's
+bottom, axe 0 violations; red before: document 3,797 px > 740); the TS-1 cases pass with `scrollIntoView` instead of
+`window.scrollTo`.
+
+No API change.

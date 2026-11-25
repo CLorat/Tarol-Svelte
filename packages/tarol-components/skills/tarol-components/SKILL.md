@@ -31,7 +31,8 @@ description: >-
    it shows a polite notice (`role="status"`) with "Use the new value" / "Keep mine"; input and focus stay.
 5. `AppShell title nav actions` gives the skip link and the landmarks; put pages in its children. Below 40rem the nav
    stacks above the page; `navPosition="bottom"` makes it a one-row bar at the bottom (thumb reach): give it a `<ul>` of
-   a few links (every target ≥ 44 px). Do not add your own fixed bottom nav next to `AppShell`.
+   a few links (every target ≥ 44 px). Then the page scrolls in `main` (its own area between header and bar), not the
+   document: scroll it with `main.scrollTo`, not `window.scrollTo`. Do not add your own fixed bottom nav next to `AppShell`.
 5a. One aggregate's page: `<DetailLayout query={view} title={(a) => a.title}>` with snippets `children(a)`, `meta(a)`,
    `actions(a)`, `aside(a)`; it renders the `h1` and the loading/error states. Do not wrap it in `QueryState` again.
 5b. Global search: `<SearchBox label onselect={(hit) => open(hit.type, hit.aggregate)} />`; `types`, `limit`,

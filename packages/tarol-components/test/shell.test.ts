@@ -35,15 +35,28 @@ describe('AppShell on a phone (TS-1)', () => {
   it('navPosition="bottom" is a one-row bar at the bottom of the viewport with targets of at least 44 px', async () => {
     const { nav, main } = await show(360, 'bottom');
     expect(main.width).toBe(360);
-    expect(nav.bottom).toBe(window.innerHeight); // sticky: at the thumb while the page scrolls
+    expect(nav.bottom).toBe(window.innerHeight); // at the thumb while the page scrolls
     expect(nav.height).toBeLessThanOrEqual(64);
     const links = [...document.querySelectorAll('nav a')].map((a) => a.getBoundingClientRect());
     expect(new Set(links.map((l) => Math.round(l.top))).size).toBe(1); // one row
     for (const l of links) expect(l.height).toBeGreaterThanOrEqual(44);
     expect(noHorizontalScroll()).toBe(true);
-    window.scrollTo(0, document.documentElement.scrollHeight);
+    page.getByTestId('last').element().scrollIntoView();
     const last = page.getByTestId('last').element().getBoundingClientRect();
     expect(last.bottom).toBeLessThanOrEqual(document.querySelector('nav')!.getBoundingClientRect().top); // never under the bar
+    await expectAccessible();
+  });
+
+  it('navPosition="bottom": the page scrolls in its own area above the bar, never under it, the document not at all (TS-19)', async () => {
+    const { nav } = await show(360, 'bottom');
+    const main = document.querySelector('main')!;
+    // the document has no scroll, not even by the bar's height (Tatalu FB-INT-2)
+    expect(document.documentElement.scrollHeight).toBeLessThanOrEqual(window.innerHeight);
+    expect(main.scrollHeight).toBeGreaterThan(main.clientHeight);
+    main.scrollTop = main.scrollHeight / 2; // mid-scroll: with a sticky bar, lines pass under it here
+    expect(main.getBoundingClientRect().bottom).toBeLessThanOrEqual(nav.top + 0.5);
+    // the scroll area ends where the bar begins: nothing of the page is ever under the bar
+    expect(nav.bottom).toBe(window.innerHeight);
     await expectAccessible();
   });
 

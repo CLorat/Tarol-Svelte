@@ -30,6 +30,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Changed
 
+* `@clorat/tarol-components`: `AppShell navPosition="bottom"` on a phone is exactly the viewport's height and the page scrolls in the main landmark between header and bar, so nothing is ever under the bar and the document does not scroll; `main` is a tab stop in that mode (TS-19).
 * `@clorat/tarol-client`: `ChangeRequest<T = undefined>` carries the result type of a change (type only); `TarolClient.change` and `@clorat/tarol-svelte` `changeForm` infer it. `@clorat/tarol-codegen` types the request of a creation as `ChangeRequest<Created<…>>`, so `changeForm(requests.createX, …)` needs no `<I, Created>` (TS-11).
 * `@clorat/tarol-codegen`: an operation without `x-tarol-kind` (an app's plain endpoint) is skipped with a warning and named
   in the header comment instead of failing the generation (TS-3); `--strict` / `GenerateOptions.strict` keeps the error.

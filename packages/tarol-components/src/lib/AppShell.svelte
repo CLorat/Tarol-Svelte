@@ -2,7 +2,8 @@
   @component
   The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark.
   Below 40rem the navigation is stacked above the page (`navPosition="side"`, the default) or a one-row bar at the bottom
-  of the viewport, in thumb reach (`navPosition="bottom"`: its list items share the row, each target at least 44 px high).
+  of the viewport, in thumb reach (`navPosition="bottom"`: its list items share the row, each target at least 44 px high;
+  the shell is then exactly the viewport's height and the page scrolls in the main landmark, never under the bar).
 -->
 <script lang="ts">
   import { getMessages } from '@clorat/tarol-design';
@@ -34,7 +35,8 @@
     {#if actions}<div class="t-shell-actions">{@render actions()}</div>{/if}
   </header>
   {#if nav}<nav class="t-shell-nav" aria-label={navLabel}>{@render nav()}</nav>{/if}
-  <main id="t-main" class="t-shell-main" tabindex="-1">{@render children()}</main>
+  <!-- with the bottom bar the page is its own scroll area, so it is a tab stop: the arrow keys scroll it (WCAG 2.1.1) -->
+  <main id="t-main" class="t-shell-main" tabindex={nav && navPosition === 'bottom' ? 0 : -1}>{@render children()}</main>
 </div>
 
 <style>
@@ -90,18 +92,26 @@
       border-inline-end: 0;
       border-bottom: 1px solid var(--t-color-border);
     }
-    /* bottom: the nav after the page in the grid, sticky at the viewport's bottom edge */
+    /*
+      bottom: the shell is exactly the viewport; the page scrolls in its own area between the header and the bar, so
+      nothing of it is ever under the bar and the document never scrolls, not even by the bar's height (TS-19)
+    */
     .t-shell[data-nav='bottom'] {
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      height: 100dvh;
+      min-height: 0;
     }
     .t-shell[data-nav='bottom'] .t-shell-main {
       grid-row: 2;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .t-shell[data-nav='bottom'] .t-shell-main:focus-visible {
+      outline: 2px solid var(--t-color-focus);
+      outline-offset: -2px;
     }
     .t-shell[data-nav='bottom'] .t-shell-nav {
       grid-row: 3;
-      position: sticky;
-      inset-block-end: 0;
-      z-index: 1; /* above the page, below dialogs and toasts */
       padding: 0 0 env(safe-area-inset-bottom);
       border-bottom: 0;
       border-top: 1px solid var(--t-color-border);
