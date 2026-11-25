@@ -373,3 +373,64 @@ hint, session and last session gone, `onSignOut` once, no navigation, no token r
 and no request (red before: `oidc.revoke is not a function`). The fake server gained a revocation endpoint.
 
 Public API: `Oidc.revoke` (API report regenerated).
+
+## Open items
+
+* **TS-26, TS-27 (outbox, offline reads)**: a design note, not code: [docs/architecture/offline.md](../architecture/offline.md)
+  (options, recommendation: subpaths `@clorat/tarol-client/outbox` and `/idb`, the API sketch, four owner questions). Not
+  built because it needs the owner's decision (framework or app concern, personal data at rest) and Tarol-Net round 2's
+  `Tarol-Device`/`Tarol-Captured-At` headers (a browser refuses unknown headers cross-origin until CORS allows them).
+* **TS-28, TS-29 (download, decimals)**: [docs/architecture/files-and-decimals.md](../architecture/files-and-decimals.md);
+  both wait for a backend contract (a file kind in the document; `decimal` as a string with a format).
+* **TS-30 (`ConflictCard`)**, proposal: a `ConflictCard` in tarol-components over Tarol-Net's `FieldConflict<T>` (`{ field,
+  mine: { value, author, device, capturedAt }, theirs: { … } }` as a view member), with the same texts as `FormField`'s
+  conflict notice (`ui.changed`, `ui.takeTheirs`, `ui.keepMine`) and a third choice "keep both" only where the backend
+  offers it; the decision is a change (`Merge.Decide`), sent with `action(requests.decideConflict)` (TS-15). It waits for
+  the backend shape, because the card must not invent one (AGENTS.md: the backend is the truth).
+* **TS-31 (`idleLock`, `LockScreen`)**, proposal: `idleLock({ after: 5 * 60_000, cover: true })` in tarol-svelte (a rune
+  over `pointerdown`/`keydown`/`visibilitychange` that sets `locked`, nothing global until called), a `LockScreen` in
+  tarol-components (catalogue texts, focus trapped, `inert` on the app) whose unlock is the app's (`onUnlock: () =>
+  Promise<boolean>`): a PIN hash (WebCrypto PBKDF2) and WebAuthn are security decisions per app, so the package would ship
+  the timer and the screen only. Not built: Tatalu's `lib/security/lock.svelte.ts` works, and the unlock factor is an
+  owner decision.
+* **TS-32 (`Stream.VersionConflict` retry)**: *Checked: covered by the backend.* Tarol-Net round 2 retries a change without
+  `If-Match` on the server (re-load, re-decide); with `If-Match` the conflict stays a message for the person. The client
+  does not retry: it cannot re-decide, only re-send the same body. Tatalu can drop its three immediate retries in
+  `queue.svelte.ts` once it runs on that backend.
+* **TS-33 (`ConfirmationRequired`, `reasons[]`)**: open until Tarol-Net round 2 settles the problem's members; the client
+  already passes unknown problem members through as `Problem.extensions`.
+
+## Size
+
+`@clorat/tarol-svelte` "svelte bindings" (`query, list, changeForm, live, setTarol`) is over its 3.5 kB budget after TS-9,
+TS-12, TS-13, TS-14, TS-20 and TS-21 (the form and query features), measured below. Raising it is the owner's decision; the
+commit "svelte: raise the bindings budget" is separate so it can be dropped or changed.
+
+## Release notes 0.1.0-preview.6 (Tatalu)
+
+What Tatalu can change or remove when it moves to `0.1.0-preview.6` (and, where named, Tarol-Net round 2):
+
+| Item | Tatalu file | What to do |
+|---|---|---|
+| TS-9 | `Tatalu.*` views and inputs with flat fields or `string?` instead of `T?`; `SetupView`, `SyncProbeView`, `AuditRow`, `TerminationReason.Unspecified`, `ChildChanges.cs` | use `T?`/`Option<T>` of records, enums and value types again and regenerate; remove the casts to generated enum types and the `Unspecified` sentinel (with Tarol-Net's `Required` for nested members) |
+| TS-10 | `frontend/apps/web/src/screens/kinder/measles.ts` (`MeaslesStatus`), `PrivacyDocuments.svelte` (`version`) | import `MeaslesStatus` and `ProcessingAgreementVersion` from the generated `api.ts` (needs Tarol-Net round 2's `x-tarol-types`/`x-tarol-constants`) |
+| TS-11 | `RegisterChild.svelte` | `changeForm(requests.registerChild, …)` without `<I, Created>` |
+| TS-12 | `AddGuardian.svelte` | the guardian id may leave the form values again; a missing one is announced in `formError` |
+| TS-13 | `Profile.svelte` (own `loaded`) | `{#if view.ready}` |
+| TS-14 | `Devices.svelte` (`probe.refresh()` before "Gespeichert.") | `changeForm(…, { awaitRevalidation: true })` (or `action(…, { awaitRevalidation: true })`) |
+| TS-15 | `Locations.svelte`, `BankSection.svelte`, `InsuranceSection.svelte` (`refusal` state, `tarol(getTarol().client).changes.*`) | `const main = action(requests.x)`; `main.run(input)`, `main.pending`, `t(main.code)` |
+| TS-16 | `lib/ChoiceGroup.svelte`, `lib/SelectField.svelte`, row errors in `OpeningHoursEditor.svelte` | `FormField type="radio" \| "select" \| "date" \| "time" options={…}`; `path="windows[{i}].to"` |
+| TS-17 | `i18n/de.ts` (`...vertraegeDe` spreads) and the catalogue test "überschreibt keinen Text eines Teilkatalogs" | `defineMessages(vertraegeDe, belegungDe, …)`; the test can go |
+| TS-18 | `Profile.svelte` (own scrolling area around `Tabs`) | remove the wrapper |
+| TS-19 | `App.svelte` (`.frame`, `.frame-content`), `lib/BottomNav.svelte` | `<AppShell navPosition="bottom">` with the nav snippet; scroll code uses `main` |
+| TS-20 | `lib/draft.svelte.ts` (`keepDraft`) | `changeForm(…, { draft: 'key' })`; drafts move from `tatalu.draft.<key>` to `tarol.draft.<key>` (old drafts are not read) |
+| TS-21 | `lib/forms.ts` (`unchosen`) and the per-step input functions with `T \| null` | `changeForm(allowNull(requests.x), { state: null, … }, { rules })` |
+| TS-22 | `AuditLog.svelte` (the `List` wrapper) | `<DataTable filter={(row) => inRange(row.at)}>` |
+| TS-23 | `lib/auth.ts` (`restore()` only when `navigator.onLine`), `lib/offline/session.ts` | `if ((await oidc.restore()) === 'offline') …`; `createOidc({ lastSession: true })` and `oidc.lastSession()` |
+| TS-24 | `main.ts` (reads `amr`) | `session.factors`; `oidc.login({ acr, maxAge, prompt: 'login' })` for the finance step |
+| TS-25 | — (app-level device sessions only) | `oidc.revoke()` on "sign out this device" |
+| TS-32 | `lib/offline/queue.svelte.ts` (three immediate retries on `Stream.VersionConflict`) | remove once on Tarol-Net round 2 |
+
+Breaking for Tatalu: `restore()` resolves a value (ignoring it still works); `Option<Record>` types are type aliases, not
+interfaces; `changeForm`'s `initial` no longer narrows the input (a call that relied on it reports the mismatch); with
+`navPosition="bottom"` on a phone the window does not scroll.
