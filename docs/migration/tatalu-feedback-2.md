@@ -196,3 +196,20 @@ detected at run time: the skill says to pass each part as an argument (a merged 
 (red before: no export `defineMessages`).
 
 Public API: `defineMessages` (API report regenerated).
+
+## TS-18: `Tabs` on a narrow screen
+
+**Finding confirmed.** `.t-tablist` was `display: flex` without wrapping or scrolling: six tabs (Tatalu's profile) made the
+page 702 px wide at a 360 px viewport **[verified]** (the new test's first assertion, before the change).
+
+**Change.** The tab list scrolls horizontally in itself (`overflow-x: auto`, thin scrollbar); tabs keep their width
+(`flex: none`, no wrapping); the browser scrolls the focused tab into view (arrow keys, Home/End move the focus). The focus
+ring is drawn inside the tab (`outline-offset: -2px`), because the scrolling list clips anything outside it. The line under
+the tabs is an inset shadow instead of a border with the tabs' `-1px` overlap, which made the list scroll vertically by one
+pixel once it scrolls. Looks unchanged otherwise.
+
+**[verified]** `tarol-design/test/widgets.test.ts` "many tabs at 360 px …": no horizontal page scroll, the list scrolls
+horizontally and not vertically, End focuses the last tab inside the list's box, the ring is inside the tab, axe 0
+violations (red before: page 702 px wide; then list height 36 > 35 with the border).
+
+No API change.

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import '../dist/tokens.css';
 import { expectAccessible } from './axe.js';
+import ManyTabs from './fixtures/ManyTabs.svelte';
 import Widgets from './fixtures/Widgets.svelte';
 
 let app: ReturnType<typeof mount> | undefined;
@@ -159,6 +160,32 @@ describe('menu button', () => {
 });
 
 describe('tabs', () => {
+  it('many tabs at 360 px: the tab list scrolls in itself, the page does not, the focused tab is visible (TS-18)', async () => {
+    await page.viewport(360, 740);
+    try {
+      render(ManyTabs);
+      const list = document.querySelector<HTMLElement>('[role=tablist]');
+      expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(360);
+      expect(list?.scrollWidth).toBeGreaterThan(list?.clientWidth ?? 0);
+      expect(list?.scrollHeight).toBeLessThanOrEqual(list?.clientHeight ?? 0); // no vertical scroll from the underline
+      page.getByRole('tab', { name: 'Persönliche Daten' }).element().focus();
+      await userEvent.keyboard('{End}');
+      const last = page.getByRole('tab', { name: 'Datenschutz' }).element();
+      expect(document.activeElement).toBe(last);
+      const box = last.getBoundingClientRect();
+      const frame = list?.getBoundingClientRect();
+      expect(box.left).toBeGreaterThanOrEqual(frame?.left ?? 0);
+      expect(box.right).toBeLessThanOrEqual((frame?.right ?? 0) + 0.5);
+      // the focus ring is drawn inside the tab, so the scrolling list does not clip it
+      const style = getComputedStyle(last);
+      expect(style.outlineStyle).not.toBe('none');
+      expect(parseFloat(style.outlineOffset) + parseFloat(style.outlineWidth)).toBeLessThanOrEqual(0);
+      await expectAccessible();
+    } finally {
+      await page.viewport(1024, 768);
+    }
+  });
+
   it('one tab stop; arrows select with wrap; Home/End; the panel is labelled by its tab', async () => {
     render(Widgets);
     const details = page.getByRole('tab', { name: 'Details' });

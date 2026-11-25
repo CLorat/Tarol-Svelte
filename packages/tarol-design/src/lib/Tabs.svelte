@@ -2,7 +2,7 @@
   @component
   Tabs (WAI-ARIA APG tabs, automatic activation): one tab stop for the tab list; Arrow Left/Right move and select (wrapping),
   Home/End go to the first and last tab. Only the selected panel is rendered; it is focusable so its content can be reached
-  with Tab.
+  with Tab. More tabs than fit scroll inside the tab list; the focused tab scrolls into view.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -100,22 +100,32 @@
 </div>
 
 <style>
+  /* many tabs on a narrow screen: the list scrolls in itself (the focused tab is scrolled into view), never the page (TS-18) */
   .t-tablist {
     display: flex;
     gap: var(--t-space-1);
-    border-bottom: 1px solid var(--t-color-border);
+    /* the line under the tabs as a shadow: a border with the tabs' -1px overlap would scroll the list vertically */
+    box-shadow: inset 0 -1px 0 var(--t-color-border);
+    overflow-x: auto;
+    scrollbar-width: thin;
   }
   .t-tab {
+    flex: none;
+    white-space: nowrap;
     min-height: var(--t-control-height);
     padding: 0 var(--t-space-3);
     border: 0;
     border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
     background: none;
     color: var(--t-color-fg-muted);
     font: inherit;
     font-size: var(--t-text-sm);
     cursor: pointer;
+  }
+  /* inside the tab: the scrolling list would clip a ring drawn outside it */
+  .t-tab:focus-visible {
+    outline: 2px solid var(--t-color-focus);
+    outline-offset: -2px;
   }
   .t-tab[aria-selected='true'] {
     border-bottom-color: var(--t-color-accent);
