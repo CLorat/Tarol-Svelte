@@ -257,6 +257,16 @@ Public API: `Confirmation`, `Problem.confirm`, `Form.confirmation`, `Form.confir
 outbox 1.46 kB (1.5 kB), svelte bindings 4.3 kB / 3.83 kB brotli (5.25 kB, the round-2 proposal), ChangeForm + FormField
 2.55 kB (3 kB), ThemeRoot 3.03 kB (3.25 kB, proposed SV-37).
 
+## TS-40: a change that may start its aggregate (Tarol-Net TN-42)
+
+Tarol-Net round 3c answers 201 `{id, version}` for every change whose commit started its stream (`IOrStart<T>`, an `ILoads`
+load-or-create) and documents the 201 next to the 204. tarol-codegen typed such a change's result as `undefined`, so the new id
+was out of reach. Now a `change` operation with a 201 response returns `Created<Id> | undefined` (`undefined` for the 204).
+
+* **API change:** the generated result type of such changes; no new exports.
+* **Test [verified]:** `generate.test.ts` "a change that may start its aggregate (TS-40, Tarol-Net TN-42)" (red before: `undefined`).
+* **Tatalu:** the parents' `GET /ich/vorschlaege` round trip after a first proposal (FB-F15.5-2) can read the id from the answer.
+
 ## TS-39: one projection row (Tarol-Net TN-54)
 
 Tarol-Net round 3b adds `IRowQuery<TRow>`: a GET answering one projection row, `x-tarol-kind: row`. tarol-codegen refused the

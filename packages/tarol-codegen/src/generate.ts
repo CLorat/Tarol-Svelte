@@ -521,12 +521,14 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
       const bodyField = body ? ', body' : '';
       const queryField = queryParams.length ? `, query: { ${queryParams.map((p) => p.name).join(', ')} }` : '';
       const id = createdId(o);
+      const created = id === 'string' ? 'Created' : `Created<${id}>`;
+      // a change that may start its aggregate (Tarol-Net TN-42, IOrStart/ILoads) answers 201 {id, version} or 204 (TS-40)
       const result =
         o.kind === 'creation'
-          ? id === 'string'
-            ? 'Created'
-            : `Created<${id}>`
-          : o.kind === 'admin' && success(o)
+          ? created
+          : o.kind === 'change' && o.op.responses?.['201']
+            ? `${created} | undefined`
+            : o.kind === 'admin' && success(o)
             ? viewType(o)
             : 'undefined';
       // T defaults to undefined; the codes narrow the result by an assertion (TarolClient stays code-agnostic)

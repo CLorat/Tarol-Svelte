@@ -101,8 +101,8 @@ export interface OutboxOptions {
   /** The app's id of this device (opaque). Only sent with `captureHeaders`. */
   readonly device?: string;
   /**
-   * Sends `Tarol-Device` and `Tarol-Captured-At` with every attempt. Off by default: the backend accepts them only from
-   * Tarol-Net TN-60 on (before that a cross-origin preflight refuses them).
+   * Sends `Tarol-Device` and `Tarol-Captured-At` with every attempt. Off by default: the backend accepts them from Tarol-Net
+   * 0.1.0-preview.6 (TN-60, `OperationContext.Capture`; an older backend's cross-origin preflight refuses them).
    */
   readonly captureHeaders?: boolean;
   /** Waits between attempts after a transient failure (ms); the last repeats. Default 5, 15, 30, 60 s. */
