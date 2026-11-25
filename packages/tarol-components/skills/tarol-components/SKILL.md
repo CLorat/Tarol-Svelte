@@ -80,6 +80,16 @@ description: >-
 | two widgets in one DataTable cell | only the first gets the focus from the arrow keys; split the cell |
 | rendering a search snippet with `{@html}` | never: the snippet is plain text; `<b>` in it is the document's text. Use `highlight()` and render text nodes |
 
+## Typed lint in an app
+
+typescript-eslint's typed rules read no `.svelte` file, so an app's **own** component is opaque to them (svelte-check is
+fine): a type exported from its `<script module>` is unresolved, and the parameter of its callback (`onSent={(c) => …}`)
+is `any` (`no-unsafe-member-access`, `no-unsafe-return`). Recipe: put types and pure functions that components share in a
+`.ts` module (`import type { Sent } from './sent.js'`), and annotate the parameter: `onSent={(c: Sent) => …}`. The
+packages' components are typed (generated `.svelte.d.ts`), so `onselect={(id) => …}` on `MenuButton` needs nothing; their
+item and parameter types are exported (`MenuItem`, `TabItem`, `ComboboxOption`, `FieldControl`, `QueryStateSource`,
+`SearchHit`, `Column`), props through `ComponentProps<typeof X>` from `svelte`. Never switch the rules off.
+
 ## Notes
 
 Built only from public primitives of `@clorat/tarol-design`; replace any component by composing the same primitives.

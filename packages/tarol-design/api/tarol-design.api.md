@@ -40,6 +40,12 @@ export const Combobox: Component<Props_3, {}, "value">;
 export type Combobox = ReturnType<typeof Combobox>;
 
 // @public
+export interface ComboboxOption {
+    label: string;
+    value: string;
+}
+
+// @public
 export function createToasts(): Toasts;
 
 // Warning: (ae-forgotten-export) The symbol "Props_4" needs to be exported by the entry point index.d.ts
@@ -76,6 +82,14 @@ export const Field: Component<Props_6, {}, "">;
 export type Field = ReturnType<typeof Field>;
 
 // @public
+export interface FieldControl {
+    'aria-describedby': string | undefined;
+    'aria-invalid': 'true' | undefined;
+    'aria-required': 'true' | undefined;
+    id: string;
+}
+
+// @public
 export function getMessages(): Translate;
 
 // @public
@@ -88,6 +102,13 @@ export const MenuButton: Component<Props_7, {}, "">;
 
 // @public
 export type MenuButton = ReturnType<typeof MenuButton>;
+
+// @public
+export interface MenuItem {
+    disabled?: boolean | undefined;
+    id: string;
+    label: string;
+}
 
 // @public
 export type MessageParams = Readonly<Record<string, string | number | undefined>>;
@@ -165,6 +186,12 @@ export const Spinner: Component<Props_10, {}, "">;
 
 // @public
 export type Spinner = ReturnType<typeof Spinner>;
+
+// @public
+export interface TabItem {
+    id: string;
+    label: string;
+}
 
 // Warning: (ae-forgotten-export) The symbol "Props_11" needs to be exported by the entry point index.d.ts
 //

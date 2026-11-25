@@ -108,6 +108,17 @@ export const QueryState: Component<Props_4, {}, "">;
 // @public
 export type QueryState = ReturnType<typeof QueryState>;
 
+// @public
+export interface QueryStateSource {
+    readonly items?: readonly unknown[];
+    readonly loading: boolean;
+    refresh(): Promise<void>;
+    readonly requestId?: string | undefined;
+    readonly stale?: boolean;
+    readonly value?: unknown;
+    readonly violation: Violation | undefined;
+}
+
 // Warning: (ae-forgotten-export) The symbol "Props_5" needs to be exported by the entry point index.d.ts
 //
 // @public

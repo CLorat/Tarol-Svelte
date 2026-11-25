@@ -4,6 +4,7 @@ export { default as DataTable } from './DataTable.svelte';
 export { default as DetailLayout } from './DetailLayout.svelte';
 export { default as FormField } from './FormField.svelte';
 export { default as QueryState } from './QueryState.svelte';
+export type { QueryStateSource } from './QueryState.svelte';
 export { default as SearchBox } from './SearchBox.svelte';
 export type { SearchHit } from './SearchBox.svelte';
 export type { Column } from './column.js';

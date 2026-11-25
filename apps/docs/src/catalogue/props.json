@@ -95,7 +95,7 @@
       },
       {
         "name": "options",
-        "type": "readonly Option[]",
+        "type": "readonly ComboboxOption[]",
         "optional": false,
         "bindable": false,
         "default": null,
@@ -111,7 +111,7 @@
       },
       {
         "name": "filter",
-        "type": "((option: Option, text: string) => boolean) | false",
+        "type": "((option: ComboboxOption, text: string) => boolean) | false",
         "optional": true,
         "bindable": false,
         "default": null,
@@ -175,7 +175,7 @@
       },
       {
         "name": "item",
-        "type": "Snippet<[Option]>",
+        "type": "Snippet<[ComboboxOption]>",
         "optional": true,
         "bindable": false,
         "default": null,
@@ -343,7 +343,7 @@
       },
       {
         "name": "control",
-        "type": "Snippet<[Control]>",
+        "type": "Snippet<[FieldControl]>",
         "optional": false,
         "bindable": false,
         "default": null,
@@ -359,7 +359,7 @@
     "props": [
       {
         "name": "items",
-        "type": "readonly Item[]",
+        "type": "readonly MenuItem[]",
         "optional": false,
         "bindable": false,
         "default": null,
@@ -615,7 +615,7 @@
     "props": [
       {
         "name": "tabs",
-        "type": "readonly Tab[]",
+        "type": "readonly TabItem[]",
         "optional": false,
         "bindable": false,
         "default": null,
@@ -1109,7 +1109,7 @@
     "props": [
       {
         "name": "state",
-        "type": "State",
+        "type": "QueryStateSource",
         "optional": false,
         "bindable": false,
         "default": null,

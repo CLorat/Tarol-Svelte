@@ -4,11 +4,9 @@
   item, Arrow Up on its last; Arrow keys move (wrapping), Home/End, Enter or Space choose, Escape closes and returns focus
   to the button, Tab closes. A click outside closes it (light dismiss). Use it for actions, not for choosing a value.
 -->
-<script lang="ts">
-  import type { Snippet } from 'svelte';
-
+<script module lang="ts">
   /** One action. */
-  interface Item {
+  export interface MenuItem {
     /** A stable id, passed to `onselect`. */
     id: string;
     /** The item's text (already translated). */
@@ -16,10 +14,14 @@
     /** Shown but not choosable. */
     disabled?: boolean | undefined;
   }
+</script>
+
+<script lang="ts">
+  import type { Snippet } from 'svelte';
 
   interface Props {
     /** The actions, in order. */
-    items: readonly Item[];
+    items: readonly MenuItem[];
     /** The button's content (text, or an icon with a `VisuallyHidden` text). */
     children: Snippet;
     /** Called with the chosen item's id; the menu is closed by then. */

@@ -3,17 +3,23 @@
   Label, hint and error around one control. The control snippet receives the ids to wire: `id`, `aria-describedby` and
   `aria-invalid`, so the error is announced with the field.
 -->
+<script module lang="ts">
+  /** What the control snippet receives. */
+  export interface FieldControl {
+    /** The control's id (the label's `for`). */
+    id: string;
+    /** The ids of the hint and the error, when shown. */
+    'aria-describedby': string | undefined;
+    /** `true` while an error is shown. */
+    'aria-invalid': 'true' | undefined;
+    /** `true` when the field is required. */
+    'aria-required': 'true' | undefined;
+  }
+</script>
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { getMessages } from './messages.js';
-
-  /** What the control snippet receives. */
-  interface Control {
-    id: string;
-    'aria-describedby': string | undefined;
-    'aria-invalid': 'true' | undefined;
-    'aria-required': 'true' | undefined;
-  }
 
   interface Props {
     /** The visible label (the app's own, already translated text). */
@@ -25,7 +31,7 @@
     /** Marks the field as required (label suffix and `aria-required`). */
     required?: boolean | undefined;
     /** The control. */
-    control: Snippet<[Control]>;
+    control: Snippet<[FieldControl]>;
   }
 
   let { label, hint, error, required = false, control }: Props = $props();

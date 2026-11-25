@@ -85,6 +85,8 @@ description: >-
 * Only the catalogues you pass are bundled; `en` is the default.
 * `prefers-reduced-motion` sets the duration tokens to 0, and so does `<ThemeRoot motion="reduce">` (an in-app setting).
   All token pairs meet WCAG 2.2 AA contrast in both themes.
+* Item types for an app's helpers: `MenuItem`, `TabItem`, `ComboboxOption`, `FieldControl`, `SelectProps`,
+  `RadioGroupProps` (typed lint of app components: tarol-components skill).
 * Test recipe: axe right after a change of `variant` (or any colour) can report `color-contrast` on a `Button` whose
   background is still in its transition. Render the test inside `<ThemeRoot motion="reduce">` (or emulate
   `reducedMotion: 'reduce'` in Playwright); never wait a fixed time before axe.
