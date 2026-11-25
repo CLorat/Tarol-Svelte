@@ -108,7 +108,7 @@ function nullParent(values: unknown, path: string): boolean {
  * that). Server field errors land on the field with the same path, with no glue code; client rules use the same codes.
  */
 export function changeForm<I extends object, T = undefined>(
-  change: (input: I) => ChangeRequest,
+  change: (input: I) => ChangeRequest<T>,
   initial: I,
   options: FormOptions<T, I> = {},
 ): Form<I, T> {

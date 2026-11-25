@@ -620,3 +620,30 @@ describe('x-tarol-types and x-tarol-constants (TS-10, Tatalu FB-F02.6-2, FB-F13.
     expect(() => generate(withExtras({ 'x-tarol-constants': { Rate: Number.NaN } }))).toThrow(/Rate/);
   });
 });
+
+describe('typed creations (TS-11, Tatalu FB-F02.1-8)', () => {
+  const code = generate(fixture, { source: 'artflow.openapi.json' });
+
+  it('types the request of a creation with its result, so changeForm and client.change infer it', () => {
+    expect(code).toContain('createAuction: (body: CreateAuctionInput): ChangeRequest<Created> =>');
+    const usage = `
+import { createClient, type Created } from '@clorat/tarol-client';
+import { changeForm } from '@clorat/tarol-svelte';
+import { requests } from './artflow.js';
+
+export async function screen(): Promise<string | undefined> {
+  const form = changeForm(requests.createAuction, { reserve: 0 });
+  const r = await form.submit();
+  const created: Created | undefined = r?.ok ? r.value : undefined;
+  const bid = changeForm(requests.placeBid, { auction: created?.id as never, amount: 1 });
+  const placed = await bid.submit();
+  // a plain change still returns nothing
+  const nothing: undefined = placed?.ok ? placed.value : undefined;
+  void nothing;
+  const direct = await createClient({ baseUrl: '/api' }).change(requests.createAuction({ reserve: 1 }));
+  return direct.ok ? direct.value.id : created?.id;
+}
+`;
+    expect(typecheck({ 'artflow.ts': code, 'usage.ts': usage })).toEqual([]);
+  });
+});

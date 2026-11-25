@@ -17,7 +17,7 @@ import { Violation } from '@clorat/tarol-client';
 export function at(root: unknown, path: string): unknown;
 
 // @public
-export function changeForm<I extends object, T = undefined>(change: (input: I) => ChangeRequest, initial: I, options?: FormOptions<T, I>): Form<I, T>;
+export function changeForm<I extends object, T = undefined>(change: (input: I) => ChangeRequest<T>, initial: I, options?: FormOptions<T, I>): Form<I, T>;
 
 // @public
 export function check(value: unknown, rules: readonly Rule[]): string | null;

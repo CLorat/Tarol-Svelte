@@ -529,7 +529,7 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
       out.push(`/** The input of ${o.type}. */`, `export type ${o.type}Input = ${inputType};`, '');
       if (queryParams.length) usesQs = true;
       requests.push(
-        `${summary}  ${o.name}: (${input}: ${o.type}Input): ChangeRequest => ({ method: '${o.method}', path: ${queryParams.length ? `${url} + qs(${queryField.slice(', query: '.length)})` : url}${bodyField} }),`,
+        `${summary}  ${o.name}: (${input}: ${o.type}Input): ChangeRequest${typeArg} => ({ method: '${o.method}', path: ${queryParams.length ? `${url} + qs(${queryField.slice(', query: '.length)})` : url}${bodyField} }),`,
       );
       changes.push(
         `${doc(o.op.summary ?? o.op.description ?? `${o.method} ${o.path}`, '      ')}      ${o.name}: (input: ${o.type}Input, options?: ChangeOptions): Promise<Result<${result}${codeArg}>> =>\n        client.change${typeArg}(requests.${o.name}(input), options)${code ? ` as Promise<Result<${result}${codeArg}>>` : ''},`,

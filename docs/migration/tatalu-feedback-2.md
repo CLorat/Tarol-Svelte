@@ -50,3 +50,25 @@ unknown type name and the constants were ignored), the constants type-check as l
 
 Public API: `OpenApiDocument['x-tarol-types']`, `OpenApiDocument['x-tarol-constants']`, the type `ConstantValue` (API
 report regenerated). Generated output: new `export const`s when the document has constants; otherwise byte-identical.
+
+## TS-11: typed creations
+
+**Finding confirmed.** `changeForm(requests.createAuction, …)` typed the submit's value as `undefined`: the generated
+request returned a plain `ChangeRequest`, and `changeForm`'s `T` defaulted to `undefined`. Tatalu wrote
+`changeForm<I, Created>(…)` (`RegisterChild.svelte`).
+
+**Change.** `@clorat/tarol-client` `ChangeRequest<T = undefined>`: `T` is the value a successful change returns, a type
+only (no member carries it; TypeScript infers it from the type reference). `TarolClient.change<T>(request:
+ChangeRequest<T>, …)` and `@clorat/tarol-svelte` `changeForm(change: (input: I) => ChangeRequest<T>, …)` infer it. The
+generator types the request of a creation as `ChangeRequest<Created>` / `ChangeRequest<Created<XId>>` and of an admin
+change with an answer as `ChangeRequest<View>`; plain changes stay `ChangeRequest` (= `ChangeRequest<undefined>`). Because
+`T` is not used structurally, every `ChangeRequest<X>` is assignable to every other, so explicit `changeForm<I, Created>`,
+`client.change<Created>(…)` and hand-written `ChangeRequest` values keep compiling.
+
+**[verified]** `tarol-codegen/test/generate.test.ts` "typed creations (TS-11 …)" type-checks `changeForm(requests.createAuction,
+…)` and `client.change(requests.createAuction(…))` without type arguments (red before: `Property 'id' does not exist on type
+'never'` twice and `'direct.value' is possibly 'undefined'`). Snapshot change reviewed: the three request builders with a
+result gain their type argument. `packages/tarol-admin/src/lib/api.ts` and `apps/docs/src/artflow/api.ts` regenerated.
+
+Public API: `ChangeRequest` gains a type parameter (default `undefined`), `TarolClient.change`'s parameter is
+`ChangeRequest<T>`, `changeForm`'s `change` returns `ChangeRequest<T>` (API reports regenerated).

@@ -125,7 +125,7 @@ export const requests = {
   /** DELETE /projections/{name}/{version} */
   tarolAdminDropProjection: ({ name, version }: TarolAdminDropProjectionInput): ChangeRequest => ({ method: 'DELETE', path: `/projections/${enc(name)}/${enc(String(version))}` }),
   /** POST /subjects/{id}/erase */
-  tarolAdminEraseSubject: ({ id, tenant }: TarolAdminEraseSubjectInput): ChangeRequest => ({ method: 'POST', path: `/subjects/${enc(id)}/erase` + qs({ tenant }) }),
+  tarolAdminEraseSubject: ({ id, tenant }: TarolAdminEraseSubjectInput): ChangeRequest<ErasureView> => ({ method: 'POST', path: `/subjects/${enc(id)}/erase` + qs({ tenant }) }),
   /** GET /subjects/{id}/export */
   tarolAdminExportSubject: ({ id }: { readonly id: string }, query: TarolAdminExportSubjectQuery): ReadRequest => ({ path: `/subjects/${enc(id)}/export`, query }),
   /** GET /dead */
@@ -135,7 +135,7 @@ export const requests = {
   /** POST /dead/{kind}/{id}/redrive */
   tarolAdminRedrive: ({ kind, id }: TarolAdminRedriveInput): ChangeRequest => ({ method: 'POST', path: `/dead/${enc(kind)}/${enc(String(id))}/redrive` }),
   /** POST /dead/{kind}/redrive */
-  tarolAdminRedriveMany: ({ kind, tenant, name, max }: TarolAdminRedriveManyInput): ChangeRequest => ({ method: 'POST', path: `/dead/${enc(kind)}/redrive` + qs({ tenant, name, max }) }),
+  tarolAdminRedriveMany: ({ kind, tenant, name, max }: TarolAdminRedriveManyInput): ChangeRequest<RedriveView> => ({ method: 'POST', path: `/dead/${enc(kind)}/redrive` + qs({ tenant, name, max }) }),
 };
 
 /** Validation rules per change and field path (`lines[].quantity`), with the backend's codes: `changeForm(…, { rules })`. */
