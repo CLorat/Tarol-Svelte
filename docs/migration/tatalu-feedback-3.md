@@ -278,8 +278,8 @@ Breaking for Tatalu: `Problem.reasons` instead of `extensions.reasons`; `ChangeF
 
 ## Verification
 
-`pnpm verify` on this branch at `2f326b5` (format, build, lint, typecheck, test, size, package checks, API reports, eng
-tests): **exit 0** **[verified]**.
+`pnpm verify` on this branch at `2f326b5`, and again at `83338af` (the last code-tree commit; format, build, lint, typecheck,
+test, size, package checks, API reports, eng tests): **exit 0** both times **[verified]**.
 
 * `pnpm test`: 28 test files passed, 3 skipped; 275 tests passed, 15 skipped (on `main` before this round: 246 passed, 15
   skipped). The skipped tests are the existing ones that need the sample backend or a container (unchanged).
