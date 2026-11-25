@@ -393,7 +393,7 @@ Public API: `Oidc.revoke` (API report regenerated).
   Promise<boolean>`): a PIN hash (WebCrypto PBKDF2) and WebAuthn are security decisions per app, so the package would ship
   the timer and the screen only. Not built: Tatalu's `lib/security/lock.svelte.ts` works, and the unlock factor is an
   owner decision.
-* **TS-32 (`Stream.VersionConflict` retry)**: *Checked: covered by the backend.* Tarol-Net round 2 retries a change without
+* **TS-32 (`Stream.VersionConflict` retry)**: *Checked: covered by the backend.* Tarol-Net round 2 (TN-45) retries a change without
   `If-Match` on the server (re-load, re-decide); with `If-Match` the conflict stays a message for the person. The client
   does not retry: it cannot re-decide, only re-send the same body. Tatalu can drop its three immediate retries in
   `queue.svelte.ts` once it runs on that backend.
@@ -416,7 +416,7 @@ What Tatalu can change or remove when it moves to `0.1.0-preview.6` (and, where 
 | Item | Tatalu file | What to do |
 |---|---|---|
 | TS-9 | `Tatalu.*` views and inputs with flat fields or `string?` instead of `T?`; `SetupView`, `SyncProbeView`, `AuditRow`, `TerminationReason.Unspecified`, `ChildChanges.cs` | use `T?`/`Option<T>` of records, enums and value types again and regenerate; remove the casts to generated enum types and the `Unspecified` sentinel (with Tarol-Net's `Required` for nested members) |
-| TS-10 | `frontend/apps/web/src/screens/kinder/measles.ts` (`MeaslesStatus`), `PrivacyDocuments.svelte` (`version`) | import `MeaslesStatus` and `ProcessingAgreementVersion` from the generated `api.ts` (needs Tarol-Net round 2's `x-tarol-types`/`x-tarol-constants`) |
+| TS-10 | `frontend/apps/web/src/screens/kinder/measles.ts` (`MeaslesStatus`), `PrivacyDocuments.svelte` (`version`) | import `MeaslesStatus` and `ProcessingAgreementVersion` from the generated `api.ts` (Tarol-Net TN-35: `[ContractType]` on `MeaslesStatus`, `[ContractConstant("ProcessingAgreementVersion")]` on the constant) |
 | TS-11 | `RegisterChild.svelte` | `changeForm(requests.registerChild, …)` without `<I, Created>` |
 | TS-12 | `AddGuardian.svelte` | the guardian id may leave the form values again; a missing one is announced in `formError` |
 | TS-13 | `Profile.svelte` (own `loaded`) | `{#if view.ready}` |
