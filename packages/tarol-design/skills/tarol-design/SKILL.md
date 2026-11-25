@@ -83,4 +83,8 @@ description: >-
 ## Notes
 
 * Only the catalogues you pass are bundled; `en` is the default.
-* `prefers-reduced-motion` sets the duration tokens to 0. All token pairs meet WCAG 2.2 AA contrast in both themes.
+* `prefers-reduced-motion` sets the duration tokens to 0, and so does `<ThemeRoot motion="reduce">` (an in-app setting).
+  All token pairs meet WCAG 2.2 AA contrast in both themes.
+* Test recipe: axe right after a change of `variant` (or any colour) can report `color-contrast` on a `Button` whose
+  background is still in its transition. Render the test inside `<ThemeRoot motion="reduce">` (or emulate
+  `reducedMotion: 'reduce'` in Playwright); never wait a fixed time before axe.

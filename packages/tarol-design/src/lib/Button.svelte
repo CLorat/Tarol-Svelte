@@ -76,4 +76,10 @@
     opacity: 0.55;
     cursor: not-allowed;
   }
+  /* the tokens are 0 here inside ThemeRoot; this also holds where an app sets its own durations */
+  @media (prefers-reduced-motion: reduce) {
+    .t-button {
+      transition: none;
+    }
+  }
 </style>

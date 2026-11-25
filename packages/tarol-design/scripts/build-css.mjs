@@ -14,6 +14,7 @@ const css = [
   `:where(.t-root[data-theme=dark]){${vars(dark)};color-scheme:dark}`,
   `:where(.t-root[data-density=compact]){--t-density:0.75}`,
   `@media (prefers-reduced-motion:reduce){:where(.t-root){--t-duration-fast:0ms;--t-duration-normal:0ms}}`,
+  `:where(.t-root[data-motion=reduce]){--t-duration-fast:0ms;--t-duration-normal:0ms}`,
   `:where(.t-root) :where(*,*::before,*::after){box-sizing:border-box}`,
   `:where(.t-root) :where(:focus-visible){outline:2px solid var(--t-color-focus);outline-offset:2px}`,
 ].join('\n');

@@ -714,7 +714,7 @@
   "ThemeRoot": {
     "package": "@clorat/tarol-design",
     "name": "ThemeRoot",
-    "doc": "The root of the design system: sets `.t-root` (tokens apply only inside it), the theme and density, the message catalogue for its subtree, and the notification region. Nothing outside it is touched.",
+    "doc": "The root of the design system: sets `.t-root` (tokens apply only inside it), the theme, density and motion, the message catalogue for its subtree, and the notification region. Nothing outside it is touched.",
     "extends": "",
     "props": [
       {
@@ -732,6 +732,14 @@
         "bindable": false,
         "default": "'comfortable'",
         "doc": "`comfortable` (default) or `compact`."
+      },
+      {
+        "name": "motion",
+        "type": "'auto' | 'reduce'",
+        "optional": true,
+        "bindable": false,
+        "default": "'auto'",
+        "doc": "`auto` (default) follows `prefers-reduced-motion`; `reduce` sets the duration tokens to 0 in the subtree, so no colour or size changes animate: an in-app \"reduce motion\" setting, and the recipe for tests that run axe right after a change (a running transition is a mixed colour, which axe can report as `color-contrast`)."
       },
       {
         "name": "locale",
