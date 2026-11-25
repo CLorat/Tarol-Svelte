@@ -27,7 +27,7 @@ test('the props tables come from the components’ types', async ({ page }) => {
   await page.goto('/#/components/Combobox');
   const table = page.getByRole('table', { name: 'Props of Combobox' });
   await expect(table.getByRole('rowheader', { name: 'filter?' })).toBeVisible();
-  await expect(table).toContainText('(option: Option, text: string) => boolean');
+  await expect(table).toContainText('(option: ComboboxOption, text: string) => boolean');
   await expect(table.getByRole('row', { name: /value\?.*bindable/ })).toContainText('null');
 });
 
