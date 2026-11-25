@@ -93,4 +93,4 @@ description: >-
 
 * Plain Svelte 5 (Vite SPA). The runes are compiled by your app's Svelte plugin; nothing global runs at import.
 * `Rule` kinds: `Required`, `NotEmpty`, `Range`, `Length` (UTF-16 units), `Pattern` (ECMAScript, `u` flag), `Email` (the
-  backend's rule), `Count`; one code per value, as on the server. The generator (`@clorat/tarol-codegen`) writes them.
+  backend's rule), `Count`, `Scale` (`multipleOf`); one code per value, as on the server. The generator writes them.

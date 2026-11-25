@@ -53,6 +53,25 @@ describe('rules', () => {
     expect(check('EURO', code)).toBe('Currency');
   });
 
+  it('checks Scale: a multiple of the step, without float noise (TS-29)', () => {
+    const cents = [{ rule: 'Scale', code: 'Scale', step: 0.01 }] as const;
+    expect([check(12.34, cents), check(1e21, cents), check(-3.5, cents), check(0.3, cents)]).toEqual([
+      null,
+      null,
+      null,
+      null,
+    ]);
+    // the digits of the JSON text count, as the backend's decimal reads it: 0.1 + 0.2 is sent as 0.30000000000000004
+    expect([check(12.345, cents), check(0.1 + 0.2, cents), check(1e-7, cents), check('12.34', cents)]).toEqual([
+      'Scale',
+      'Scale',
+      'Scale',
+      'Scale',
+    ]);
+    expect(check(null, cents)).toBeNull();
+    expect(check(0.75, [{ rule: 'Scale', code: 'Scale', step: 0.25 }])).toBeNull();
+  });
+
   it('maps concrete paths to rule keys', () => {
     expect(rulePath('lines[12].quantity')).toBe('lines[].quantity');
     expect(rulePath('customer')).toBe('customer');

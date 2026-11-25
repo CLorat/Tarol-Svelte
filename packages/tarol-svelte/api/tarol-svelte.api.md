@@ -181,7 +181,8 @@ export interface Rule {
     readonly max?: number;
     readonly min?: number;
     readonly pattern?: string;
-    readonly rule: 'Required' | 'NotEmpty' | 'Range' | 'Length' | 'Pattern' | 'Email' | 'Count';
+    readonly rule: 'Required' | 'NotEmpty' | 'Range' | 'Length' | 'Pattern' | 'Email' | 'Count' | 'Scale';
+    readonly step?: number;
 }
 
 // @public

@@ -21,6 +21,7 @@ export interface GeneratedRule {
     readonly min?: number;
     readonly pattern?: string;
     readonly rule: string;
+    readonly step?: number;
 }
 
 // @public
@@ -97,6 +98,7 @@ export interface Schema {
     readonly minimum?: number | string;
     readonly minItems?: number;
     readonly minLength?: number;
+    readonly multipleOf?: number;
     readonly nullable?: boolean;
     readonly oneOf?: readonly Schema[];
     readonly pattern?: string;

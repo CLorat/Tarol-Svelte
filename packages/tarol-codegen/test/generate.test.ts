@@ -788,3 +788,27 @@ export const dose = (v: MedicationOrderView): string => (v.details?.dose ?? '') 
     expect(typecheck({ 'api.ts': code, 'usage.ts': usage })).toEqual([]);
   });
 });
+
+// Owner decision 2026-11-25: a `decimal` stays a JSON number; Tarol-Net TN-53 writes `[Scale(n)]` as `multipleOf: 10^-n`.
+describe('multipleOf as the client rule Scale (TS-29, Tatalu FB-F04.5-1)', () => {
+  const schemas: Record<string, Schema> = {
+    SetFee: {
+      type: 'object',
+      required: ['amount'],
+      properties: {
+        amount: { type: 'number', minimum: '0', maximum: '10000', multipleOf: 0.01 },
+        rate: { type: ['number', 'null'], multipleOf: 0.001 },
+      },
+    },
+  };
+  const code = generate(doc(schemas, { '/fees': post('SetFee', 'SetFee') }));
+
+  it('carries multipleOf into the rules with its step, after Range', () => {
+    const r = /export const rules = (\{[\s\S]*?\}) as const;/.exec(code)?.[1] ?? '';
+    expect(r).toContain(
+      '"amount": [{"rule":"Required","code":"Required"}, {"rule":"Range","code":"Range","min":0,"max":10000}, {"rule":"Scale","code":"Scale","step":0.01}]',
+    );
+    expect(r).toContain('"rate": [{"rule":"Scale","code":"Scale","step":0.001}]');
+    expect(code).toContain('  amount: number;');
+  });
+});

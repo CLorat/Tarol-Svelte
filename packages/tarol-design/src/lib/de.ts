@@ -35,6 +35,7 @@ export const de: Catalogue = {
   'Range.min': 'Geben Sie mindestens {min} ein.',
   'Range.max': 'Geben Sie höchstens {max} ein.',
   'Range.any': 'Der Wert liegt außerhalb des erlaubten Bereichs.',
+  Scale: 'Der Wert hat zu viele Nachkommastellen.',
   Length: 'Geben Sie {min} bis {max} Zeichen ein.',
   'Length.min': 'Geben Sie mindestens {min} Zeichen ein.',
   'Length.max': 'Geben Sie höchstens {max} Zeichen ein.',

@@ -20,6 +20,7 @@ export const en: Catalogue = {
   'Range.min': 'Enter a value of at least {min}.',
   'Range.max': 'Enter a value of at most {max}.',
   'Range.any': 'The value is out of range.',
+  Scale: 'The value has too many decimal places.',
   Length: 'Enter between {min} and {max} characters.',
   'Length.min': 'Enter at least {min} characters.',
   'Length.max': 'Enter at most {max} characters.',
