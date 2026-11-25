@@ -509,26 +509,32 @@ describe('one projection row (TS-39, Tarol-Net TN-54)', () => {
 
 describe('a change that may start its aggregate (TS-40, Tarol-Net TN-42)', () => {
   // the document Tarol-Net writes for an IOrStart<T> change: 204, or 201 {id, version} when it started the stream
-  const starts = doc({}, {
-    '/attendance/{child}/{month}/check-in': {
-      post: {
-        operationId: 'CheckIn',
-        'x-tarol-kind': 'change',
-        'x-tarol-errors': ['Auth.Forbidden'],
-        parameters: [
-          { name: 'child', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-          { name: 'month', in: 'path', required: true, schema: { type: 'string' } },
-        ],
-        responses: {
-          '204': { description: 'Committed' },
-          '201': {
-            description: 'Committed, and the change started the aggregate (TN-42)',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['id', 'version'],
-                  properties: { id: { type: 'string', format: 'uuid' }, version: { type: 'integer', format: 'int64' } },
+  const starts = doc(
+    {},
+    {
+      '/attendance/{child}/{month}/check-in': {
+        post: {
+          operationId: 'CheckIn',
+          'x-tarol-kind': 'change',
+          'x-tarol-errors': ['Auth.Forbidden'],
+          parameters: [
+            { name: 'child', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+            { name: 'month', in: 'path', required: true, schema: { type: 'string' } },
+          ],
+          responses: {
+            '204': { description: 'Committed' },
+            '201': {
+              description: 'Committed, and the change started the aggregate (TN-42)',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['id', 'version'],
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      version: { type: 'integer', format: 'int64' },
+                    },
+                  },
                 },
               },
             },
@@ -536,11 +542,13 @@ describe('a change that may start its aggregate (TS-40, Tarol-Net TN-42)', () =>
         },
       },
     },
-  });
+  );
   const code = generate(starts);
 
   it('answers the new id when it started the aggregate, nothing otherwise', () => {
-    expect(code).toContain('checkIn: (input: CheckInInput, options?: ChangeOptions): Promise<Result<Created | undefined, CheckInCode>> =>');
+    expect(code).toContain(
+      'checkIn: (input: CheckInInput, options?: ChangeOptions): Promise<Result<Created | undefined, CheckInCode>> =>',
+    );
   });
 
   it('compiles', () => {

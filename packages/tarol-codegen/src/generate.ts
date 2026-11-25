@@ -529,8 +529,8 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
           : o.kind === 'change' && o.op.responses?.['201']
             ? `${created} | undefined`
             : o.kind === 'admin' && success(o)
-            ? viewType(o)
-            : 'undefined';
+              ? viewType(o)
+              : 'undefined';
       // T defaults to undefined; the codes narrow the result by an assertion (TarolClient stays code-agnostic)
       const typeArg = result === 'undefined' ? '' : `<${result}>`;
       out.push(`/** The input of ${o.type}. */`, `export type ${o.type}Input = ${inputType};`, '');
