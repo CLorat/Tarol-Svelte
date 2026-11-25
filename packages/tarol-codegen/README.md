@@ -10,6 +10,10 @@ tarol-codegen http://localhost:5080/openapi/v1.json -o src/lib/api.ts     # or a
 tarol-codegen openapi.json -o src/lib/api.ts --check                       # CI: fails when the file is out of date
 ```
 
+Exit codes: `0` written (or up to date with `--check`); `1` any failure, with one line `tarol-codegen: …` on stderr (a
+document it cannot translate, with its JSON pointer; a missing file; an HTTP status other than 2xx; a body that is not
+JSON; a stale file with `--check`); `2` missing arguments (the usage on stderr). Only `wrote <file>` goes to stdout.
+
 ```ts
 import { createClient } from '@clorat/tarol-client';
 import { requests, rules, tarol } from './api';

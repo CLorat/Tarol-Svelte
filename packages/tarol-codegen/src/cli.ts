@@ -22,20 +22,23 @@ export async function main(argv: readonly string[]): Promise<number> {
     process.stderr.write(`${usage}\n`);
     return 2;
   }
-  const text = /^https?:\/\//.test(input) ? await (await fetch(input)).text() : await readFile(input, 'utf8');
+  const remote = /^https?:\/\//.test(input);
+  let document: OpenApiDocument;
+  try {
+    document = await read(input, remote);
+  } catch (error) {
+    return fail(error instanceof Failure ? error.message : `cannot read ${input}: ${String(error)}`);
+  }
   let code: string;
   try {
-    code = generate(JSON.parse(text) as OpenApiDocument, {
-      source: /^https?:\/\//.test(input) ? input : (input.split('/').at(-1) ?? input),
+    code = generate(document, {
+      source: remote ? input : (input.split('/').at(-1) ?? input),
       strict,
       onWarning: (message) => process.stderr.write(`tarol-codegen: warning: ${message}\n`),
     });
   } catch (error) {
-    if (error instanceof GenerateError) {
-      process.stderr.write(`tarol-codegen: ${error.message}\n`);
-      return 1;
-    }
-    throw error;
+    // a GenerateError names the pointer; anything else is a bug here, still one line and exit 1
+    return fail(error instanceof GenerateError ? error.message : `internal error: ${String(error)}`);
   }
   if (check) {
     const current = await readFile(out, 'utf8').catch(() => '');
@@ -48,6 +51,41 @@ export async function main(argv: readonly string[]): Promise<number> {
   await writeFile(out, code);
   process.stdout.write(`tarol-codegen: wrote ${out}\n`);
   return 0;
+}
+
+/** A failure to read the document, with the message for stderr. */
+class Failure extends Error {}
+
+/**
+ * Reads and parses the document. Every failure (no file, an HTTP status other than 2xx, a network error, a body that is
+ * not JSON) is a {@link Failure} with one line naming the input, so a script that sends stdout to /dev/null still sees it.
+ */
+async function read(input: string, remote: boolean): Promise<OpenApiDocument> {
+  let text: string;
+  if (remote) {
+    const response = await fetch(input).catch((error: unknown) => {
+      throw new Failure(`cannot fetch ${input}: ${error instanceof Error ? error.message : String(error)}`);
+    });
+    if (!response.ok)
+      throw new Failure(`${input} answered ${String(response.status)} ${response.statusText}`.trimEnd());
+    text = await response.text();
+  } else {
+    text = await readFile(input, 'utf8').catch((error: unknown) => {
+      const code = (error as { code?: unknown }).code;
+      throw new Failure(`cannot read ${input}: ${typeof code === 'string' ? code : String(error)}`);
+    });
+  }
+  try {
+    return JSON.parse(text) as OpenApiDocument;
+  } catch (error) {
+    throw new Failure(`${input} is not JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/** Writes one line to stderr and returns the exit code 1. */
+function fail(message: string): number {
+  process.stderr.write(`tarol-codegen: ${message.replace(/\s*\n\s*/g, ' ')}\n`);
+  return 1;
 }
 
 /**
