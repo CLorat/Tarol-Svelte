@@ -665,3 +665,126 @@ export function screen(): void {
     expect(typecheck({ 'artflow.ts': code, 'usage.ts': usage })).toEqual([]);
   });
 });
+
+// Round 3: the nullable objects Tatalu flattened in waves 1–3, in the shapes Tarol-Net writes them (a nullable reference
+// `T?` and, since TN-31, `Option<T>` of a component as `oneOf [{type: "null"}, {$ref}]` in place; the older component
+// `type: ["null", "object"]`), in an input, a view, a list row and an Option<T> of a change.
+describe('nullable objects in inputs, views, rows and Option<T> (TS-38 = TS-9; Tatalu FB-F06.6-1, FB-F05.8-2, FB-F06.5-1)', () => {
+  const nul: Schema = { type: 'null' };
+  const ref = (name: string): Schema => ({ $ref: `#/components/schemas/${name}` });
+  const schemas: Record<string, Schema> = {
+    AppointmentDetails: {
+      type: 'object',
+      required: ['title'],
+      properties: { title: { type: 'string', minLength: 1 }, place: { type: ['string', 'null'] } },
+    },
+    // FB-F06.6-1: `AppointmentDetails? Details` in a row (null = "not shared with you")
+    AppointmentRow: {
+      type: 'object',
+      required: ['id', 'details'],
+      properties: { id: { type: 'string', format: 'uuid' }, details: { oneOf: [nul, ref('AppointmentDetails')] } },
+    },
+    AuthorizationInput: {
+      type: 'object',
+      required: ['from', 'doctor'],
+      properties: { from: { type: 'string', format: 'date' }, doctor: { type: 'string', minLength: 1 } },
+    },
+    // FB-F05.8-2: `AuthorizationInput?` in an input, `MedicationAuthorization?` in a view
+    CreateMedicationOrder: {
+      type: 'object',
+      required: ['name', 'authorization'],
+      properties: {
+        name: { type: 'string', minLength: 1 },
+        authorization: { oneOf: [nul, ref('AuthorizationInput')] },
+      },
+    },
+    MedicationOrderView: {
+      type: 'object',
+      required: ['name', 'authorization', 'details'],
+      properties: {
+        name: { type: 'string' },
+        authorization: { anyOf: [nul, ref('AuthorizationInput')] },
+        // the older component shape of Option<Record>
+        details: { $ref: '#/components/schemas/OptionOfMedicationDetails' },
+      },
+    },
+    OptionOfMedicationDetails: {
+      type: ['null', 'object'],
+      required: ['dose'],
+      properties: { dose: { type: 'string' } },
+    },
+    ExternalSubstituteInput: {
+      type: 'object',
+      required: ['name'],
+      properties: { name: { type: 'string', minLength: 1 }, contact: { type: 'string' } },
+    },
+    // FB-F06.5-1: `Option<ExternalSubstituteInput>` in a change (TN-31: oneOf in place)
+    AssignSubstitute: {
+      type: 'object',
+      required: ['external'],
+      properties: { external: { oneOf: [nul, ref('ExternalSubstituteInput')] } },
+    },
+  };
+  const listOp = {
+    get: {
+      operationId: 'AppointmentSearch',
+      'x-tarol-kind': 'list',
+      responses: {
+        '200': {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['items'],
+                properties: {
+                  items: { type: 'array', items: ref('AppointmentRow') },
+                  next: { type: ['string', 'null'] },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  const viewOp = {
+    get: {
+      operationId: 'MedicationOrderView',
+      'x-tarol-kind': 'view',
+      responses: { '200': { content: { 'application/json': { schema: ref('MedicationOrderView') } } } },
+    },
+  };
+  const code = generate(
+    doc(schemas, {
+      '/appointments': listOp,
+      '/medication-orders/x': viewOp,
+      '/medication-orders': post('CreateMedicationOrder', 'CreateMedicationOrder'),
+      '/absences/substitute': post('AssignSubstitute', 'AssignSubstitute'),
+    }),
+  );
+
+  it('generates T | null for each, and no Required rule on the nullable member', () => {
+    expect(code).toContain('  details: AppointmentDetails | null;');
+    expect(code).toContain('  authorization: AuthorizationInput | null;');
+    expect(code).toContain('  details: OptionOfMedicationDetails;');
+    expect(code).toMatch(/export type OptionOfMedicationDetails = \{\n {2}dose: string;\n\} \| null;/);
+    expect(code).toContain('  external: ExternalSubstituteInput | null;');
+    const r = /export const rules = (\{[\s\S]*?\}) as const;/.exec(code)?.[1] ?? '';
+    expect(r).not.toContain('"authorization": [');
+    expect(r).not.toContain('"external": [');
+    expect(r).toContain('"external.name": [');
+  });
+
+  it('compiles, and an app can send null and read null without a placeholder', () => {
+    const usage = `
+import { tarol, type AppointmentRow, type MedicationOrderView } from './api.js';
+import { createClient } from '@clorat/tarol-client';
+const api = tarol(createClient({ baseUrl: '/api' }));
+void api.changes.createMedicationOrder({ name: 'Ibuprofen', authorization: null });
+void api.changes.assignSubstitute({ external: null });
+export const title = (row: AppointmentRow): string => row.details?.title ?? 'hidden';
+export const dose = (v: MedicationOrderView): string => (v.details?.dose ?? '') + (v.authorization?.doctor ?? '');
+`;
+    expect(typecheck({ 'api.ts': code, 'usage.ts': usage })).toEqual([]);
+  });
+});
