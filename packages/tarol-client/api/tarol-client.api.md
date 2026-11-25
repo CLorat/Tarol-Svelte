@@ -17,6 +17,7 @@ export interface ChangeEvent {
 // @public
 export interface ChangeOptions {
     readonly expectedVersion?: number;
+    readonly headers?: Readonly<Record<string, string>>;
     readonly key?: string;
     readonly signal?: AbortSignal;
 }

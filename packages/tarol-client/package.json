@@ -22,6 +22,14 @@
       "types": "./dist/push.d.ts",
       "default": "./dist/push.js"
     },
+    "./outbox": {
+      "types": "./dist/outbox.d.ts",
+      "default": "./dist/outbox.js"
+    },
+    "./idb": {
+      "types": "./dist/idb.d.ts",
+      "default": "./dist/idb.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -35,8 +43,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "size": "size-limit",
     "check:package": "publint --strict && attw --pack . --profile esm-only",
-    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.push.json",
-    "api:check": "api-extractor run && api-extractor run -c api-extractor.push.json"
+    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.push.json && api-extractor run --local -c api-extractor.outbox.json && api-extractor run --local -c api-extractor.idb.json",
+    "api:check": "api-extractor run && api-extractor run -c api-extractor.push.json && api-extractor run -c api-extractor.outbox.json && api-extractor run -c api-extractor.idb.json"
   },
   "size-limit": [
     {
@@ -65,6 +73,48 @@
       "path": "dist/push.js",
       "import": "{ connectPush }",
       "limit": "2 kB",
+      "brotli": true
+    },
+    {
+      "name": "outbox",
+      "path": "dist/outbox.js",
+      "import": "{ createOutbox }",
+      "limit": "1.5 kB",
+      "gzip": true
+    },
+    {
+      "name": "outbox (brotli)",
+      "path": "dist/outbox.js",
+      "import": "{ createOutbox }",
+      "limit": "1.5 kB",
+      "brotli": true
+    },
+    {
+      "name": "offline reads",
+      "path": "dist/outbox.js",
+      "import": "{ offlineReads }",
+      "limit": "1 kB",
+      "gzip": true
+    },
+    {
+      "name": "offline reads (brotli)",
+      "path": "dist/outbox.js",
+      "import": "{ offlineReads }",
+      "limit": "1 kB",
+      "brotli": true
+    },
+    {
+      "name": "idb",
+      "path": "dist/idb.js",
+      "import": "{ idbStore }",
+      "limit": "0.5 kB",
+      "gzip": true
+    },
+    {
+      "name": "idb (brotli)",
+      "path": "dist/idb.js",
+      "import": "{ idbStore }",
+      "limit": "0.5 kB",
       "brotli": true
     }
   ]

@@ -2,9 +2,10 @@
 name: tarol-client
 description: >-
   Use when calling a Tarol backend from TypeScript without Svelte: changes (POST/PUT/PATCH/DELETE), views and keyset
-  lists, field errors, version conflicts, idempotent retries, or the UI push hub /tarol/messages. Covers createClient,
-  change, read, Result/Violation, Id, Page, TokenProvider and connectPush from @clorat/tarol-client. Do not hand-write
-  fetch calls, parse problem JSON yourself, or install @microsoft/signalr.
+  lists, field errors, version conflicts, idempotent retries, the UI push hub /tarol/messages, or offline capture and
+  reads. Covers createClient, change, read, Result/Violation, Id, Page, TokenProvider, connectPush, createOutbox,
+  offlineReads and idbStore from @clorat/tarol-client. Do not hand-write fetch calls, parse problem JSON yourself, build
+  your own IndexedDB queue, or install @microsoft/signalr.
 ---
 
 # Tarol client (`@clorat/tarol-client`)
@@ -31,6 +32,16 @@ description: >-
    `Hub.Error`; translate the `code`, never show or parse `message`. A forwarded message carries `revision` (the stream
    version after the event, a view's version) and `position` (its `Tarol-Position`); pass that as
    `read(path, { readAfter: m.position })` to read a list after the event, not before it (a projection lags the push).
+
+8. Offline (a PWA): `createOutbox({ client, store: idbStore('app'), scope: () => `${tenant}/${subject}` })` from
+   `@clorat/tarol-client/outbox` (`idbStore` from `@clorat/tarol-client/idb`). `await outbox.submit(request, { label })`
+   stores first, then sends; `state` is `sent` (with `result`), `queued` (offline, 5xx, 429: sent later with the **same**
+   key) or `failed` (a refusal; `outbox.failed[i].violation` keeps `code`, `detail` and `extensions.reasons` until
+   `retry(key)` or `discard(key)`). A 401 sets `needsSignIn`: `flush()` after the sign-in. `subscribe(listener)` for a UI.
+   Offline reads: `const reads = offlineReads({ store, scope, keep: (path) => path.startsWith('/children/') })`,
+   `createClient({ fetch: reads.fetch })`; show `reads.savedAt(path)` ("as of …"). At sign-out call `outbox.clear()` and
+   `reads.clear()`: the stores are unencrypted. `captureHeaders: true` (+ `device`) sends `Tarol-Device` and
+   `Tarol-Captured-At`; leave it off until the backend accepts them (Tarol-Net TN-60).
 
 ## Example
 
@@ -68,6 +79,8 @@ if (first.ok && first.value.next) await tarol.read<Page<AuctionRow>>('/auctions'
 | `onRefused: (topic, reason) => reason.startsWith('Forbidden')` | the hub's text is wrapped by SignalR and the code is `Hub.Forbidden`: compare `refusal.code` |
 | a topic without a dot (`bids`) | `TypeError: not a topic` before anything is sent |
 | `{@html}` of server text | never do it; render text |
+| `outbox.submit` without a signed-in scope | throws `outbox.submit needs a scope`; nothing is stored for nobody |
+| `captureHeaders: true` against a backend before TN-60 | a cross-origin preflight refuses the headers: every attempt is `Network` |
 
 ## Notes
 
