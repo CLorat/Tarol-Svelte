@@ -179,6 +179,40 @@ describe('changeForm', () => {
     expect(form.errors).toEqual({ 'address.street': ['Required'] });
   });
 
+  it('reports a client rule error of a path no field shows as formError instead of blocking silently (TS-12)', async () => {
+    interface AddGuardian {
+      name: string;
+      guardian?: string;
+    }
+    const f = fakeClient(() => okResult(1));
+    const add = (input: AddGuardian): ChangeRequest => ({ method: 'POST', path: '/guardians', body: input });
+    const guardianRules: Rules = {
+      name: [{ rule: 'NotEmpty', code: 'Required' }],
+      guardian: [{ rule: 'Required', code: 'Required' }],
+    };
+    const start: AddGuardian = { name: 'Ida' };
+    const form = root(() => changeForm(add, start, { client: f.client, rules: guardianRules }));
+    expect(await form.submit()).toBeUndefined();
+    expect(f.changes).toHaveLength(0);
+    expect(form.formError).toEqual({
+      kind: 'invalid',
+      errors: { guardian: ['Required'] },
+      details: { guardian: [{ code: 'Required' }] },
+    });
+    // a field that shows the path (FormField registers it) takes the error, even before it has a value
+    const off = form.register('guardian');
+    expect(await form.submit()).toBeUndefined();
+    expect(form.formError).toBeUndefined();
+    expect(form.error('guardian')).toBe('Required');
+    off();
+    // a field bound to a value that exists (a hand-written input over '') keeps its error, as before
+    form.values.guardian = '';
+    form.values.name = '';
+    expect(await form.submit()).toBeUndefined();
+    expect(form.formError).toBeUndefined();
+    expect(form.error('name')).toBe('Required');
+  });
+
   it('reads values at backend paths', () => {
     expect(at(initial, 'lines[1].quantity')).toBe(2);
     expect(at(initial, 'lines[5].quantity')).toBeUndefined();

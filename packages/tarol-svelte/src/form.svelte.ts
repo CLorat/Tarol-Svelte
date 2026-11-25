@@ -43,6 +43,11 @@ export interface Form<I, T> {
   detail(path: string): string | undefined;
   /** The request id of the last failed submit (`Tarol-Request-Id`), for "Reference: …" next to the error. */
   readonly requestId: string | undefined;
+  /**
+   * Declares that a field shows this path (`FormField` calls it); returns the undo. A client rule's error on a path no
+   * field shows and the input has no value for (an id the change builder adds) goes to {@link Form.formError} on submit.
+   */
+  register(path: string): () => void;
   /** Marks a field as touched and checks it against its rules (call it on blur). */
   touch(path: string): void;
   /** Checks every field with rules; `true` when none fails. */
@@ -122,6 +127,8 @@ export function changeForm<I extends object, T = undefined>(
   let formError = $state<Violation | undefined>();
   let pending = $state(false);
   let sent: { body: string; key: string } | undefined;
+  // how many fields show each path (not reactive: read on submit only)
+  const shown: Record<string, number> = {};
   // option `from` (SV-26): the server values the input is based on, and the version they had
   const from = options.from;
   const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
@@ -188,6 +195,12 @@ export function changeForm<I extends object, T = undefined>(
     get requestId() {
       return requestId;
     },
+    register(path) {
+      shown[path] = (shown[path] ?? 0) + 1;
+      return () => {
+        shown[path] = (shown[path] ?? 1) - 1;
+      };
+    },
     touch: checkPath,
     validate() {
       for (const p of rulePaths(values, rules)) checkPath(p);
@@ -195,7 +208,19 @@ export function changeForm<I extends object, T = undefined>(
     },
     async submit() {
       if (pending) return undefined;
-      if (!this.validate()) return undefined;
+      if (!this.validate()) {
+        // no field shows these paths (TS-12): say so instead of blocking the submit silently
+        const orphans = Object.entries(clientErrors).filter(([p]) => !shown[p] && at(values, p) === undefined);
+        formError =
+          orphans.length > 0
+            ? {
+                kind: 'invalid',
+                errors: Object.fromEntries(orphans),
+                details: Object.fromEntries(orphans.map(([p, codes]) => [p, codes.map((code) => ({ code }))])),
+              }
+            : undefined;
+        return undefined;
+      }
       // the input as JSON is what the backend gets and fingerprints with the key, so compare and send exactly that
       const body = JSON.stringify(values);
       const input = JSON.parse(body) as I;

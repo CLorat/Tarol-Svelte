@@ -8,6 +8,7 @@ import type { Result } from '@clorat/tarol-client';
 import BidForm from './fixtures/BidForm.svelte';
 import ConsentForm from './fixtures/ConsentForm.svelte';
 import Failing from './fixtures/Failing.svelte';
+import OrphanForm from './fixtures/OrphanForm.svelte';
 import Table from './fixtures/Table.svelte';
 
 let app: ReturnType<typeof mount> | undefined;
@@ -192,6 +193,27 @@ describe('ChangeForm and FormField', () => {
     await terms.click(); // touched on the change: the server's error is gone at once
     await expect.element(terms).not.toHaveAttribute('aria-invalid');
     expect(consents().terms).toBe(true);
+  });
+
+  it('announces a client rule error of a path no field shows, instead of blocking silently (TS-12)', async () => {
+    let sent = 0;
+    const f = fakeClient(0, () => {
+      sent += 1;
+      return { ok: true, value: undefined, status: 201, replayed: false, stale: false, notModified: false };
+    });
+    render(OrphanForm, { client: f.client, guardian: true });
+    await page.getByRole('button', { name: 'Add' }).click();
+    await expect.element(page.getByRole('alert')).toHaveTextContent('This field is required.');
+    expect(sent).toBe(0);
+    await expectAccessible();
+  });
+
+  it('keeps the error of a path a FormField shows on that field, even before it has a value (TS-12)', async () => {
+    render(OrphanForm, { client: fakeClient(0).client, guardian: false });
+    await page.getByRole('button', { name: 'Add' }).click();
+    // the field that shows `note` has its own error, although the input has no value for it yet
+    await expect.element(page.getByLabelText('Note')).toHaveAttribute('aria-invalid', 'true');
+    expect(page.getByRole('alert').query()).toBeNull();
   });
 
   it('shows the bounds of the server detail on a field without client rules', async () => {

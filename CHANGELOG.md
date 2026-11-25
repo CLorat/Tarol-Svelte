@@ -17,6 +17,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Fixed
 
+* `@clorat/tarol-svelte`: a submit blocked by a client rule on a path no field shows (and the input has no value for) reports it in `formError` instead of returning silently (TS-12). New: `Form.register(path)`; `@clorat/tarol-components` `FormField` calls it.
 * `@clorat/tarol-codegen`: nullable members are `T | null` (TS-9): `oneOf`/`anyOf` of `{type: "null"}` and one schema (a `$ref`, an enum, a record), and a type array with `"null"`, also `["null", "object"]` with members (`Option<Record>`, now a type alias `{…} | null` instead of an interface); no `Required` rule for a nullable member. `@clorat/tarol-svelte`: `changeForm` skips the rules of a nullable record's members while it is `null`.
 * `@clorat/tarol-design`: `Field` (and so `TextField`, `NumberField`, `DateField`, `FormField`) puts a (no-break) space between
   the label and the required marker: "Vorname (Pflichtfeld)", not "Vorname(Pflichtfeld)" (TS-5).

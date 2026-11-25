@@ -32,6 +32,7 @@ export interface Form<I, T> {
     readonly errors: Readonly<Record<string, readonly string[]>>;
     readonly formError: Violation | undefined;
     readonly pending: boolean;
+    register(path: string): () => void;
     readonly requestId: string | undefined;
     reset(values?: I): void;
     resolve(path: string, choice: 'mine' | 'theirs'): void;

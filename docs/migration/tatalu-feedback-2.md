@@ -72,3 +72,25 @@ result gain their type argument. `packages/tarol-admin/src/lib/api.ts` and `apps
 
 Public API: `ChangeRequest` gains a type parameter (default `undefined`), `TarolClient.change`'s parameter is
 `ChangeRequest<T>`, `changeForm`'s `change` returns `ChangeRequest<T>` (API reports regenerated).
+
+## TS-12: a form that blocks silently
+
+**Finding confirmed.** A client rule for a path no field shows (Tatalu: `guardian: Required`, the id is added by the change
+builder, not typed in) failed `validate()`, so `submit()` returned `undefined`: no field error visible, no `formError`.
+
+**Change.** `@clorat/tarol-svelte` `Form.register(path): () => void` declares that a field shows the path (returns the
+undo; counted, so two fields of one path work). On a blocked submit, the client errors on paths that are **not registered
+and have no value in the input** (`at(values, path) === undefined`) become `formError: { kind: 'invalid', errors, details }`
+(details `[{ code }]`), which `ChangeForm` announces above the button; otherwise `formError` is cleared. Both conditions,
+so that a hand-written field over an existing member (`''`, `null`) keeps its error on the field only, and a `FormField`
+over a member without an initial value keeps it too. `@clorat/tarol-components` `FormField` registers its path in an
+`$effect`.
+
+Not changed: `form.values` stays a getter (the second half of FB-F02.2-5); replace all values with `form.reset(next)`.
+
+**[verified]** `tarol-svelte/test/form.svelte.test.ts` "reports a client rule error of a path no field shows as formError …"
+(red before: `formError` was `undefined`); `tarol-components/test/components.test.ts` "announces a client rule error of a
+path no field shows …" and "keeps the error of a path a FormField shows on that field …" (red before the `FormField` change:
+the alert appeared for `note`), axe 0 violations.
+
+Public API: `Form.register` (API report regenerated). Behaviour change: such a submit sets `formError` (it stayed as it was).

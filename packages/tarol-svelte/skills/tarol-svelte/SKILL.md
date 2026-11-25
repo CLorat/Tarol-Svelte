@@ -29,7 +29,8 @@ description: >-
 6. Forms: `changeForm(change, initial, { rules, expectedVersion })`. Bind inputs to `form.values.x`, call
    `form.touch('x')` on blur, show `form.error('x')`. Server 400 errors land on the field with the same path
    (`lines[1].quantity`), with the server's detail in `form.detail(path)` (`3..60`); errors no field shows, and coded
-   errors (403, 409), are in `form.formError`, the request id in `form.requestId` (`query(…).requestId` for reads). A retry of an
+   errors (403, 409), are in `form.formError` (so is a client rule's error on a path no field shows and the input has no
+   value for; a hand-written field over an absent member calls `form.register(path)` in an `$effect`), the request id in `form.requestId` (`query(…).requestId` for reads). A retry of an
    unchanged input reuses the idempotency key, so double clicks and network retries are safe. A generated creation's
    request carries its result (`ChangeRequest<Created>`): `(await form.submit())?.value.id` is typed, no `changeForm<I, Created>`.
 6a. Optimistic changes are opt-in per form: `changeForm(bid, initial, { expectedVersion: () => view.version,

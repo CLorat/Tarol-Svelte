@@ -42,6 +42,8 @@
   );
   // the field binds a text or a number input, so the server's value is a string, a number or null
   const conflict = $derived(form.conflict(path));
+  // this field shows `path`: a client error on it is not the form's (TS-12)
+  $effect(() => form.register(path));
 </script>
 
 <!-- one block: the form's gap stays between fields, and the empty live region below the field takes no room -->
