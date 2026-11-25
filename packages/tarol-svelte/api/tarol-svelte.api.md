@@ -44,6 +44,7 @@ export interface Form<I, T> {
 
 // @public
 export interface FormOptions<T, I = unknown> {
+    readonly awaitRevalidation?: boolean;
     readonly client?: TarolClient;
     readonly expectedVersion?: () => number | undefined;
     readonly from?: () => Partial<I> | undefined;

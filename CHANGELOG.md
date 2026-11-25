@@ -6,6 +6,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Added
 
+* `@clorat/tarol-svelte`: `changeForm(…, { awaitRevalidation: true })` resolves a successful submit after the queries its change revalidates have read again, so "Saved" shows the saved view and a next submit starts from it (TS-14).
 * `@clorat/tarol-svelte`: `Query.ready` and `List.ready`, `true` once the first value (page) arrived and never back to `false`; `loading` stays `true` on every revalidation (TS-13).
 * `@clorat/tarol-codegen`: `x-tarol-constants` (backend constants as `export const <Name> = <literal> as const`) and a check of `x-tarol-types` (schemas no operation references; an unknown name is a `GenerateError`) (TS-10). New: `OpenApiDocument["x-tarol-types"]`, `OpenApiDocument["x-tarol-constants"]`, `ConstantValue`.
 * `@clorat/tarol-components`: `AppShell navPosition="bottom"` (TS-1, from Tatalu): below 40rem the navigation is a one-row,

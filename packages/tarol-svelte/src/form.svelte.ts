@@ -1,5 +1,6 @@
 import type { ChangeRequest, FieldError, Result, TarolClient, Violation } from '@clorat/tarol-client';
 import { getTarol } from './context.js';
+import { revalidated } from './query.svelte.js';
 import { check, rulePath, type Rules } from './rules.js';
 
 /** Settings of {@link changeForm}. */
@@ -8,6 +9,11 @@ export interface FormOptions<T, I = unknown> {
   readonly rules?: Rules;
   /** Extra settings of the change, e.g. the expected version of the aggregate being edited. */
   readonly expectedVersion?: () => number | undefined;
+  /**
+   * Resolve a successful submit (and call `onSuccess`) only after the queries this change revalidates have read again, so
+   * the screen shows the saved state before "Saved" and a next submit starts from it (TS-14). Default `false`.
+   */
+  readonly awaitRevalidation?: boolean;
   /** Called after a successful submit. */
   readonly onSuccess?: (result: Extract<Result<T>, { ok: true }>) => void;
   /** The client, when not taken from {@link setTarol}'s context. */
@@ -241,6 +247,7 @@ export function changeForm<I extends object, T = undefined>(
           sent = undefined;
           serverErrors = {};
           serverDetails = {};
+          if (options.awaitRevalidation === true) await revalidated(client);
           options.onSuccess?.(r);
         } else if (r.violation.kind === 'invalid') {
           serverErrors = r.violation.errors;

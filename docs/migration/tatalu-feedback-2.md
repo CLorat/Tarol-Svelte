@@ -110,3 +110,23 @@ not ready; a revalidation has `loading: true, ready: true`; a failed revalidatio
 page arrived …" (red before: `ready` was `undefined`).
 
 Public API: `Query.ready`, `List.ready` (API report regenerated).
+
+## TS-14: own change, stale view
+
+**Finding confirmed.** After a successful change every `query` of the client revalidates (`onChange`), but nobody waits for
+it: `submit()` resolved when the PUT was answered, Tatalu showed "Gespeichert." and a second save right after it took the
+old view value as "last seen" (`previous`), a false conflict with its own change (`Devices.svelte`, `audit.spec.ts`).
+
+**Change.** `FormOptions.awaitRevalidation` (default `false`, unchanged timing): with `true`, a successful submit awaits
+the reads that this client's own changes started (the revalidations `onChange` triggers, tracked per client in a
+`WeakMap` created on first use, nothing at import) before it calls `onSuccess` and resolves; `pending` stays `true` until
+then. A failed revalidation does not fail the submit (it is the query's `violation`). The new aggregate version is
+`Ok.version` (from the change's `ETag`), as before.
+
+Not done: making it the default. It changes when every form's submit resolves (the button stays busy for one more read),
+so it is the owner's decision (proposed in the PR).
+
+**[verified]** `tarol-svelte/test/form.svelte.test.ts` "with awaitRevalidation, resolves a successful submit after the
+queries its change revalidates" (red before: the submit resolved while the view still read `15:00`).
+
+Public API: `FormOptions.awaitRevalidation` (API report regenerated).

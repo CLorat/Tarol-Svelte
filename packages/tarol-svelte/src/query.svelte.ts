@@ -122,6 +122,26 @@ interface Source<T> {
   known?(revision: number): boolean;
 }
 
+// the revalidations each client's own changes started, so a form can wait for them (TS-14); created on first use
+let revalidations: WeakMap<TarolClient, Promise<void>[]> | undefined;
+
+function revalidating(client: TarolClient, read: Promise<void>): void {
+  const map = (revalidations ??= new WeakMap());
+  const reads = map.get(client) ?? [];
+  map.set(client, reads);
+  reads.push(read);
+  const done = (): void => {
+    void reads.splice(reads.indexOf(read), 1);
+  };
+  read.then(done, done);
+}
+
+/** Resolves when the reads that this client's own changes started so far have answered (or failed). */
+export function revalidated(client: TarolClient): Promise<void> {
+  const reads = revalidations?.get(client) ?? [];
+  return Promise.allSettled([...reads]).then(() => undefined);
+}
+
 /** Runs the shared loop: re-read on argument change, focus, own change and push topic; abort the previous read. */
 function track<T>(
   tarol: { readonly client: TarolClient; readonly push?: PushClient },
@@ -183,7 +203,12 @@ function track<T>(
 
   $effect(() => {
     const offs: (() => void)[] = [];
-    if (options.revalidateOnChange !== false) offs.push(tarol.client.onChange(() => void run()));
+    if (options.revalidateOnChange !== false)
+      offs.push(
+        tarol.client.onChange(() => {
+          revalidating(tarol.client, run());
+        }),
+      );
     if (options.revalidateOnFocus !== false) {
       const onFocus = (): void => void run();
       const onVisible = (): void => {

@@ -1,7 +1,7 @@
 import type { ChangeRequest } from '@clorat/tarol-client';
 import { flushSync } from 'svelte';
 import { afterEach, describe, expect, it } from 'vitest';
-import { at, changeForm, type Rules } from '../src/index.js';
+import { at, changeForm, query, type Rules } from '../src/index.js';
 import { fakeClient, okResult } from './fakes.js';
 
 let cleanup: (() => void) | undefined;
@@ -211,6 +211,35 @@ describe('changeForm', () => {
     expect(await form.submit()).toBeUndefined();
     expect(form.formError).toBeUndefined();
     expect(form.error('name')).toBe('Required');
+  });
+
+  it('with awaitRevalidation, resolves a successful submit after the queries its change revalidates (TS-14)', async () => {
+    let value = '15:00';
+    let release: (() => void) | undefined;
+    const f = fakeClient(async () => {
+      if (value !== '15:00') await new Promise<void>((r) => (release = r)); // the revalidation after the save is slow
+      return okResult(value);
+    });
+    f.answerChanges((r) => {
+      value = (r.body as { value: string }).value;
+      return okResult(undefined);
+    });
+    const save = (input: { value: string }): ChangeRequest => ({ method: 'PUT', path: '/probe', body: input });
+    const { view, form } = root(() => ({
+      view: query<string>(() => ({ path: '/probe' }), { tarol: { client: f.client } }),
+      form: changeForm(save, { value: '15:30' }, { client: f.client, awaitRevalidation: true }),
+    }));
+    await expect.poll(() => view.value).toBe('15:00');
+    let done = false;
+    const submitted = form.submit().then((r) => ((done = true), r));
+    await expect.poll(() => release).toBeDefined();
+    await Promise.resolve();
+    expect(done).toBe(false); // "Saved" would show the old view: a second save would send the old value as last seen
+    expect(form.pending).toBe(true);
+    release?.();
+    expect((await submitted)?.ok).toBe(true);
+    expect(view.value).toBe('15:30');
+    expect(form.pending).toBe(false);
   });
 
   it('reads values at backend paths', () => {
