@@ -171,7 +171,8 @@ describe('changeForm', () => {
       'address.street': [{ rule: 'Required', code: 'Required' }],
       'address.city': [{ rule: 'Required', code: 'Required' }],
     };
-    const form = root(() => changeForm(register, { name: 'Mia', address: null }, { client: f.client, rules: nested }));
+    const start: Child = { name: 'Mia', address: null };
+    const form = root(() => changeForm(register, start, { client: f.client, rules: nested }));
     expect((await form.submit())?.ok).toBe(true);
     form.values.address = { street: '', city: 'Kiel' };
     expect(await form.submit()).toBeUndefined();
