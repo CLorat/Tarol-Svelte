@@ -20,6 +20,8 @@ description: >-
    through `getMessages()` (`t('Range', { min: 1, max: 10 })`). German: `<ThemeRoot locale="de" messages={de}>`; app
    catalogues first: `messages={[myDe, de]}`. A backend code `X.Y` that no catalogue has falls back to the generic `Y`
    (`ChildDayCare.NotFound` → `NotFound`, `Plot.AlreadyExists` → `AlreadyExists`): add `X.Y` only for a better text.
+   Build an app catalogue from its areas with `defineMessages(contractsDe, planningDe, …)`: it throws on a key that two
+   parts give different texts. Never `{ ...contractsDe, … }`: a spread overwrites silently.
 4. Fields: `TextField`/`NumberField` take `label`, `hint`, `error` (already translated) and `required`; label, hint and
    error are wired with `aria-describedby`/`aria-invalid`. `NumberField` binds `number | null`. `Checkbox` (a consent,
    a yes/no setting) takes the same props and binds `checked`; the box comes before its label. `Select` (native select,

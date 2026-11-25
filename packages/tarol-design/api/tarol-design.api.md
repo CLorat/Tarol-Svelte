@@ -53,6 +53,9 @@ export type DateField = ReturnType<typeof DateField>;
 // @public
 export const de: Catalogue;
 
+// @public
+export function defineMessages(...parts: Catalogue[]): Catalogue;
+
 // Warning: (ae-forgotten-export) The symbol "Props_5" needs to be exported by the entry point index.d.ts
 //
 // @public

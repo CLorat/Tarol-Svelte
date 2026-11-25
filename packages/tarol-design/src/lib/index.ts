@@ -19,7 +19,7 @@ export { default as Toaster } from './Toaster.svelte';
 export { default as VisuallyHidden } from './VisuallyHidden.svelte';
 export { de } from './de.js';
 export { en } from './en.js';
-export { getMessages, setMessages, translator } from './messages.js';
+export { defineMessages, getMessages, setMessages, translator } from './messages.js';
 export type { Catalogue, MessageParams, Translate } from './messages.js';
 export { createToasts, getToasts, setToasts } from './toasts.svelte.js';
 export type { Toast, Toasts } from './toasts.svelte.js';

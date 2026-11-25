@@ -179,3 +179,20 @@ Public API: `Select`, `RadioGroup`, `SelectProps`, `RadioGroupProps` (design API
 gains `time`; `FormField`'s `type` gains `select`, `radio`, `date`, `time` and the props `options`, `placeholder` (in
 `dist/FormField.svelte.d.ts`; the report lists `FormField` as `Component<Props>`). Size **[verified]** (`pnpm size`):
 tarol-design "everything" 11.31 kB of 15 kB; tarol-components "ChangeForm + FormField" 2.3 kB of 3 kB.
+
+## TS-17: merging catalogues
+
+**Finding confirmed.** Tatalu builds its German catalogue from one part per area. Equal keys of two areas with different
+texts were found only by `svelte-check` (TS1117, duplicate key in one literal), and a part spread into the catalogue
+(`...vertraegeDe`) was overwritten silently by a later key (`occupancy.title`). tarol-design had no merge helper.
+
+**Change.** `@clorat/tarol-design` `defineMessages(...parts: Catalogue[]): Catalogue` merges the parts in order and throws
+`Error('defineMessages: "occupancy.title" has two texts: "…" (part 1) and "…" (part 3)')` for a key that two parts give
+different texts; the same text twice is accepted (shared weekday names). It throws when the module is loaded, so the app's
+first test fails. A spread inside an object literal is resolved by JavaScript before any function sees it, so it cannot be
+detected at run time: the skill says to pass each part as an argument (a merged result can be a part again).
+
+**[verified]** `tarol-design/test/messages.test.ts` "merges catalogue parts and refuses a key with two different texts …"
+(red before: no export `defineMessages`).
+
+Public API: `defineMessages` (API report regenerated).
