@@ -12,7 +12,17 @@ export interface OpenApiDocument {
   readonly components?: { readonly schemas?: Readonly<Record<string, Schema>> };
   /** The UI push topics (Tarol-Net BC-25): topic name → its contract version, stream, payload schema and rules. */
   readonly 'x-tarol-topics'?: Readonly<Record<string, TopicDescription>>;
+  /**
+   * Names of `components.schemas` entries the app needs although no operation references them (an enum a domain
+   * function returns); every schema is exported, this list makes the backend's intent checkable (Tarol-Net round 2).
+   */
+  readonly 'x-tarol-types'?: readonly string[];
+  /** Backend constants: PascalCase name → JSON literal (string, number, boolean or a list of them) (Tarol-Net round 2). */
+  readonly 'x-tarol-constants'?: Readonly<Record<string, ConstantValue>>;
 }
+
+/** The value of one `x-tarol-constants` entry. */
+export type ConstantValue = string | number | boolean | readonly (string | number | boolean)[];
 
 /** One topic of `x-tarol-topics`. */
 export interface TopicDescription {
@@ -224,15 +234,23 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
   /** The TypeScript type of a schema; every construct is either translated exactly or an error. */
   const ts = (s: Schema, pointer: string): string => {
     if (s.$ref) return ref(s.$ref, pointer);
-    if (s.oneOf ?? s.anyOf)
-      return (s.oneOf ?? s.anyOf ?? [])
-        .map((x, i) => ts(x, `${pointer}/${s.oneOf ? 'oneOf' : 'anyOf'}/${String(i)}`))
-        .join(' | ');
+    if (s.oneOf ?? s.anyOf) {
+      // `T?` and `Option<T>` of a reference, an enum or a record: `oneOf: [{type: "null"}, T]` (TS-9); null goes last
+      const parts = (s.oneOf ?? s.anyOf ?? []).map((x, i) =>
+        ts(x, `${pointer}/${s.oneOf ? 'oneOf' : 'anyOf'}/${String(i)}`),
+      );
+      const others = parts.filter((x) => x !== 'null');
+      return [...others, ...(others.length < parts.length ? ['null'] : [])].join(' | ');
+    }
     if (s.allOf) return s.allOf.map((x, i) => wrap(ts(x, `${pointer}/allOf/${String(i)}`))).join(' & ');
-    if (s.enum) return s.enum.map((v) => JSON.stringify(v)).join(' | ');
     const t = types(s);
     const nullable = s.nullable === true || t.includes('null');
+    if (s.enum) {
+      const values = s.enum.map((v) => JSON.stringify(v));
+      return nullable && !s.enum.includes(null) ? `${values.join(' | ')} | null` : values.join(' | ');
+    }
     const rest = t.filter((x) => x !== 'null');
+    if (rest.length === 0 && t.includes('null')) return 'null';
     let out: string;
     // ASP.NET's Web defaults read numbers from strings too and say so as ["number","string"] + pattern; the backend
     // always writes numbers, and the client always sends numbers.
@@ -347,15 +365,44 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     '',
   );
 
+  // the extra types the backend wants exported (TS-10): every schema is, so only check that they exist
+  const extraTypes: unknown = document['x-tarol-types'];
+  if (extraTypes !== undefined) {
+    if (!Array.isArray(extraTypes)) throw new GenerateError('#/x-tarol-types', 'not a list of schema names');
+    for (const [i, n] of (extraTypes as unknown[]).entries())
+      if (typeof n !== 'string' || !(n in schemas))
+        throw new GenerateError(`#/x-tarol-types/${String(i)}`, `${String(n)} is not in components.schemas`);
+  }
+  // the backend's constants (TS-10): one exported literal each
+  const constants = Object.entries((document['x-tarol-constants'] ?? {}) as Readonly<Record<string, unknown>>).sort(
+    ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0),
+  );
+  if (constants.length) {
+    const literal = (v: unknown): boolean =>
+      typeof v === 'string' || typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v));
+    const lines = constants.map(([name, v]) => {
+      const pointer = `#/x-tarol-constants/${pointerPart(name)}`;
+      if (!/^[A-Z][A-Za-z0-9]*$/.test(name)) throw new GenerateError(pointer, 'not a PascalCase identifier');
+      if (!literal(v) && !(Array.isArray(v) && v.every(literal)))
+        throw new GenerateError(pointer, 'not a string, number, boolean or a list of them');
+      const text = Array.isArray(v) ? `[${v.map((x) => JSON.stringify(x)).join(', ')}]` : JSON.stringify(v);
+      return `export const ${name} = ${text} as const;`;
+    });
+    out.push('/** Backend constants (x-tarol-constants). */', ...lines, '');
+  }
+
   // schema types (not the problem schema: the client maps problems to its Violation)
   for (const [name, s] of Object.entries(schemas)) {
     if (name === problemSchema) continue;
     const pointer = `#/components/schemas/${pointerPart(name)}`;
     const t =
       s.properties || (types(s).includes('object') && !s.additionalProperties) ? objectType(s, pointer, '') : null;
-    const decl = !t?.startsWith('{')
-      ? `export type ${pascal(name)} = ${t ?? ts(s, pointer)};`
-      : `export interface ${pascal(name)} ${t}`;
+    // `Option<Record>` is `type: ["null", "object"]` with the record's members: a type alias `{…} | null` (TS-9)
+    const orNull = t !== null && (s.nullable === true || types(s).includes('null')) ? ' | null' : '';
+    const decl =
+      !t?.startsWith('{') || orNull
+        ? `export type ${pascal(name)} = ${t ?? ts(s, pointer)}${orNull};`
+        : `export interface ${pascal(name)} ${t}`;
     out.push(doc(s.description) + decl, '');
   }
 
@@ -482,7 +529,7 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
       out.push(`/** The input of ${o.type}. */`, `export type ${o.type}Input = ${inputType};`, '');
       if (queryParams.length) usesQs = true;
       requests.push(
-        `${summary}  ${o.name}: (${input}: ${o.type}Input): ChangeRequest => ({ method: '${o.method}', path: ${queryParams.length ? `${url} + qs(${queryField.slice(', query: '.length)})` : url}${bodyField} }),`,
+        `${summary}  ${o.name}: (${input}: ${o.type}Input): ChangeRequest${typeArg} => ({ method: '${o.method}', path: ${queryParams.length ? `${url} + qs(${queryField.slice(', query: '.length)})` : url}${bodyField} }),`,
       );
       changes.push(
         `${doc(o.op.summary ?? o.op.description ?? `${o.method} ${o.path}`, '      ')}      ${o.name}: (input: ${o.type}Input, options?: ChangeOptions): Promise<Result<${result}${codeArg}>> =>\n        client.change${typeArg}(requests.${o.name}(input), options)${code ? ` as Promise<Result<${result}${codeArg}>>` : ''},`,
@@ -567,6 +614,14 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     text = text.replace('const enc = encodeURIComponent;', `${idTypes.join('\n')}\n\nconst enc = encodeURIComponent;`);
   return text;
 
+  /** The other member of `oneOf`/`anyOf` `[{type: "null"}, T]`, or the schema itself. */
+  function nonNull(s: Schema): Schema {
+    const list = s.oneOf ?? s.anyOf;
+    if (list?.length !== 2) return s;
+    const other = list.filter((x) => !(types(x).length === 1 && types(x)[0] === 'null' && !x.$ref));
+    return other.length === 1 && other[0] ? other[0] : s;
+  }
+
   function resolve(s: Schema): Schema {
     if (!s.$ref) return s;
     const name = /^#\/components\/schemas\/(.+)$/.exec(s.$ref)?.[1] ?? '';
@@ -610,14 +665,13 @@ export function generate(document: OpenApiDocument, options: GenerateOptions = {
     const required = new Set(s.required ?? []);
     for (const [name, raw] of Object.entries(s.properties ?? {})) {
       const path = prefix + name;
-      const p = resolve(raw);
-      const list = fieldRules(
-        p,
-        required.has(name) && !types(p).includes('null'),
-        `${pointer}/properties/${pointerPart(name)}`,
-      );
+      // a nullable member (`oneOf: [{type: "null"}, T]`) has T's rules, and no Required: null is a valid value (TS-9)
+      const inner = nonNull(raw);
+      const p = raw['x-tarol-rules'] ? raw : resolve(inner);
+      const nullable = inner !== raw || isNullable(p) || isNullable(resolve(inner));
+      const list = fieldRules(p, required.has(name) && !nullable, `${pointer}/properties/${pointerPart(name)}`);
       if (list.length) out.push(`    ${JSON.stringify(path)}: [${list.map((r) => JSON.stringify(r)).join(', ')}],`);
-      const refName = raw.$ref ?? p.items?.$ref ?? '';
+      const refName = inner.$ref ?? p.items?.$ref ?? '';
       if (refName && seen.has(refName)) continue; // a recursive schema: one level is enough for the fields of a form
       const next = new Set(seen).add(refName);
       if (p.properties) out.push(...rulesOf(p, `${pointer}/properties/${pointerPart(name)}`, `${path}.`, next));
@@ -693,6 +747,10 @@ function fieldRules(s: Schema, required: boolean, pointer: string): GeneratedRul
     out.push({ rule: 'Pattern', code: 'Pattern', pattern: s.pattern });
   if (isString && s.format === 'email') out.push({ rule: 'Email', code: 'Email' });
   return out;
+}
+
+function isNullable(s: Schema): boolean {
+  return s.nullable === true || types(s).includes('null');
 }
 
 function compiles(pattern: string, flags = ''): boolean {

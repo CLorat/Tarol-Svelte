@@ -247,7 +247,7 @@ export const requests = {
   /** GET /auctions/{auction} */
   auctionView: ({ auction }: { readonly auction: AuctionId }): ReadRequest => ({ path: `/auctions/${enc(auction)}`, subject: auction, stream: "Auction" }),
   /** POST /auctions */
-  createAuction: (body: CreateAuctionInput): ChangeRequest => ({ method: 'POST', path: `/auctions`, body }),
+  createAuction: (body: CreateAuctionInput): ChangeRequest<Created> => ({ method: 'POST', path: `/auctions`, body }),
   /** GET /my/auctions */
   myAuctions: (query: MyAuctionsQuery = {}): ReadRequest => ({ path: `/my/auctions`, query }),
   /** POST /auctions/{auction}/bids */
@@ -261,7 +261,7 @@ export const requests = {
   /** DELETE /tarol/admin/projections/{name}/{version} */
   tarolAdminDropProjection: ({ name, version }: TarolAdminDropProjectionInput): ChangeRequest => ({ method: 'DELETE', path: `/tarol/admin/projections/${enc(name)}/${enc(String(version))}` }),
   /** POST /tarol/admin/subjects/{id}/erase */
-  tarolAdminEraseSubject: ({ id, tenant }: TarolAdminEraseSubjectInput): ChangeRequest => ({ method: 'POST', path: `/tarol/admin/subjects/${enc(id)}/erase` + qs({ tenant }) }),
+  tarolAdminEraseSubject: ({ id, tenant }: TarolAdminEraseSubjectInput): ChangeRequest<ErasureView> => ({ method: 'POST', path: `/tarol/admin/subjects/${enc(id)}/erase` + qs({ tenant }) }),
   /** GET /tarol/admin/subjects/{id}/export */
   tarolAdminExportSubject: ({ id }: { readonly id: string }, query: TarolAdminExportSubjectQuery): ReadRequest => ({ path: `/tarol/admin/subjects/${enc(id)}/export`, query }),
   /** GET /tarol/admin/dead */
@@ -271,7 +271,7 @@ export const requests = {
   /** POST /tarol/admin/dead/{kind}/{id}/redrive */
   tarolAdminRedrive: ({ kind, id }: TarolAdminRedriveInput): ChangeRequest => ({ method: 'POST', path: `/tarol/admin/dead/${enc(kind)}/${enc(String(id))}/redrive` }),
   /** POST /tarol/admin/dead/{kind}/redrive */
-  tarolAdminRedriveMany: ({ kind, tenant, name, max }: TarolAdminRedriveManyInput): ChangeRequest => ({ method: 'POST', path: `/tarol/admin/dead/${enc(kind)}/redrive` + qs({ tenant, name, max }) }),
+  tarolAdminRedriveMany: ({ kind, tenant, name, max }: TarolAdminRedriveManyInput): ChangeRequest<RedriveView> => ({ method: 'POST', path: `/tarol/admin/dead/${enc(kind)}/redrive` + qs({ tenant, name, max }) }),
   /** GET /search */
   tarolSearch: (query: TarolSearchQuery): ReadRequest => ({ path: `/search`, query }),
 };

@@ -439,6 +439,126 @@
       }
     ]
   },
+  "RadioGroup": {
+    "package": "@clorat/tarol-design",
+    "name": "RadioGroup",
+    "doc": "A choice from a few options as radio buttons in a `fieldset` (a `radiogroup` named by its legend): the arrow keys move the choice (native), every option is a target of at least 44 px, hint and error are wired with `aria-describedby`.",
+    "extends": "",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible legend (the app's own, translated text)."
+      },
+      {
+        "name": "options",
+        "type": "readonly { readonly value: V; readonly label: string; readonly hint?: string | undefined }[]",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The choices: the backend's value, its text and an optional line of help."
+      },
+      {
+        "name": "value",
+        "type": "V | null",
+        "optional": true,
+        "bindable": true,
+        "default": "null",
+        "doc": "The chosen value, or `null` (bindable)."
+      },
+      {
+        "name": "hint",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Help text under the legend."
+      },
+      {
+        "name": "error",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The error text, already translated."
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Marks the group as required."
+      }
+    ]
+  },
+  "Select": {
+    "package": "@clorat/tarol-design",
+    "name": "Select",
+    "doc": "A labelled choice from a list on the native `select` (keyboard, type-ahead and the phone's picker come from the browser). The value is the chosen option's `value`, or `null` while the placeholder is shown.",
+    "extends": "Omit<HTMLSelectAttributes, 'value'>",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The visible label."
+      },
+      {
+        "name": "options",
+        "type": "readonly { readonly value: V; readonly label: string }[]",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The choices: the backend's value (e.g. an enum member) and its text (the app's own, translated)."
+      },
+      {
+        "name": "value",
+        "type": "V | null",
+        "optional": true,
+        "bindable": true,
+        "default": "null",
+        "doc": "The chosen value, or `null` (bindable)."
+      },
+      {
+        "name": "placeholder",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "''",
+        "doc": "The text of the empty first entry (e.g. \"Choose …\"); it cannot be chosen again."
+      },
+      {
+        "name": "hint",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Help text under the select."
+      },
+      {
+        "name": "error",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The error text, already translated."
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "optional": true,
+        "bindable": false,
+        "default": "false",
+        "doc": "Marks the field as required."
+      }
+    ]
+  },
   "Skeleton": {
     "package": "@clorat/tarol-design",
     "name": "Skeleton",
@@ -490,7 +610,7 @@
   "Tabs": {
     "package": "@clorat/tarol-design",
     "name": "Tabs",
-    "doc": "Tabs (WAI-ARIA APG tabs, automatic activation): one tab stop for the tab list; Arrow Left/Right move and select (wrapping), Home/End go to the first and last tab. Only the selected panel is rendered; it is focusable so its content can be reached with Tab.",
+    "doc": "Tabs (WAI-ARIA APG tabs, automatic activation): one tab stop for the tab list; Arrow Left/Right move and select (wrapping), Home/End go to the first and last tab. Only the selected panel is rendered; it is focusable so its content can be reached with Tab. More tabs than fit scroll inside the tab list; the focused tab scrolls into view.",
     "extends": "",
     "props": [
       {
@@ -538,7 +658,7 @@
   "TextField": {
     "package": "@clorat/tarol-design",
     "name": "TextField",
-    "doc": "A labelled text input (`type` text, email, password, search, tel, url).",
+    "doc": "A labelled text input (`type` text, email, password, search, tel, url, or time: `HH:mm`, the browser's picker).",
     "extends": "Omit<HTMLInputAttributes, 'value' | 'type'>",
     "props": [
       {
@@ -559,7 +679,7 @@
       },
       {
         "name": "type",
-        "type": "'text' | 'email' | 'password' | 'search' | 'tel' | 'url'",
+        "type": "'text' | 'email' | 'password' | 'search' | 'tel' | 'url' | 'time'",
         "optional": true,
         "bindable": false,
         "default": "'text'",
@@ -656,7 +776,7 @@
   "AppShell": {
     "package": "@clorat/tarol-components",
     "name": "AppShell",
-    "doc": "The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark. Below 40rem the navigation is stacked above the page (`navPosition=\"side\"`, the default) or a one-row bar at the bottom of the viewport, in thumb reach (`navPosition=\"bottom\"`: its list items share the row, each target at least 44 px high).",
+    "doc": "The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark. Below 40rem the navigation is stacked above the page (`navPosition=\"side\"`, the default) or a one-row bar at the bottom of the viewport, in thumb reach (`navPosition=\"bottom\"`: its list items share the row, each target at least 44 px high; the shell is then exactly the viewport's height and the page scrolls in the main landmark, never under the bar).",
     "extends": "",
     "props": [
       {
@@ -812,6 +932,14 @@
         "doc": "Render only visible rows when there are more than this. Default 200 (docs/migration/design.md)."
       },
       {
+        "name": "filter",
+        "type": "((row: T) => boolean)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Shows only the rows it keeps (a client-side narrowing the backend's equality filters cannot express, e.g. a time range); paging, `hasMore` and `more()` stay the list's. Default: every row."
+      },
+      {
         "name": "rowHeight",
         "type": "number",
         "optional": true,
@@ -917,11 +1045,27 @@
       },
       {
         "name": "type",
-        "type": "'text' | 'number' | 'email' | 'password' | 'tel' | 'url' | 'checkbox'",
+        "type": "| 'text' | 'number' | 'email' | 'password' | 'tel' | 'url' | 'checkbox' | 'select' | 'radio' | 'date' | 'time'",
         "optional": true,
         "bindable": false,
         "default": "'text'",
-        "doc": "`text` (default), `number`, `email`, `password`, `tel`, `url`, or `checkbox` (a boolean member, e.g. a consent)."
+        "doc": "`text` (default), `number`, `email`, `password`, `tel`, `url`; `checkbox` (a boolean member, e.g. a consent); `select` or `radio` (one of `options`, `null` until chosen); `date` (`YYYY-MM-DD`) or `time` (`HH:mm`), `null` when empty. A select, a radio group and a box are touched on the change."
+      },
+      {
+        "name": "options",
+        "type": "readonly { readonly value: string; readonly label: string; readonly hint?: string | undefined }[]",
+        "optional": true,
+        "bindable": false,
+        "default": "[]",
+        "doc": "The choices of a `select` or `radio` field: the backend's value (an enum member) and its text."
+      },
+      {
+        "name": "placeholder",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The empty first entry of a `select` (e.g. \"Choose …\")."
       },
       {
         "name": "rules",

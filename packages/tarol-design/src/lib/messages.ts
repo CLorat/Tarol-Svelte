@@ -36,6 +36,28 @@ export function translator(...catalogues: Catalogue[]): Translate {
   };
 }
 
+/**
+ * Merges the catalogue parts of an app's areas into one. A key that two parts give **different** texts is an error (thrown
+ * at once, so the app's first test finds it); the same text twice is fine. Pass each part as an argument: a part spread
+ * into an object literal (`{ ...contractsDe, … }`) overwrites silently before this function sees it.
+ */
+export function defineMessages(...parts: Catalogue[]): Catalogue {
+  const out: Record<string, string> = {};
+  const from: Record<string, number> = {};
+  parts.forEach((part, i) => {
+    for (const [k, text] of Object.entries(part)) {
+      const before = out[k];
+      if (before !== undefined && before !== text)
+        throw new Error(
+          `defineMessages: ${JSON.stringify(k)} has two texts: ${JSON.stringify(before)} (part ${String((from[k] ?? 0) + 1)}) and ${JSON.stringify(text)} (part ${String(i + 1)})`,
+        );
+      out[k] = text;
+      from[k] ??= i;
+    }
+  });
+  return out;
+}
+
 function find(catalogues: Catalogue[], id: string): string | undefined {
   for (const c of catalogues) if (id in c) return c[id];
   return undefined;

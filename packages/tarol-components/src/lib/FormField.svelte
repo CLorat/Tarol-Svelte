@@ -6,7 +6,16 @@
   value" / "Keep mine"; the input and the focus stay as they are.
 -->
 <script lang="ts">
-  import { Button, Checkbox, getMessages, NumberField, TextField } from '@clorat/tarol-design';
+  import {
+    Button,
+    Checkbox,
+    DateField,
+    getMessages,
+    NumberField,
+    RadioGroup,
+    Select,
+    TextField,
+  } from '@clorat/tarol-design';
   import { at, type Form, type Rule } from '@clorat/tarol-svelte';
   import { setAt } from './paths.js';
 
@@ -17,8 +26,29 @@
     path: string;
     /** The visible label (the app's own text). */
     label: string;
-    /** `text` (default), `number`, `email`, `password`, `tel`, `url`, or `checkbox` (a boolean member, e.g. a consent). */
-    type?: 'text' | 'number' | 'email' | 'password' | 'tel' | 'url' | 'checkbox' | undefined;
+    /**
+     * `text` (default), `number`, `email`, `password`, `tel`, `url`; `checkbox` (a boolean member, e.g. a consent);
+     * `select` or `radio` (one of `options`, `null` until chosen); `date` (`YYYY-MM-DD`) or `time` (`HH:mm`), `null` when
+     * empty. A select, a radio group and a box are touched on the change.
+     */
+    type?:
+      | 'text'
+      | 'number'
+      | 'email'
+      | 'password'
+      | 'tel'
+      | 'url'
+      | 'checkbox'
+      | 'select'
+      | 'radio'
+      | 'date'
+      | 'time'
+      | undefined;
+    /** The choices of a `select` or `radio` field: the backend's value (an enum member) and its text. */
+    options?:
+      readonly { readonly value: string; readonly label: string; readonly hint?: string | undefined }[] | undefined;
+    /** The empty first entry of a `select` (e.g. "Choose …"). */
+    placeholder?: string | undefined;
     /** The field's rules: their bounds fill the message (`Enter between {min} and {max} characters.`). */
     rules?: readonly Rule[] | undefined;
     /** Help text. */
@@ -27,7 +57,17 @@
     required?: boolean | undefined;
   }
 
-  let { form, path, label, type = 'text', rules = [], hint, required = false }: Props = $props();
+  let {
+    form,
+    path,
+    label,
+    type = 'text',
+    rules = [],
+    hint,
+    required = false,
+    options = [],
+    placeholder,
+  }: Props = $props();
   const t = getMessages();
   const code = $derived(form.error(path));
   const rule = $derived(rules.find((r) => r.code === code));
@@ -42,6 +82,8 @@
   );
   // the field binds a text or a number input, so the server's value is a string, a number or null
   const conflict = $derived(form.conflict(path));
+  // this field shows `path`: a client error on it is not the form's (TS-12)
+  $effect(() => form.register(path));
 </script>
 
 <!-- one block: the form's gap stays between fields, and the empty live region below the field takes no room -->
@@ -60,6 +102,40 @@
           form.touch(path);
         }
       }
+    />
+  {:else if type === 'select' || type === 'radio'}
+    {@const Choice = type === 'select' ? Select : RadioGroup}
+    <Choice
+      {label}
+      {hint}
+      {error}
+      {required}
+      {options}
+      {placeholder}
+      bind:value={
+        () => (at(form.values, path) as string | null | undefined) ?? null,
+        (v) => {
+          setAt(form.values, path, v);
+          form.touch(path);
+        }
+      }
+    />
+  {:else if type === 'date'}
+    <DateField
+      {label}
+      {hint}
+      {error}
+      {required}
+      bind:value={
+        () => (at(form.values, path) as string | null | undefined) ?? null,
+        (v) => {
+          setAt(form.values, path, v);
+          if (code !== undefined) form.touch(path);
+        }
+      }
+      onblur={() => {
+        form.touch(path);
+      }}
     />
   {:else if type === 'number'}
     <NumberField
@@ -90,7 +166,8 @@
       bind:value={
         () => (at(form.values, path) as string | null) ?? '',
         (v) => {
-          setAt(form.values, path, v);
+          // an empty time is null, as an empty date (the backend's TimeOnly? / Option<TimeOnly>)
+          setAt(form.values, path, type === 'time' && v === '' ? null : v);
           // once a field shows an error it is checked while typing, so the error is gone before the blur: otherwise the
           // blur of a click on submit removes the message, the button moves up and the click is lost
           if (code !== undefined) form.touch(path);

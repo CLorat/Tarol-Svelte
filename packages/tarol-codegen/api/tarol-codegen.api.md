@@ -5,6 +5,9 @@
 ```ts
 
 // @public
+export type ConstantValue = string | number | boolean | readonly (string | number | boolean)[];
+
+// @public
 export const emailRule = "one @ with 1 to 64 characters before it; a domain of at most 253 characters that contains a dot, does not start or end with one and has no empty label; no white space; at most 254 characters";
 
 // @public
@@ -35,7 +38,9 @@ export interface GenerateOptions {
 
 // @public
 export interface OpenApiDocument {
+    readonly 'x-tarol-constants'?: Readonly<Record<string, ConstantValue>>;
     readonly 'x-tarol-topics'?: Readonly<Record<string, TopicDescription>>;
+    readonly 'x-tarol-types'?: readonly string[];
     readonly components?: {
         readonly schemas?: Readonly<Record<string, Schema>>;
     };

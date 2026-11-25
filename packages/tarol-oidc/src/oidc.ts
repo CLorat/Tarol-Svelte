@@ -39,7 +39,33 @@ export interface OidcOptions {
   readonly replaceUrl?: ((url: string) => void) | undefined;
   /** Called after logout and after a refresh that failed, e.g. `() => client.invalidate()`. */
   readonly onSignOut?: (() => void) | undefined;
+  /** Whether the browser is online. Default `navigator.onLine` (`true` outside a browser). */
+  readonly online?: (() => boolean) | undefined;
+  /**
+   * Remember the last signed-in person (subject, tenant, roles; never a token) for an app opened offline: `true` keeps it
+   * in `localStorage`, or pass a storage. Forgotten by `logout()`. Default: not remembered.
+   */
+  readonly lastSession?: boolean | OidcStorage | undefined;
 }
+
+/** The person who signed in last on this device ({@link OidcOptions.lastSession}); no tokens. */
+export interface LastSession {
+  /** The `sub` claim. */
+  readonly subject: string;
+  /** The tenant, as the backend derives it. */
+  readonly tenant: string | null;
+  /** The roles granted at that sign-in. */
+  readonly roles: readonly string[];
+  /** When that sign-in (or its last refresh) happened, in milliseconds since the epoch. */
+  readonly signedInAt: number;
+}
+
+/** The outcome of {@link Oidc.restore}. */
+export type RestoreResult =
+  /** The browser is on its way to the authorization server (`prompt=none`). */
+  | 'redirected'
+  /** Offline, or the authorization server cannot be reached: nothing happened (no browser error page). */
+  | 'offline';
 
 /** The signed-in user, from the ID token (philosophy P5: auth is handled once). */
 export interface OidcSession {
@@ -51,8 +77,25 @@ export interface OidcSession {
   readonly roles: readonly string[];
   /** All validated ID token claims. */
   readonly claims: Readonly<Record<string, unknown>>;
+  /** How the user signed in: the ID token's `amr` values (`pwd`, `otp`, `mfa` …), or none when it has no `amr`. */
+  readonly factors: readonly string[];
   /** When the access token expires, in milliseconds since the epoch. */
   readonly expiresAt: number;
+}
+
+/** Settings of one {@link Oidc.login}: a stronger or a fresh sign-in (step-up). */
+export interface LoginOptions {
+  /** The path to return to after the callback. Default: the current path. */
+  readonly returnTo?: string | undefined;
+  /** The authentication context classes to ask for (`acr_values`), most wanted first. */
+  readonly acr?: string | readonly string[] | undefined;
+  /**
+   * The oldest sign-in accepted, in seconds (`max_age`): the server asks again when its session is older, and the
+   * callback refuses an ID token whose `auth_time` is older.
+   */
+  readonly maxAge?: number | undefined;
+  /** `login` asks for the credentials again, `select_account` lets the user choose an account, `consent` asks again. */
+  readonly prompt?: 'login' | 'select_account' | 'consent' | undefined;
 }
 
 /** The outcome of {@link Oidc.handleRedirect}. */
@@ -72,24 +115,40 @@ export interface Oidc {
   session(): OidcSession | null;
   /** Calls `listener` on every sign-in, refresh and sign-out; returns the unsubscribe function. */
   subscribe(listener: (session: OidcSession | null) => void): () => void;
-  /** Redirects to the authorization server; `returnTo` (default: the current path) is restored after the callback. */
-  login(returnTo?: string): Promise<void>;
-  /** After a reload (no tokens in memory): a top-level `prompt=none` redirect that the server's session answers. */
-  restore(returnTo?: string): Promise<void>;
+  /**
+   * Redirects to the authorization server; `returnTo` (default: the current path) is restored after the callback. With
+   * {@link LoginOptions} it asks for a stronger or a fresh sign-in (`acr`, `maxAge`, `prompt`).
+   */
+  login(returnTo?: string | LoginOptions): Promise<void>;
+  /**
+   * After a reload (no tokens in memory): a top-level `prompt=none` redirect that the server's session answers. Offline, or
+   * when the authorization server cannot be reached, it does not navigate and resolves `'offline'`.
+   */
+  restore(returnTo?: string): Promise<RestoreResult>;
+  /** The person who signed in last on this device (option `lastSession`), or `null`; for an app opened offline. */
+  lastSession(): LastSession | null;
   /** Handles the callback URL (default `location.href`); call it once at start-up. */
   handleRedirect(url?: string): Promise<RedirectResult>;
   /** Forgets the tokens and redirects to the end-session endpoint (when the server has one). */
   logout(): Promise<void>;
+  /**
+   * Revokes the refresh token at the server (RFC 7009, "device lost", access withdrawn) and signs out here, without
+   * navigating; forgets the last session. `true` when the server revoked a token, `false` when there was none to revoke
+   * or the server has no revocation endpoint. The server's browser session is not ended: that is {@link Oidc.logout}.
+   */
+  revoke(): Promise<boolean>;
 }
 
 /** The share of the token's lifetime after which it is refreshed ahead of time. */
 const refreshAt = 0.8;
 const pendingKey = 'tarol-oidc:';
+const lastKey = 'tarol-oidc-last';
 
 interface Pending {
   readonly verifier: string;
   readonly nonce: string;
   readonly returnTo: string;
+  readonly maxAge?: number;
 }
 
 interface Tokens {
@@ -123,6 +182,26 @@ export function createOidc(options: OidcOptions): Oidc {
     else location.assign(url);
   };
   const scope = [...new Set(['openid', ...(options.scopes ?? [])])].join(' ');
+  const online = options.online ?? ((): boolean => (globalThis.navigator as Navigator | undefined)?.onLine !== false);
+  const remembered = (): OidcStorage | undefined =>
+    options.lastSession === true ? localStorage : options.lastSession === false ? undefined : options.lastSession;
+  const remember = (session: OidcSession | null): void => {
+    const store = remembered();
+    if (!store) return;
+    try {
+      if (session) {
+        const last: LastSession = {
+          subject: session.subject,
+          tenant: session.tenant,
+          roles: session.roles,
+          signedInAt: Date.now(),
+        };
+        store.setItem(lastKey, JSON.stringify(last));
+      } else store.removeItem(lastKey);
+    } catch {
+      // a blocked storage: nothing remembered
+    }
+  };
   const listeners = new Set<(session: OidcSession | null) => void>();
   let server: Promise<oauth.AuthorizationServer> | undefined;
   let tokens: Tokens | null = null;
@@ -143,6 +222,7 @@ export function createOidc(options: OidcOptions): Oidc {
   const set = (next: Tokens | null): void => {
     clearTimeout(timer);
     tokens = next;
+    if (next) remember(next.session);
     if (next) {
       const lifetime = next.session.expiresAt - Date.now();
       // a network failure here is not the end of the session: the next token() or 401 tries again
@@ -165,6 +245,7 @@ export function createOidc(options: OidcOptions): Oidc {
         tenant: mapped.tenant,
         roles: mapped.roles,
         claims,
+        factors: Array.isArray(claims['amr']) ? claims['amr'].filter((f): f is string => typeof f === 'string') : [],
         expiresAt: Date.now() + (r.expires_in ?? 300) * 1000,
       },
     };
@@ -201,13 +282,18 @@ export function createOidc(options: OidcOptions): Oidc {
     return refreshing;
   };
 
-  const redirect = async (returnTo: string, prompt: string | undefined): Promise<void> => {
+  const redirect = async (returnTo: string, prompt: string | undefined, extra: LoginOptions = {}): Promise<void> => {
     const as = await discover();
     if (!as.authorization_endpoint) throw new Error('tarol-oidc: the server has no authorization_endpoint');
     const verifier = oauth.generateRandomCodeVerifier();
     const state = oauth.generateRandomState();
     const nonce = oauth.generateRandomNonce();
-    const pending: Pending = { verifier, nonce, returnTo };
+    const pending: Pending = {
+      verifier,
+      nonce,
+      returnTo,
+      ...(extra.maxAge === undefined ? {} : { maxAge: extra.maxAge }),
+    };
     storage().setItem(pendingKey + state, JSON.stringify(pending));
     const url = new URL(as.authorization_endpoint);
     const query = url.searchParams;
@@ -220,6 +306,9 @@ export function createOidc(options: OidcOptions): Oidc {
     query.set('code_challenge', await oauth.calculatePKCECodeChallenge(verifier));
     query.set('code_challenge_method', 'S256');
     if (prompt) query.set('prompt', prompt);
+    const acr = typeof extra.acr === 'string' ? [extra.acr] : (extra.acr ?? []);
+    if (acr.length > 0) query.set('acr_values', acr.join(' '));
+    if (extra.maxAge !== undefined) query.set('max_age', String(extra.maxAge));
     navigate(url.href);
   };
 
@@ -252,6 +341,7 @@ export function createOidc(options: OidcOptions): Oidc {
       const result = await oauth.processAuthorizationCodeResponse(as, client, response, {
         expectedNonce: pending.nonce,
         requireIdToken: true,
+        ...(pending.maxAge === undefined ? {} : { maxAge: pending.maxAge }),
       });
       set(await accept(result, null));
       return { kind: 'signed-in', returnTo };
@@ -267,6 +357,7 @@ export function createOidc(options: OidcOptions): Oidc {
   const logout = async (): Promise<void> => {
     const idToken = tokens?.idToken;
     signOut();
+    remember(null); // an explicit sign-out forgets the person too
     const as = await discover();
     if (!as.end_session_endpoint) return;
     const url = new URL(as.end_session_endpoint);
@@ -274,6 +365,21 @@ export function createOidc(options: OidcOptions): Oidc {
     if (idToken) url.searchParams.set('id_token_hint', idToken);
     if (options.postLogoutRedirectUri) url.searchParams.set('post_logout_redirect_uri', options.postLogoutRedirectUri);
     navigate(url.href);
+  };
+
+  const revoke = async (): Promise<boolean> => {
+    const current = tokens;
+    signOut();
+    remember(null);
+    if (!current?.refresh) return false;
+    const as = await discover();
+    if (!as.revocation_endpoint) return false;
+    const response = await oauth.revocationRequest(as, client, auth, current.refresh, {
+      ...http(),
+      additionalParameters: { token_type_hint: 'refresh_token' },
+    });
+    await oauth.processRevocationResponse(response);
+    return true;
   };
 
   const provider: TokenProvider = {
@@ -297,9 +403,37 @@ export function createOidc(options: OidcOptions): Oidc {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    login: (returnTo) => redirect(returnTo ?? here(), undefined),
-    restore: (returnTo) => redirect(returnTo ?? here(), 'none'),
+    login: (to) =>
+      typeof to === 'object' ? redirect(to.returnTo ?? here(), to.prompt, to) : redirect(to ?? here(), undefined),
+    async restore(returnTo) {
+      if (!online()) return 'offline';
+      let as: oauth.AuthorizationServer;
+      try {
+        as = await discover();
+        // the metadata may come from a cache (a service worker): check that the server answers before leaving the page
+        if (as.authorization_endpoint)
+          await (options.fetch ?? globalThis.fetch)(as.authorization_endpoint, {
+            method: 'HEAD',
+            mode: 'no-cors',
+            cache: 'no-store',
+          });
+      } catch (e) {
+        if (e instanceof TypeError) return 'offline'; // fetch failed: no network or no server
+        throw e;
+      }
+      await redirect(returnTo ?? here(), 'none');
+      return 'redirected';
+    },
+    lastSession() {
+      try {
+        const raw = remembered()?.getItem(lastKey);
+        return raw ? (JSON.parse(raw) as LastSession) : null;
+      } catch {
+        return null;
+      }
+    },
     handleRedirect,
     logout,
+    revoke,
   };
 }

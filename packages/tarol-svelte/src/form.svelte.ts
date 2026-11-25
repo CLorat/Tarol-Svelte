@@ -1,6 +1,25 @@
 import type { ChangeRequest, FieldError, Result, TarolClient, Violation } from '@clorat/tarol-client';
 import { getTarol } from './context.js';
+import { revalidated } from './query.svelte.js';
 import { check, rulePath, type Rules } from './rules.js';
+
+/** The part of the Web Storage API a draft needs (`localStorage`, `sessionStorage`, or a test double). */
+export interface DraftStorage {
+  /** The stored text, or `null`. */
+  getItem(key: string): string | null;
+  /** Stores the text. */
+  setItem(key: string, value: string): void;
+  /** Removes the entry. */
+  removeItem(key: string): void;
+}
+
+/** Where {@link FormOptions.draft} keeps the input: stored under `tarol.draft.<key>`. */
+export interface DraftOptions {
+  /** The draft's name, unique per form (add the user or tenant when several people share a device). */
+  readonly key: string;
+  /** Default `localStorage` (taken when the form is created; none outside a browser). */
+  readonly storage?: DraftStorage | undefined;
+}
 
 /** Settings of {@link changeForm}. */
 export interface FormOptions<T, I = unknown> {
@@ -8,6 +27,17 @@ export interface FormOptions<T, I = unknown> {
   readonly rules?: Rules;
   /** Extra settings of the change, e.g. the expected version of the aggregate being edited. */
   readonly expectedVersion?: () => number | undefined;
+  /**
+   * Resolve a successful submit (and call `onSuccess`) only after the queries this change revalidates have read again, so
+   * the screen shows the saved state before "Saved" and a next submit starts from it (TS-14). Default `false`.
+   */
+  readonly awaitRevalidation?: boolean;
+  /**
+   * Keep the input of an unfinished form in browser storage (`localStorage` by default) and restore it when the form is
+   * created again; cleared after a successful submit and by `reset()`. A storage that fails (private window, blocked
+   * storage) means no draft. For creation forms: with `from`, the server's values replace a restored draft.
+   */
+  readonly draft?: string | DraftOptions;
   /** Called after a successful submit. */
   readonly onSuccess?: (result: Extract<Result<T>, { ok: true }>) => void;
   /** The client, when not taken from {@link setTarol}'s context. */
@@ -43,6 +73,11 @@ export interface Form<I, T> {
   detail(path: string): string | undefined;
   /** The request id of the last failed submit (`Tarol-Request-Id`), for "Reference: …" next to the error. */
   readonly requestId: string | undefined;
+  /**
+   * Declares that a field shows this path (`FormField` calls it); returns the undo. A client rule's error on a path no
+   * field shows and the input has no value for (an id the change builder adds) goes to {@link Form.formError} on submit.
+   */
+  register(path: string): () => void;
   /** Marks a field as touched and checks it against its rules (call it on blur). */
   touch(path: string): void;
   /** Checks every field with rules; `true` when none fails. */
@@ -55,6 +90,18 @@ export interface Form<I, T> {
   resolve(path: string, choice: 'mine' | 'theirs'): void;
   /** Puts the values back and clears errors. */
   reset(values?: I): void;
+}
+
+/** A form's values over the input `I`: every top-level member may also be `null` (nothing chosen or typed yet). */
+export type FormInput<I> = { [K in keyof I]: I[K] | null };
+
+/**
+ * Lets the form over a change hold `null` in a required member until the user chooses (an enum, a number):
+ * `changeForm(allowNull(requests.openDayCare), { state: null, … }, { rules })`. Only the type changes: the client rule
+ * `Required` (generated for a required member) stops the submit, and the backend answers `Required` too.
+ */
+export function allowNull<I, T>(change: (input: I) => ChangeRequest<T>): (input: FormInput<I>) => ChangeRequest<T> {
+  return change as (input: FormInput<I>) => ChangeRequest<T>;
 }
 
 /** Reads a value at a JSON path such as `lines[1].quantity` (the backend's camel-cased field paths). */
@@ -74,7 +121,10 @@ function without<V>(record: Readonly<Record<string, V>>, key: string): Record<st
   return copy;
 }
 
-/** Every concrete path in `values` that has rules, e.g. `lines[0].quantity` and `lines[1].quantity` for `lines[].quantity`. */
+/**
+ * Every concrete path in `values` that has rules, e.g. `lines[0].quantity` and `lines[1].quantity` for `lines[].quantity`;
+ * not the members of a record that is `null`.
+ */
 function rulePaths(values: unknown, rules: Rules): string[] {
   const out: string[] = [];
   for (const key of Object.keys(rules)) {
@@ -88,9 +138,16 @@ function rulePaths(values: unknown, rules: Rules): string[] {
           return Array.isArray(arr) ? arr.map((_, j) => `${p}[${String(j)}]`) : [];
         });
     });
-    out.push(...paths);
+    // a member of a record that is null (`Option<Record>`, `T?`) has no value to check: null is valid (TS-9)
+    out.push(...paths.filter((p) => !nullParent(values, p)));
   }
   return out;
+}
+
+function nullParent(values: unknown, path: string): boolean {
+  const parts = path.match(/[^.[\]]+/g) ?? [];
+  for (let i = 1; i < parts.length; i++) if (at(values, parts.slice(0, i).join('.')) === null) return true;
+  return false;
 }
 
 /**
@@ -98,13 +155,36 @@ function rulePaths(values: unknown, rules: Rules): string[] {
  * that). Server field errors land on the field with the same path, with no glue code; client rules use the same codes.
  */
 export function changeForm<I extends object, T = undefined>(
-  change: (input: I) => ChangeRequest,
-  initial: I,
+  change: (input: I) => ChangeRequest<T>,
+  // the input type comes from the change (the generated request), not from a narrower initial literal (`state: null`)
+  initial: NoInfer<I>,
   options: FormOptions<T, I> = {},
 ): Form<I, T> {
   const client = options.client ?? getTarol().client;
   const rules = options.rules ?? {};
   let values = $state(structuredClone(initial));
+  // option `draft` (TS-20): restore, keep while the user types, drop on success and reset
+  const draft = typeof options.draft === 'string' ? { key: options.draft } : options.draft;
+  const store = draft ? (draft.storage ?? (globalThis as { localStorage?: DraftStorage }).localStorage) : undefined;
+  const draftKey = `tarol.draft.${draft?.key ?? ''}`;
+  const attempt = <R>(f: (s: DraftStorage) => R): R | undefined => {
+    try {
+      return store ? f(store) : undefined;
+    } catch {
+      return undefined; // no draft then
+    }
+  };
+  if (store) {
+    const saved = attempt((s) => s.getItem(draftKey));
+    if (saved) Object.assign(values, JSON.parse(saved) as Partial<I>);
+    $effect(() => {
+      const text = JSON.stringify(values);
+      attempt((s) => {
+        if (text === JSON.stringify(initial)) s.removeItem(draftKey);
+        else s.setItem(draftKey, text);
+      });
+    });
+  }
   let clientErrors = $state<Record<string, readonly string[]>>({});
   let serverErrors = $state<Record<string, readonly string[]>>({});
   let serverDetails = $state<Readonly<Record<string, readonly FieldError[]>>>({});
@@ -112,6 +192,8 @@ export function changeForm<I extends object, T = undefined>(
   let formError = $state<Violation | undefined>();
   let pending = $state(false);
   let sent: { body: string; key: string } | undefined;
+  // how many fields show each path (not reactive: read on submit only)
+  const shown: Record<string, number> = {};
   // option `from` (SV-26): the server values the input is based on, and the version they had
   const from = options.from;
   const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
@@ -142,6 +224,13 @@ export function changeForm<I extends object, T = undefined>(
       conflicts = found;
       base = $state.snapshot(next);
       if (!dirty) baseVersion = version;
+    });
+  }
+
+  /** Drops the stored draft; the next change of the values (a new input after a success) starts a new one. */
+  function dropDraft(): void {
+    attempt((s) => {
+      s.removeItem(draftKey);
     });
   }
 
@@ -178,6 +267,12 @@ export function changeForm<I extends object, T = undefined>(
     get requestId() {
       return requestId;
     },
+    register(path) {
+      shown[path] = (shown[path] ?? 0) + 1;
+      return () => {
+        shown[path] = (shown[path] ?? 1) - 1;
+      };
+    },
     touch: checkPath,
     validate() {
       for (const p of rulePaths(values, rules)) checkPath(p);
@@ -185,7 +280,19 @@ export function changeForm<I extends object, T = undefined>(
     },
     async submit() {
       if (pending) return undefined;
-      if (!this.validate()) return undefined;
+      if (!this.validate()) {
+        // no field shows these paths (TS-12): say so instead of blocking the submit silently
+        const orphans = Object.entries(clientErrors).filter(([p]) => !shown[p] && at(values, p) === undefined);
+        formError =
+          orphans.length > 0
+            ? {
+                kind: 'invalid',
+                errors: Object.fromEntries(orphans),
+                details: Object.fromEntries(orphans.map(([p, codes]) => [p, codes.map((code) => ({ code }))])),
+              }
+            : undefined;
+        return undefined;
+      }
       // the input as JSON is what the backend gets and fingerprints with the key, so compare and send exactly that
       const body = JSON.stringify(values);
       const input = JSON.parse(body) as I;
@@ -204,8 +311,10 @@ export function changeForm<I extends object, T = undefined>(
         requestId = r.ok ? undefined : r.requestId;
         if (r.ok) {
           sent = undefined;
+          dropDraft();
           serverErrors = {};
           serverDetails = {};
+          if (options.awaitRevalidation === true) await revalidated(client);
           options.onSuccess?.(r);
         } else if (r.violation.kind === 'invalid') {
           serverErrors = r.violation.errors;
@@ -240,6 +349,7 @@ export function changeForm<I extends object, T = undefined>(
       if (Object.keys(conflicts).length === 0) baseVersion = options.expectedVersion?.();
     },
     reset(next) {
+      dropDraft();
       values = structuredClone(next ?? initial);
       conflicts = {};
       base = undefined; // the next `from` value is taken as it is

@@ -6,6 +6,18 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Added
 
+* `@clorat/tarol-oidc`: `revoke()` revokes the refresh token at the server (RFC 7009) and signs out here without navigating (TS-25).
+* `@clorat/tarol-oidc`: `login({ returnTo, acr, maxAge, prompt })` for a stronger or fresh sign-in, and `session.factors` (the `amr` claim) (TS-24).
+* `@clorat/tarol-oidc`: `restore()` resolves `'offline'` without navigating when offline or the authorization server does not answer; opt-in `lastSession` and `oidc.lastSession()` (subject, tenant, roles; no tokens) for an app opened offline (TS-23).
+* `@clorat/tarol-components`: `DataTable filter` shows only the rows a function keeps; paging stays the list's (TS-22).
+* `@clorat/tarol-svelte`: `allowNull(change)` and `FormInput<I>`: a form whose required members may be `null` until the user chooses; `changeForm`'s `initial` no longer narrows the input type (`NoInfer`) (TS-21).
+* `@clorat/tarol-svelte`: `changeForm(…, { draft })` keeps an unfinished input in browser storage, restores it and clears it on success or `reset()` (TS-20). New: `DraftOptions`, `DraftStorage`.
+* `@clorat/tarol-design`: `defineMessages(...parts)` merges catalogue parts and throws on a key with two different texts (TS-17).
+* `@clorat/tarol-design`: `Select` and `RadioGroup` (generic over the value, `null` until chosen), `TextField type="time"`. `@clorat/tarol-components`: `FormField type="select" | "radio" | "date" | "time"` with `options` and `placeholder` (TS-16).
+* `@clorat/tarol-svelte`: `action(change, options)` for a change without a form: `run(input, { expectedVersion })`, `pending`, `violation`, `code`, `requestId`, `reset()` (TS-15).
+* `@clorat/tarol-svelte`: `changeForm(…, { awaitRevalidation: true })` resolves a successful submit after the queries its change revalidates have read again, so "Saved" shows the saved view and a next submit starts from it (TS-14).
+* `@clorat/tarol-svelte`: `Query.ready` and `List.ready`, `true` once the first value (page) arrived and never back to `false`; `loading` stays `true` on every revalidation (TS-13).
+* `@clorat/tarol-codegen`: `x-tarol-constants` (backend constants as `export const <Name> = <literal> as const`) and a check of `x-tarol-types` (schemas no operation references; an unknown name is a `GenerateError`) (TS-10). New: `OpenApiDocument["x-tarol-types"]`, `OpenApiDocument["x-tarol-constants"]`, `ConstantValue`.
 * `@clorat/tarol-components`: `AppShell navPosition="bottom"` (TS-1, from Tatalu): below 40rem the navigation is a one-row,
   sticky bar at the bottom of the viewport with targets of at least 44 px; above it, the side navigation. The default
   (`side`) is unchanged.
@@ -16,11 +28,16 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Fixed
 
+* `@clorat/tarol-design`: `Tabs` with more tabs than fit scroll inside the tab list instead of widening the page; the focus ring is drawn inside the tab (TS-18).
+* `@clorat/tarol-svelte`: a submit blocked by a client rule on a path no field shows (and the input has no value for) reports it in `formError` instead of returning silently (TS-12). New: `Form.register(path)`; `@clorat/tarol-components` `FormField` calls it.
+* `@clorat/tarol-codegen`: nullable members are `T | null` (TS-9): `oneOf`/`anyOf` of `{type: "null"}` and one schema (a `$ref`, an enum, a record), and a type array with `"null"`, also `["null", "object"]` with members (`Option<Record>`, now a type alias `{…} | null` instead of an interface); no `Required` rule for a nullable member. `@clorat/tarol-svelte`: `changeForm` skips the rules of a nullable record's members while it is `null`.
 * `@clorat/tarol-design`: `Field` (and so `TextField`, `NumberField`, `DateField`, `FormField`) puts a (no-break) space between
   the label and the required marker: "Vorname (Pflichtfeld)", not "Vorname(Pflichtfeld)" (TS-5).
 
 ### Changed
 
+* `@clorat/tarol-components`: `AppShell navPosition="bottom"` on a phone is exactly the viewport's height and the page scrolls in the main landmark between header and bar, so nothing is ever under the bar and the document does not scroll; `main` is a tab stop in that mode (TS-19).
+* `@clorat/tarol-client`: `ChangeRequest<T = undefined>` carries the result type of a change (type only); `TarolClient.change` and `@clorat/tarol-svelte` `changeForm` infer it. `@clorat/tarol-codegen` types the request of a creation as `ChangeRequest<Created<…>>`, so `changeForm(requests.createX, …)` needs no `<I, Created>` (TS-11).
 * `@clorat/tarol-codegen`: an operation without `x-tarol-kind` (an app's plain endpoint) is skipped with a warning and named
   in the header comment instead of failing the generation (TS-3); `--strict` / `GenerateOptions.strict` keeps the error.
   New: `GenerateOptions.strict`, `GenerateOptions.onWarning`.

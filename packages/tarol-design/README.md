@@ -23,7 +23,7 @@ depend on any Tarol package, and nothing applies outside `ThemeRoot` (no global 
 |---|---|
 | `tokens.css` | `--t-color-*`, `--t-space-*` (× density), `--t-radius-*`, `--t-text-*`, `--t-shadow-*`, `--t-duration-*` (0 under reduced motion); scoped to `.t-root` |
 | `ThemeRoot` | `theme` (`auto`/`light`/`dark`), `density`, `locale`, `messages` (catalogues, tried in order), the toast region |
-| Primitives | `Button`, `Field`, `TextField`, `NumberField`, `DateField` (native date input, ISO value), `Checkbox` (a consent: box, label, hint, error), `Dialog` (native `<dialog>`), `Toaster`/`getToasts`, `Spinner`, `Skeleton`, `VisuallyHidden` |
+| Primitives | `Button`, `Field`, `TextField`, `NumberField`, `DateField` (native date input, ISO value), `Checkbox` (a consent: box, label, hint, error), `Select` (native select with a placeholder), `RadioGroup` (fieldset of radio buttons), `Dialog` (native `<dialog>`), `Toaster`/`getToasts`, `Spinner`, `Skeleton`, `VisuallyHidden` |
 | Widgets (WAI-ARIA APG, on `popover`) | `Combobox` (list autocomplete; `filter={false}` + `onquery` for a server search), `MenuButton` (actions), `Tabs` (automatic activation) |
 | Messages | `en` (default), `de`; `getMessages()` → `t(id, params)`; backend codes (`Range`, `Auth.Forbidden` …) are message ids |
 

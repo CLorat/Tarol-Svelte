@@ -20,7 +20,7 @@ const page = await api.queries.auctionSearch({ sort: 'HighestBid' });       // R
 
 // in a component
 const auctions = list(() => requests.auctionSearch({ settled }));
-const form = changeForm(requests.createAuction, { reserve: null }, { rules: rules.createAuction });
+const form = changeForm(allowNull(requests.createAuction), { reserve: null }, { rules: rules.createAuction });
 ```
 
 The backend opts in with `AddOpenApi(o => o.AddTarolEndpoints())` and `MapOpenApi()` (Tarol-Net). What it translates:

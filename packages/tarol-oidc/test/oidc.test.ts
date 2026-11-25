@@ -249,3 +249,113 @@ describe('transport', () => {
     await expect(createOidc({ ...base, allowHttp: true }).login('/')).resolves.toBeUndefined();
   });
 });
+
+describe('an offline PWA (TS-23, Tatalu FB-F17.3-4)', () => {
+  it('restore() does not navigate when the browser is offline, and says so', async () => {
+    const { oidc, navigations } = setup({ online: () => false });
+    expect(await oidc.restore('/today')).toBe('offline');
+    expect(navigations).toHaveLength(0);
+  });
+
+  it('restore() does not navigate when the authorization server cannot be reached', async () => {
+    const server = fakeServer();
+    let reachable = true;
+    const { oidc, navigations } = setup({
+      fetch: (input, init) =>
+        reachable ? server.fetch(input, init) : Promise.reject(new TypeError('Failed to fetch')),
+    });
+    reachable = false; // discovery fails: the page was opened from the cache, the network is gone
+    expect(await oidc.restore('/today')).toBe('offline');
+    reachable = true;
+    expect(await oidc.restore('/today')).toBe('redirected');
+    expect(navigations).toHaveLength(1);
+  });
+
+  it('remembers the last signed-in person without tokens (opt-in) and forgets it on logout', async () => {
+    const remembered = memoryStorage();
+    const { oidc, signIn, server } = setup({ lastSession: remembered });
+    server.claims = { tenant: 't-1', roles: ['carer'] };
+    expect(oidc.lastSession()).toBeNull();
+    await signIn();
+    const last = oidc.lastSession();
+    expect(last).toMatchObject({ subject: 'user-1', tenant: 't-1', roles: ['carer'] });
+    expect(typeof last?.signedInAt).toBe('number');
+    const stored = [...remembered.entries.values()].join();
+    expect(stored).not.toContain('access-');
+    expect(stored).not.toContain('refresh-');
+    // a new page (reload, offline): the tokens are gone, the person is not
+    const again = createOidc({
+      issuer: server.issuer,
+      clientId: 'spa',
+      redirectUri: `${app}/callback`,
+      fetch: server.fetch,
+      storage: memoryStorage(),
+      navigate: () => undefined,
+      lastSession: remembered,
+    });
+    expect(again.session()).toBeNull();
+    expect(again.lastSession()?.subject).toBe('user-1');
+    await oidc.logout();
+    expect(oidc.lastSession()).toBeNull();
+    expect(setup().oidc.lastSession()).toBeNull(); // off by default
+  });
+});
+
+describe('a stronger sign-in (TS-24, Tatalu FB-F13.2-1)', () => {
+  it('login({ acr, maxAge, prompt }) asks for it, and the callback checks auth_time against maxAge', async () => {
+    const { oidc, navigations, server } = setup();
+    await oidc.login({ returnTo: '/finances', acr: ['mfa', 'urn:example:loa:2'], maxAge: 300, prompt: 'login' });
+    const q = new URL(navigations[0] ?? '').searchParams;
+    expect(q.get('acr_values')).toBe('mfa urn:example:loa:2');
+    expect(q.get('max_age')).toBe('300');
+    expect(q.get('prompt')).toBe('login');
+    server.claims = { auth_time: Math.floor(Date.now() / 1000) - 600 }; // signed in 10 minutes ago: too old
+    expect(await oidc.handleRedirect(server.authorize(navigations[0] ?? ''))).toMatchObject({
+      kind: 'signed-out',
+      returnTo: '/finances',
+    });
+    await oidc.login({ returnTo: '/finances', maxAge: 300 });
+    server.claims = { auth_time: Math.floor(Date.now() / 1000), amr: ['pwd', 'otp', 7] };
+    expect(await oidc.handleRedirect(server.authorize(navigations[1] ?? ''))).toEqual({
+      kind: 'signed-in',
+      returnTo: '/finances',
+    });
+  });
+
+  it('gives the factors of the sign-in (amr) on the session', async () => {
+    const { oidc, signIn, server } = setup();
+    server.claims = { amr: ['pwd', 'otp', 7] };
+    await signIn();
+    expect(oidc.session()?.factors).toEqual(['pwd', 'otp']);
+    server.claims = {};
+    await signIn();
+    expect(oidc.session()?.factors).toEqual([]);
+  });
+});
+
+describe('revoke (TS-25, Tatalu FB-F13.2-2)', () => {
+  it('revokes the refresh token at the server, signs out here and does not navigate', async () => {
+    const { oidc, signIn, server, navigations, signOuts } = setup({ lastSession: memoryStorage() });
+    await signIn();
+    const before = navigations.length;
+    const refresh = server.tokenRequests.length;
+    expect(await oidc.revoke()).toBe(true);
+    expect(server.revocations).toHaveLength(1);
+    expect(server.revocations[0]?.get('token')).toMatch(/^refresh-/);
+    expect(server.revocations[0]?.get('token_type_hint')).toBe('refresh_token');
+    expect(oidc.session()).toBeNull();
+    expect(oidc.lastSession()).toBeNull();
+    expect(signOuts).toHaveBeenCalledTimes(1);
+    expect(navigations).toHaveLength(before);
+    expect(server.tokenRequests).toHaveLength(refresh);
+  });
+
+  it('signs out here and reports false when there is nothing to revoke', async () => {
+    const { oidc, signIn, server } = setup();
+    server.issueRefresh = false;
+    await signIn();
+    expect(await oidc.revoke()).toBe(false);
+    expect(server.revocations).toHaveLength(0);
+    expect(oidc.session()).toBeNull();
+  });
+});

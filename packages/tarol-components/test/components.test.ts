@@ -3,11 +3,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import '@clorat/tarol-design/tokens.css';
 import { expectAccessible } from './axe.js';
-import { fakeClient } from './fake.js';
+import { fakeClient, type Row } from './fake.js';
 import type { Result } from '@clorat/tarol-client';
 import BidForm from './fixtures/BidForm.svelte';
+import ChoiceForm from './fixtures/ChoiceForm.svelte';
 import ConsentForm from './fixtures/ConsentForm.svelte';
 import Failing from './fixtures/Failing.svelte';
+import OrphanForm from './fixtures/OrphanForm.svelte';
 import Table from './fixtures/Table.svelte';
 
 let app: ReturnType<typeof mount> | undefined;
@@ -103,6 +105,17 @@ describe('DataTable in QueryState and AppShell', () => {
     await expect.poll(() => document.activeElement?.closest('td')?.textContent.trim()).toBe(String(999 % 7));
   });
 
+  it('shows only the rows a filter keeps, with the grid row count over them (TS-22)', async () => {
+    render(Table, { client: fakeClient(5).client, limit: 5, filter: (r: Row) => r.bids >= 3 });
+    await expect.element(page.getByRole('gridcell', { name: 'Auction 3' })).toBeVisible();
+    expect([...document.querySelectorAll('tbody tr')].map((r) => r.querySelector('td')?.textContent.trim())).toEqual([
+      'Auction 3',
+      'Auction 4',
+    ]);
+    expect(page.getByRole('grid').element().getAttribute('aria-rowcount')).toBe('3');
+    await expectAccessible();
+  });
+
   it('has a skip link to the main landmark and a named navigation', async () => {
     render(Table, { client: fakeClient(1).client });
     await expect.element(page.getByRole('link', { name: 'Skip to content' })).toHaveAttribute('href', '#t-main');
@@ -192,6 +205,57 @@ describe('ChangeForm and FormField', () => {
     await terms.click(); // touched on the change: the server's error is gone at once
     await expect.element(terms).not.toHaveAttribute('aria-invalid');
     expect(consents().terms).toBe(true);
+  });
+
+  it('announces a client rule error of a path no field shows, instead of blocking silently (TS-12)', async () => {
+    let sent = 0;
+    const f = fakeClient(0, () => {
+      sent += 1;
+      return { ok: true, value: undefined, status: 201, replayed: false, stale: false, notModified: false };
+    });
+    render(OrphanForm, { client: f.client, guardian: true });
+    await page.getByRole('button', { name: 'Add' }).click();
+    await expect.element(page.getByRole('alert')).toHaveTextContent('This field is required.');
+    expect(sent).toBe(0);
+    await expectAccessible();
+  });
+
+  it('keeps the error of a path a FormField shows on that field, even before it has a value (TS-12)', async () => {
+    render(OrphanForm, { client: fakeClient(0).client, guardian: false });
+    await page.getByRole('button', { name: 'Add' }).click();
+    // the field that shows `note` has its own error, although the input has no value for it yet
+    await expect.element(page.getByLabelText('Note')).toHaveAttribute('aria-invalid', 'true');
+    expect(page.getByRole('alert').query()).toBeNull();
+  });
+
+  it('select, radio, date and time fields bind by path; a row error lands on its row (TS-16)', async () => {
+    const f = fakeClient(0, () => ({
+      ok: false,
+      status: 400,
+      violation: {
+        kind: 'invalid',
+        errors: { 'windows[1].to': ['Range'], setting: ['Required'] },
+        details: { 'windows[1].to': [{ code: 'Range' }], setting: [{ code: 'Required' }] },
+      },
+    }));
+    render(ChoiceForm, { client: f.client });
+    const read = () => JSON.parse(page.getByTestId('values').element().textContent) as Record<string, unknown>;
+    await userEvent.selectOptions(page.getByRole('combobox', { name: 'State' }), 'Hamburg');
+    await userEvent.fill(page.getByLabelText('Start'), '2026-12-01');
+    await userEvent.fill(page.getByLabelText('Until 1'), '11:30');
+    expect(read()).toMatchObject({ state: 'HH', setting: null, start: '2026-12-01' });
+    expect((read()['windows'] as { to: string }[])[0]?.to).toBe('11:30');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect.element(page.getByLabelText('Until 2')).toHaveAttribute('aria-invalid', 'true');
+    await expect.element(page.getByLabelText('Until 1')).not.toHaveAttribute('aria-invalid');
+    const group = page.getByRole('radiogroup', { name: 'Setting' });
+    await expect.element(group).toHaveAccessibleDescription('This field is required.');
+    await userEvent.click(page.getByRole('radio', { name: 'In rented rooms' }));
+    expect(read()['setting']).toBe('Rooms');
+    await expect.element(group).not.toHaveAttribute('aria-invalid'); // touched on the change
+    await userEvent.clear(page.getByLabelText('Start'));
+    expect(read()['start']).toBeNull();
+    await expectAccessible();
   });
 
   it('shows the bounds of the server detail on a field without client rules', async () => {

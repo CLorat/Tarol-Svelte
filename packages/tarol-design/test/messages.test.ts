@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { de } from '../src/lib/de.js';
 import { en } from '../src/lib/en.js';
-import { translator } from '../src/lib/messages.js';
+import { defineMessages, translator } from '../src/lib/messages.js';
 
 describe('messages', () => {
   it('de and en have the same keys (philosophy P7)', () => {
@@ -32,5 +32,17 @@ describe('messages', () => {
     expect(t('Auction.NotSeller')).toBe('Only the seller can settle.');
     expect(t('Bid.TooLow')).toBe('Etwas ist schiefgelaufen.');
     expect(translator({})('x')).toBe('x');
+  });
+
+  it('merges catalogue parts and refuses a key with two different texts, wherever the parts come from (TS-17)', () => {
+    const planning = { 'occupancy.title': 'Belegungsplanung', 'occupancy.lead': 'Wer kommt wann?' };
+    const contracts = { 'contract.title': 'Verträge', 'weekday.mon': 'Mo' };
+    const attendance = { 'occupancy.title': 'Belegung prüfen', 'weekday.mon': 'Mo' };
+    expect(defineMessages(planning, contracts)).toEqual({ ...planning, ...contracts });
+    expect(defineMessages(contracts, { 'weekday.mon': 'Mo' })).toEqual(contracts); // the same text twice is fine
+    expect(() => defineMessages(planning, contracts, attendance)).toThrow(
+      'defineMessages: "occupancy.title" has two texts: "Belegungsplanung" (part 1) and "Belegung prüfen" (part 3)',
+    );
+    expect(() => defineMessages({ 'weekday.mon': 'Mo' }, { 'weekday.mon': 'Montag' })).toThrow(/weekday\.mon/);
   });
 });

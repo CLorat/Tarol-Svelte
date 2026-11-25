@@ -14,13 +14,51 @@ import type { Topic } from '@clorat/tarol-client/push';
 import { Violation } from '@clorat/tarol-client';
 
 // @public
+export interface Action<I, T> {
+    readonly code: string | undefined;
+    readonly pending: boolean;
+    readonly requestId: string | undefined;
+    reset(): void;
+    run(input: I, options?: RunOptions): Promise<Result<T> | undefined>;
+    readonly violation: Violation | undefined;
+}
+
+// @public
+export function action<I, T = undefined>(change: (input: I) => ChangeRequest<T>, options?: ActionOptions<T>): Action<I, T>;
+
+// @public
+export interface ActionOptions<T> {
+    readonly awaitRevalidation?: boolean;
+    readonly client?: TarolClient;
+    readonly onSuccess?: (result: Extract<Result<T>, {
+        ok: true;
+    }>) => void;
+}
+
+// @public
+export function allowNull<I, T>(change: (input: I) => ChangeRequest<T>): (input: FormInput<I>) => ChangeRequest<T>;
+
+// @public
 export function at(root: unknown, path: string): unknown;
 
 // @public
-export function changeForm<I extends object, T = undefined>(change: (input: I) => ChangeRequest, initial: I, options?: FormOptions<T, I>): Form<I, T>;
+export function changeForm<I extends object, T = undefined>(change: (input: I) => ChangeRequest<T>, initial: NoInfer<I>, options?: FormOptions<T, I>): Form<I, T>;
 
 // @public
 export function check(value: unknown, rules: readonly Rule[]): string | null;
+
+// @public
+export interface DraftOptions {
+    readonly key: string;
+    readonly storage?: DraftStorage | undefined;
+}
+
+// @public
+export interface DraftStorage {
+    getItem(key: string): string | null;
+    removeItem(key: string): void;
+    setItem(key: string, value: string): void;
+}
 
 // @public
 export interface Form<I, T> {
@@ -32,6 +70,7 @@ export interface Form<I, T> {
     readonly errors: Readonly<Record<string, readonly string[]>>;
     readonly formError: Violation | undefined;
     readonly pending: boolean;
+    register(path: string): () => void;
     readonly requestId: string | undefined;
     reset(values?: I): void;
     resolve(path: string, choice: 'mine' | 'theirs'): void;
@@ -42,8 +81,15 @@ export interface Form<I, T> {
 }
 
 // @public
+export type FormInput<I> = {
+    [K in keyof I]: I[K] | null;
+};
+
+// @public
 export interface FormOptions<T, I = unknown> {
+    readonly awaitRevalidation?: boolean;
     readonly client?: TarolClient;
+    readonly draft?: string | DraftOptions;
     readonly expectedVersion?: () => number | undefined;
     readonly from?: () => Partial<I> | undefined;
     readonly onSuccess?: (result: Extract<Result<T>, {
@@ -66,6 +112,7 @@ export interface List<T> {
     readonly loading: boolean;
     more(): Promise<void>;
     patch(update: (items: readonly T[]) => readonly T[]): () => void;
+    readonly ready: boolean;
     refresh(): Promise<void>;
     readonly requestId: string | undefined;
     readonly stale: boolean;
@@ -96,6 +143,7 @@ export interface LiveTopic {
 export interface Query<T> {
     readonly loading: boolean;
     patch(update: (value: T) => T): () => void;
+    readonly ready: boolean;
     refresh(): Promise<void>;
     readonly requestId: string | undefined;
     readonly stale: boolean;
@@ -141,6 +189,11 @@ export function rulePath(path: string): string;
 
 // @public
 export type Rules = Readonly<Record<string, readonly Rule[]>>;
+
+// @public
+export interface RunOptions {
+    readonly expectedVersion?: number | undefined;
+}
 
 // @public
 export function setTarol(client: TarolClient, push?: PushClient): Tarol;

@@ -63,8 +63,13 @@ export interface QueryOptions {
 export interface Query<T> {
   /** The last value read, kept while revalidating. */
   readonly value: T | undefined;
-  /** `true` while a read is in flight. */
+  /**
+   * `true` while a read is in flight, also each revalidation (focus, own change, push): use {@link Query.ready} to wait for
+   * the first value, e.g. to create an edit form once.
+   */
   readonly loading: boolean;
+  /** `true` once a first value arrived; it never turns back to `false` (revalidations keep the value). */
+  readonly ready: boolean;
   /** The violation of the last read, if it failed. */
   readonly violation: Violation | undefined;
   /** The request id of the last failed read (`Tarol-Request-Id`), for "Reference: …" next to the error. */
@@ -91,8 +96,10 @@ export interface List<T> {
   readonly total: number | undefined;
   /** `true` when there is a next page. */
   readonly hasMore: boolean;
-  /** `true` while a page is being read. */
+  /** `true` while a page is being read, also each revalidation. */
   readonly loading: boolean;
+  /** `true` once a first page arrived; it never turns back to `false`. */
+  readonly ready: boolean;
   /** The violation of the last read, if it failed. */
   readonly violation: Violation | undefined;
   /** The request id of the last failed read (`Tarol-Request-Id`), for "Reference: …" next to the error. */
@@ -113,6 +120,26 @@ interface Source<T> {
   readonly stream?: string | undefined;
   /** `true` when the value read already has this stream revision (a pushed message it need not read again for). */
   known?(revision: number): boolean;
+}
+
+// the revalidations each client's own changes started, so a form can wait for them (TS-14); created on first use
+let revalidations: WeakMap<TarolClient, Promise<void>[]> | undefined;
+
+function revalidating(client: TarolClient, read: Promise<void>): void {
+  const map = (revalidations ??= new WeakMap());
+  const reads = map.get(client) ?? [];
+  map.set(client, reads);
+  reads.push(read);
+  const done = (): void => {
+    void reads.splice(reads.indexOf(read), 1);
+  };
+  read.then(done, done);
+}
+
+/** Resolves when the reads that this client's own changes started so far have answered (or failed). */
+export function revalidated(client: TarolClient): Promise<void> {
+  const reads = revalidations?.get(client) ?? [];
+  return Promise.allSettled([...reads]).then(() => undefined);
 }
 
 /** Runs the shared loop: re-read on argument change, focus, own change and push topic; abort the previous read. */
@@ -176,7 +203,12 @@ function track<T>(
 
   $effect(() => {
     const offs: (() => void)[] = [];
-    if (options.revalidateOnChange !== false) offs.push(tarol.client.onChange(() => void run()));
+    if (options.revalidateOnChange !== false)
+      offs.push(
+        tarol.client.onChange(() => {
+          revalidating(tarol.client, run());
+        }),
+      );
     if (options.revalidateOnFocus !== false) {
       const onFocus = (): void => void run();
       const onVisible = (): void => {
@@ -230,6 +262,7 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
   const tarol = options.tarol ?? getTarol();
   let value = $state<T | undefined>();
   let loading = $state(false);
+  let ready = $state(false);
   let violation = $state<Violation | undefined>();
   let requestId = $state<string | undefined>();
   let version = $state<number | undefined>();
@@ -253,6 +286,7 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
     (r) => {
       if (r.ok) {
         value = r.value;
+        ready = true;
         version = r.version;
         stale = r.stale;
         violation = undefined;
@@ -271,6 +305,9 @@ export function query<T>(request: () => ReadRequest | null, options: QueryOption
     },
     get loading() {
       return loading;
+    },
+    get ready() {
+      return ready;
     },
     get violation() {
       return violation;
@@ -308,6 +345,7 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
   let next = $state<string | null>(null);
   let total = $state<number | undefined>();
   let loading = $state(false);
+  let ready = $state(false);
   let violation = $state<Violation | undefined>();
   let requestId = $state<string | undefined>();
   let stale = $state(false);
@@ -330,6 +368,7 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
     (r) => {
       if (r.ok) {
         items = r.value.items;
+        ready = true;
         next = r.value.next;
         total = r.value.total;
         stale = r.stale;
@@ -355,6 +394,9 @@ export function list<T>(request: () => ReadRequest | null, options: QueryOptions
     },
     get loading() {
       return loading;
+    },
+    get ready() {
+      return ready;
     },
     get violation() {
       return violation;

@@ -22,7 +22,7 @@ export interface ChangeOptions {
 }
 
 // @public
-export interface ChangeRequest {
+export interface ChangeRequest<T = undefined> {
     readonly body?: unknown;
     readonly method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     readonly path: string;
@@ -128,7 +128,7 @@ export type Result<T, C extends string = string> = Ok<T> | Failed<C>;
 
 // @public
 export interface TarolClient {
-    change<T = undefined>(request: ChangeRequest, options?: ChangeOptions): Promise<Result<T>>;
+    change<T = undefined>(request: ChangeRequest<T>, options?: ChangeOptions): Promise<Result<T>>;
     invalidate(prefix?: string): void;
     onChange(listener: (event: ChangeEvent) => void): () => void;
     readonly position: string | null;

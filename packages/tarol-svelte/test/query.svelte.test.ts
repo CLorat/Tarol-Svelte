@@ -49,6 +49,31 @@ describe('query', () => {
     expect(f.reads[0]?.options?.signal?.aborted).toBe(true);
   });
 
+  it('is ready once the first value arrived and stays ready while it revalidates (TS-13)', async () => {
+    let release: (() => void) | undefined;
+    let fail = true;
+    const f = fakeClient(async () => {
+      if (release === undefined) await new Promise<void>((r) => (release = r));
+      return fail ? { ok: false, status: 503, violation: { kind: 'error', code: 'Unavailable' } } : okResult(1);
+    });
+    const q = root(() => query<number>(() => ({ path: '/x' }), { tarol: { client: f.client } }));
+    expect(q.ready).toBe(false);
+    await expect.poll(() => release).toBeDefined();
+    release?.();
+    await expect.poll(() => q.loading).toBe(false);
+    expect(q.ready).toBe(false); // a failed first read is no value
+    fail = false;
+    await q.refresh();
+    expect(q.ready).toBe(true);
+    const again = q.refresh();
+    expect(q.loading).toBe(true);
+    expect(q.ready).toBe(true); // a form created "once loaded" must not hang on loading
+    fail = true;
+    await again;
+    await q.refresh();
+    expect(q.ready).toBe(true);
+  });
+
   it('reads nothing while the request is null', () => {
     const f = fakeClient(() => okResult(1));
     root(() => query(() => null, { tarol: { client: f.client } }));
@@ -233,6 +258,16 @@ describe('query', () => {
 });
 
 describe('list', () => {
+  it('is ready once the first page arrived and stays ready while it revalidates (TS-13)', async () => {
+    const f = fakeClient(() => okResult<Page<number>>({ items: [1], next: null }));
+    const l = root(() => list<number>(() => ({ path: '/x' }), { tarol: { client: f.client } }));
+    expect(l.ready).toBe(false);
+    await expect.poll(() => l.ready).toBe(true);
+    const again = l.refresh();
+    expect(l.loading).toBe(true);
+    expect(l.ready).toBe(true);
+    await again;
+  });
   it('reads after the latest position of the messages a coalesced read stands for (BC-23)', async () => {
     let release: (() => void) | undefined;
     const f = fakeClient(

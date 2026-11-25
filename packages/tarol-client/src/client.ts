@@ -30,8 +30,13 @@ export interface ClientOptions {
   readonly sleep?: (ms: number) => Promise<void>;
 }
 
-/** A change (a write) as the generated client describes it. */
-export interface ChangeRequest {
+/**
+ * A change (a write) as the generated client describes it. `T` is the value a successful change returns: the generated
+ * request of a creation is a `ChangeRequest<Created<…>>`, so `client.change(…)` and `changeForm(…)` infer it (type only,
+ * nothing of it exists at run time).
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- T is only carried for inference (TS-11)
+export interface ChangeRequest<T = undefined> {
   /** The HTTP method the backend entry declares. */
   readonly method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   /** The path below the base URL, with route values already encoded. */
@@ -97,7 +102,7 @@ export interface ChangeEvent {
 /** The framework-free Tarol client. */
 export interface TarolClient {
   /** Runs a change: idempotency key, `If-Match`, problem mapping, retry on network failure. */
-  change<T = undefined>(request: ChangeRequest, options?: ChangeOptions): Promise<Result<T>>;
+  change<T = undefined>(request: ChangeRequest<T>, options?: ChangeOptions): Promise<Result<T>>;
   /** Reads a view or a list: ETag revalidation (304 reuses the cache), `Tarol-Read-After` after own changes. */
   read<T>(path: string, options?: ReadOptions): Promise<Result<T>>;
   /** The full URL of a path and query, as the client sends it. */
@@ -222,7 +227,7 @@ export function createClient(options: ClientOptions): TarolClient {
         for (const k of [...cache.keys()]) if (k.slice(k.indexOf(' ') + 1).startsWith(base + prefix)) cache.delete(k);
     },
 
-    async change<T>(request: ChangeRequest, o: ChangeOptions = {}): Promise<Result<T>> {
+    async change<T>(request: ChangeRequest<T>, o: ChangeOptions = {}): Promise<Result<T>> {
       const headers: Record<string, string> = { 'idempotency-key': o.key ?? globalThis.crypto.randomUUID() };
       if (o.expectedVersion !== undefined) headers['if-match'] = `"${String(o.expectedVersion)}"`;
       const init: RequestInit = { method: request.method };

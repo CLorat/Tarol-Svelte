@@ -45,6 +45,7 @@ views and keyset lists, forms bound to backend changes with field errors on the 
 | `changeForm(change, initial, options)` | `values` (bindable), `errors` by backend field path, `formError`, `pending`, `touch()`, `submit()`; `optimistic: (input) => view.patch(…)` shows the result at once and rolls back on a failure (409 included) |
 | `changeForm(…, { from: () => view.value })` | an edit form over a live view: untouched fields follow the server, an edited field keeps the input and reports `conflict(path)` / `resolve(path, 'mine' \| 'theirs')`; the submit sends the version the edit started from (SV-26) |
 | `query(…).patch(update)`, `list(…).patch(update)` | show a value before the backend answers; return the rollback |
+| `action(change, options)` | a change run from a button, without a form: `run(input, { expectedVersion })`, `pending`, `violation`, `code`, `requestId`; same key for a retry of the same input |
 | `live(() => topic)` | the latest push `message` on a topic and a `count` |
 
 Queries revalidate on window focus, after every change this client commits, and on their `live` topics (and after a push

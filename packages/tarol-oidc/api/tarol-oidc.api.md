@@ -10,12 +10,30 @@ import type { TokenProvider } from '@clorat/tarol-client';
 export function createOidc(options: OidcOptions): Oidc;
 
 // @public
+export interface LastSession {
+    readonly roles: readonly string[];
+    readonly signedInAt: number;
+    readonly subject: string;
+    readonly tenant: string | null;
+}
+
+// @public
+export interface LoginOptions {
+    readonly acr?: string | readonly string[] | undefined;
+    readonly maxAge?: number | undefined;
+    readonly prompt?: 'login' | 'select_account' | 'consent' | undefined;
+    readonly returnTo?: string | undefined;
+}
+
+// @public
 export interface Oidc {
     handleRedirect(url?: string): Promise<RedirectResult>;
-    login(returnTo?: string): Promise<void>;
+    lastSession(): LastSession | null;
+    login(returnTo?: string | LoginOptions): Promise<void>;
     logout(): Promise<void>;
     readonly provider: TokenProvider;
-    restore(returnTo?: string): Promise<void>;
+    restore(returnTo?: string): Promise<RestoreResult>;
+    revoke(): Promise<boolean>;
     session(): OidcSession | null;
     subscribe(listener: (session: OidcSession | null) => void): () => void;
 }
@@ -33,7 +51,9 @@ export interface OidcOptions {
     readonly clientId: string;
     readonly fetch?: typeof fetch | undefined;
     readonly issuer: string;
+    readonly lastSession?: boolean | OidcStorage | undefined;
     readonly navigate?: ((url: string) => void) | undefined;
+    readonly online?: (() => boolean) | undefined;
     readonly onSignOut?: (() => void) | undefined;
     readonly postLogoutRedirectUri?: string | undefined;
     readonly redirectUri: string;
@@ -46,6 +66,7 @@ export interface OidcOptions {
 export interface OidcSession {
     readonly claims: Readonly<Record<string, unknown>>;
     readonly expiresAt: number;
+    readonly factors: readonly string[];
     readonly roles: readonly string[];
     readonly subject: string;
     readonly tenant: string | null;
@@ -71,6 +92,13 @@ export type RedirectResult =
     readonly returnTo: string;
     readonly error: string;
 };
+
+// @public
+export type RestoreResult =
+/** The browser is on its way to the authorization server (`prompt=none`). */
+'redirected'
+/** Offline, or the authorization server cannot be reached: nothing happened (no browser error page). */
+| 'offline';
 
 // (No @packageDocumentation comment for this package)
 

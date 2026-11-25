@@ -468,3 +468,200 @@ describe('a view of a per-tenant aggregate (TS-8, Tarol-Net TN-2)', () => {
     expect(typecheck({ 'api.ts': code })).toEqual([]);
   });
 });
+
+describe('nullable schemas (TS-9, Tatalu FB-3, FB-F01.1-4, FB-F17.3-3, FB-F02.1-5, FB-F13.3-5)', () => {
+  const nul: Schema = { type: 'null' };
+  const schemas: Record<string, Schema> = {
+    PersonName: { type: 'string', minLength: 1, maxLength: 80 },
+    Gender: { enum: ['Female', 'Male', 'Diverse'] },
+    PostalAddress: {
+      type: 'object',
+      required: ['street', 'city'],
+      properties: { street: { type: 'string', minLength: 1 }, city: { type: 'string' } },
+    },
+    // Option<PostalAddress> as Tarol-Net writes it today: a type array with "null" and the record's members
+    OptionOfPostalAddress: {
+      type: ['null', 'object'],
+      required: ['street', 'city'],
+      properties: { street: { type: 'string' }, city: { type: 'string' } },
+    },
+    ChildView: {
+      type: 'object',
+      required: ['name', 'gender', 'address', 'status', 'previous', 'second', 'count'],
+      properties: {
+        name: { oneOf: [nul, { $ref: '#/components/schemas/PersonName' }] },
+        gender: { oneOf: [nul, { $ref: '#/components/schemas/Gender' }] },
+        address: { anyOf: [{ $ref: '#/components/schemas/PostalAddress' }, nul] },
+        status: { oneOf: [nul, { enum: ['Open', 'Closed'] }] },
+        previous: { $ref: '#/components/schemas/OptionOfPostalAddress' },
+        second: { type: ['string', 'null'], enum: ['A', 'B'] },
+        count: { oneOf: [nul, { type: 'integer' }] },
+        inline: {
+          type: ['null', 'object'],
+          properties: { at: { type: 'string', format: 'date-time' } },
+        },
+      },
+    },
+    RegisterChild: {
+      type: 'object',
+      required: ['name', 'address'],
+      properties: {
+        name: { oneOf: [nul, { $ref: '#/components/schemas/PersonName' }] },
+        address: { oneOf: [nul, { $ref: '#/components/schemas/PostalAddress' }] },
+        moved: { $ref: '#/components/schemas/OptionOfPostalAddress' },
+      },
+    },
+  };
+  const view = {
+    get: {
+      operationId: 'ChildView',
+      'x-tarol-kind': 'view',
+      responses: {
+        '200': { content: { 'application/json': { schema: { $ref: '#/components/schemas/ChildView' } } } },
+      },
+    },
+  };
+  const code = generate(doc(schemas, { '/children/x': view, '/children': post('RegisterChild', 'RegisterChild') }));
+
+  it('types oneOf/anyOf of null and one schema as T | null, for value types, enums, records and primitives', () => {
+    expect(code).toContain('  name: PersonName | null;');
+    expect(code).toContain('  gender: Gender | null;');
+    expect(code).toContain('  address: PostalAddress | null;');
+    expect(code).toContain('  status: "Open" | "Closed" | null;');
+    expect(code).toContain('  count: number | null;');
+  });
+
+  it('types a type array with "null" as T | null, also for an object with properties (Option<Record>)', () => {
+    expect(code).toMatch(/export type OptionOfPostalAddress = \{\n {2}street: string;\n {2}city: string;\n\} \| null;/);
+    expect(code).toContain('  previous: OptionOfPostalAddress;');
+    expect(code).toContain('  second: "A" | "B" | null;');
+    expect(code).toMatch(/ {2}inline\?: \{\n\s+at\?: string;\n\} \| null;/);
+  });
+
+  it('gives a nullable member no Required rule, and keeps the rules of its value type and of a nullable record', () => {
+    const r = /export const rules = (\{[\s\S]*?\}) as const;/.exec(code)?.[1] ?? '';
+    expect(r).toContain('"name": [{"rule":"Length","code":"Length","min":1,"max":80}]');
+    expect(r).not.toContain('"address": [');
+    expect(r).toContain(
+      '"address.street": [{"rule":"Required","code":"Required"}, {"rule":"NotEmpty","code":"Required"}]',
+    );
+    expect(r).not.toContain('"moved": [');
+  });
+
+  it('compiles, and null is accepted where the backend sends or accepts it', () => {
+    const usage = `
+import { tarol, type ChildView, type RegisterChildInput } from './api.js';
+import { createClient } from '@clorat/tarol-client';
+export const input: RegisterChildInput = { name: null, address: null, moved: null };
+export function show(v: ChildView): string {
+  return (v.name ?? '-') + (v.gender ?? '') + (v.address?.city ?? '') + (v.previous?.street ?? '');
+}
+void tarol(createClient({ baseUrl: '/api' })).changes.registerChild(input);
+`;
+    expect(typecheck({ 'api.ts': code, 'usage.ts': usage })).toEqual([]);
+  });
+});
+
+describe('x-tarol-types and x-tarol-constants (TS-10, Tatalu FB-F02.6-2, FB-F13.5-1)', () => {
+  const schemas: Record<string, Schema> = {
+    MeaslesStatus: { type: 'string', enum: ['NotRequired', 'Missing', 'Sufficient', 'FollowUpDue', 'Expired'] },
+  };
+  const withExtras = (extra: Record<string, unknown>): OpenApiDocument => ({ ...doc(schemas), ...extra });
+
+  it('exports a type no operation references when x-tarol-types names it, and refuses a name that is no schema', () => {
+    const code = generate(withExtras({ 'x-tarol-types': ['MeaslesStatus'] }));
+    expect(code).toContain(
+      'export type MeaslesStatus = "NotRequired" | "Missing" | "Sufficient" | "FollowUpDue" | "Expired";',
+    );
+    expect(() => generate(withExtras({ 'x-tarol-types': ['Measles'] }))).toThrow(
+      '#/x-tarol-types/0: Measles is not in components.schemas',
+    );
+    expect(() => generate(withExtras({ 'x-tarol-types': 'MeaslesStatus' }))).toThrow(
+      '#/x-tarol-types: not a list of schema names',
+    );
+  });
+
+  it('writes x-tarol-constants as exported literals, sorted by name', () => {
+    const code = generate(
+      withExtras({
+        'x-tarol-constants': {
+          ProcessingAgreementVersion: '2026-03',
+          MaxChildren: 12,
+          Strict: true,
+          Weekdays: ['Mon', 'Tue'],
+        },
+      }),
+    );
+    expect(code).toContain(
+      [
+        '/** Backend constants (x-tarol-constants). */',
+        'export const MaxChildren = 12 as const;',
+        'export const ProcessingAgreementVersion = "2026-03" as const;',
+        'export const Strict = true as const;',
+        'export const Weekdays = ["Mon", "Tue"] as const;',
+      ].join('\n'),
+    );
+    expect(
+      typecheck({
+        'api.ts': code,
+        'usage.ts':
+          "import { ProcessingAgreementVersion } from './api.js';\nexport const v: '2026-03' = ProcessingAgreementVersion;\n",
+      }),
+    ).toEqual([]);
+  });
+
+  it('refuses a constant that is no identifier or no JSON literal', () => {
+    expect(() => generate(withExtras({ 'x-tarol-constants': { 'max-children': 1 } }))).toThrow(
+      '#/x-tarol-constants/max-children: not a PascalCase identifier',
+    );
+    expect(() => generate(withExtras({ 'x-tarol-constants': { Limits: { a: 1 } } }))).toThrow(
+      '#/x-tarol-constants/Limits: not a string, number, boolean or a list of them',
+    );
+    expect(() => generate(withExtras({ 'x-tarol-constants': { Rate: Number.NaN } }))).toThrow(/Rate/);
+  });
+});
+
+describe('typed creations (TS-11, Tatalu FB-F02.1-8)', () => {
+  const code = generate(fixture, { source: 'artflow.openapi.json' });
+
+  it('types the request of a creation with its result, so changeForm and client.change infer it', () => {
+    expect(code).toContain('createAuction: (body: CreateAuctionInput): ChangeRequest<Created> =>');
+    const usage = `
+import { createClient, type Created } from '@clorat/tarol-client';
+import { changeForm } from '@clorat/tarol-svelte';
+import { requests } from './artflow.js';
+
+export async function screen(): Promise<string | undefined> {
+  const form = changeForm(requests.createAuction, { reserve: 0 });
+  const r = await form.submit();
+  const created: Created | undefined = r?.ok ? r.value : undefined;
+  const bid = changeForm(requests.placeBid, { auction: created?.id as never, amount: 1 });
+  const placed = await bid.submit();
+  // a plain change still returns nothing
+  const nothing: undefined = placed?.ok ? placed.value : undefined;
+  void nothing;
+  const direct = await createClient({ baseUrl: '/api' }).change(requests.createAuction({ reserve: 1 }));
+  return direct.ok ? direct.value.id : created?.id;
+}
+`;
+    expect(typecheck({ 'artflow.ts': code, 'usage.ts': usage })).toEqual([]);
+  });
+});
+
+describe('a form over a generated change with nothing chosen yet (TS-21, Tatalu FB-F01.1-11)', () => {
+  it('type-checks allowNull(requests.x) with null in a required member, and refuses null without it', () => {
+    const code = generate(fixture, { source: 'artflow.openapi.json' });
+    const usage = `
+import { allowNull, changeForm } from '@clorat/tarol-svelte';
+import { requests, rules } from './artflow.js';
+
+export function screen(): void {
+  const form = changeForm(allowNull(requests.createAuction), { reserve: null }, { rules: rules.createAuction });
+  form.values.reserve = 100;
+  // @ts-expect-error without allowNull the input type has no null
+  changeForm(requests.createAuction, { reserve: null });
+}
+`;
+    expect(typecheck({ 'artflow.ts': code, 'usage.ts': usage })).toEqual([]);
+  });
+});
