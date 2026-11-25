@@ -36,6 +36,7 @@
   </header>
   {#if nav}<nav class="t-shell-nav" aria-label={navLabel}>{@render nav()}</nav>{/if}
   <!-- with the bottom bar the page is its own scroll area, so it is a tab stop: the arrow keys scroll it (WCAG 2.1.1) -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex (a scroll area must be focusable, axe scrollable-region-focusable; tatalu-feedback-2.md TS-19) -->
   <main id="t-main" class="t-shell-main" tabindex={nav && navPosition === 'bottom' ? 0 : -1}>{@render children()}</main>
 </div>
 

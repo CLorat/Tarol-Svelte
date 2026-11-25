@@ -228,7 +228,10 @@ the bar was `position: sticky` over a document that scrolls, so in the middle of
 `auto minmax(0, 1fr) auto`; `main` scrolls (`overflow-y: auto`, `overscroll-behavior: contain`) between the header and the
 bar; the bar is a plain grid row (no `sticky`, no `z-index`), padded by the safe area. Because `main` is now a scroll area,
 it is a tab stop in this mode (`tabindex="0"`, a focus ring inside it), so the arrow keys scroll it (axe
-`scrollable-region-focusable`); in the other modes it stays `tabindex="-1"` (the skip link's target). Above 40rem the
+`scrollable-region-focusable`); in the other modes it stays `tabindex="-1"` (the skip link's target). Svelte's
+`a11y_no_noninteractive_tabindex` warns about a tab stop on `main`; it is suppressed at that element with this reason
+(`<!-- svelte-ignore … -->`, the same form as `Combobox`'s): a scroll area without a tab stop cannot be scrolled with the
+keyboard in every browser, which is the WCAG 2.1.1 failure axe reports. Above 40rem the
 side navigation is unchanged.
 
 Behaviour change: with `navPosition="bottom"` on a phone, `window` no longer scrolls; code that scrolls the page uses the
