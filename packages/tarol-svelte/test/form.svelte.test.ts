@@ -1,7 +1,7 @@
 import type { ChangeRequest } from '@clorat/tarol-client';
 import { flushSync } from 'svelte';
-import { afterEach, describe, expect, it } from 'vitest';
-import { at, changeForm, query, type Rules } from '../src/index.js';
+import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
+import { allowNull, at, changeForm, query, type Rules } from '../src/index.js';
 import { fakeClient, okResult } from './fakes.js';
 
 let cleanup: (() => void) | undefined;
@@ -281,6 +281,30 @@ describe('changeForm', () => {
     form.values.customer = 'Grace';
     flushSync();
     expect(form.values.customer).toBe('Grace');
+  });
+
+  it('allowNull lets a required member be null until the user chooses; its Required rule stops the submit (TS-21)', async () => {
+    interface OpenDayCare {
+      name: string;
+      state: 'HH' | 'SH';
+      places: number;
+    }
+    const open = (input: OpenDayCare): ChangeRequest => ({ method: 'POST', path: '/daycares', body: input });
+    const f = fakeClient(() => okResult(1));
+    const form = root(() =>
+      changeForm(
+        allowNull(open),
+        { name: 'Sonnenschein', state: null, places: null },
+        { client: f.client, rules: { state: [{ rule: 'Required', code: 'Required' }] } },
+      ),
+    );
+    expectTypeOf(form.values.state).toEqualTypeOf<'HH' | 'SH' | null>();
+    expect(await form.submit()).toBeUndefined();
+    expect(form.error('state')).toBe('Required');
+    form.values.state = 'SH';
+    form.values.places = 4;
+    expect((await form.submit())?.ok).toBe(true);
+    expect(f.changes[0]?.request.body).toEqual({ name: 'Sonnenschein', state: 'SH', places: 4 });
   });
 
   it('reads values at backend paths', () => {

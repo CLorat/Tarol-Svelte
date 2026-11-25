@@ -36,10 +36,13 @@ export interface ActionOptions<T> {
 }
 
 // @public
+export function allowNull<I, T>(change: (input: I) => ChangeRequest<T>): (input: FormInput<I>) => ChangeRequest<T>;
+
+// @public
 export function at(root: unknown, path: string): unknown;
 
 // @public
-export function changeForm<I extends object, T = undefined>(change: (input: I) => ChangeRequest<T>, initial: I, options?: FormOptions<T, I>): Form<I, T>;
+export function changeForm<I extends object, T = undefined>(change: (input: I) => ChangeRequest<T>, initial: NoInfer<I>, options?: FormOptions<T, I>): Form<I, T>;
 
 // @public
 export function check(value: unknown, rules: readonly Rule[]): string | null;
@@ -76,6 +79,11 @@ export interface Form<I, T> {
     validate(): boolean;
     readonly values: I;
 }
+
+// @public
+export type FormInput<I> = {
+    [K in keyof I]: I[K] | null;
+};
 
 // @public
 export interface FormOptions<T, I = unknown> {

@@ -265,3 +265,30 @@ forms.
 success" (red before: nothing was stored) and "works without a draft when the storage fails".
 
 Public API: `FormOptions.draft`, `DraftOptions`, `DraftStorage` (API report regenerated).
+
+## TS-21: form values with nothing chosen yet
+
+**Finding confirmed.** `changeForm`'s values have the change's input type, so a required enum (or number) cannot be `null`
+while nothing is chosen. Tatalu casts each value with `unchosen(value)` (`lib/forms.ts`) and writes an input function with
+`T | null` per step; the docs app writes `changeForm<{ reserve: number | null }, Created>(…)`. Also, `changeForm` inferred
+`I` from the `initial` literal when it was narrower than the change's input, so `{ state: null }` typed `state` as `null`.
+
+**Change.** `@clorat/tarol-svelte`:
+
+* `type FormInput<I> = { [K in keyof I]: I[K] | null }` and `allowNull(change)`, which returns the same function typed
+  `(input: FormInput<I>) => ChangeRequest<T>` (no run-time work). `changeForm(allowNull(requests.openDayCare), { state:
+  null, … }, { rules })` then has `form.values.state: State | null`. The generated `Required` rule of a required member stops
+  the submit while it is `null` (and the backend answers `Required` too, FB-F01.1-11's proposal).
+* `changeForm(change, initial: NoInfer<I>, …)`: the input type is taken from the change, never from a narrower initial
+  literal (TypeScript 5.4 or later).
+
+Not done: a generated `FormInput` per change in `tarol-codegen`; one generic type over the generated input does the same.
+Only top-level members: a nested required member (`address.city`) keeps its type.
+
+**[verified]** `tarol-svelte/test/form.svelte.test.ts` "allowNull lets a required member be null until the user chooses …"
+(red before: no export `allowNull`; then, before `NoInfer`, svelte-check: `Type '"SH"' is not assignable to type 'null'`) and
+`tarol-codegen/test/generate.test.ts` "a form over a generated change with nothing chosen yet" (type-checks the README
+example and refuses `null` without `allowNull`).
+
+Public API: `allowNull`, `FormInput` (API report regenerated); `changeForm`'s `initial` is `NoInfer<I>`. Behaviour (types
+only): a call whose `initial` literal was narrower than the change's input and relied on that now reports the mismatch.

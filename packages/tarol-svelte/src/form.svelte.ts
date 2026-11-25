@@ -92,6 +92,18 @@ export interface Form<I, T> {
   reset(values?: I): void;
 }
 
+/** A form's values over the input `I`: every top-level member may also be `null` (nothing chosen or typed yet). */
+export type FormInput<I> = { [K in keyof I]: I[K] | null };
+
+/**
+ * Lets the form over a change hold `null` in a required member until the user chooses (an enum, a number):
+ * `changeForm(allowNull(requests.openDayCare), { state: null, … }, { rules })`. Only the type changes: the client rule
+ * `Required` (generated for a required member) stops the submit, and the backend answers `Required` too.
+ */
+export function allowNull<I, T>(change: (input: I) => ChangeRequest<T>): (input: FormInput<I>) => ChangeRequest<T> {
+  return change as (input: FormInput<I>) => ChangeRequest<T>;
+}
+
 /** Reads a value at a JSON path such as `lines[1].quantity` (the backend's camel-cased field paths). */
 export function at(root: unknown, path: string): unknown {
   let v: unknown = root;
@@ -144,7 +156,8 @@ function nullParent(values: unknown, path: string): boolean {
  */
 export function changeForm<I extends object, T = undefined>(
   change: (input: I) => ChangeRequest<T>,
-  initial: I,
+  // the input type comes from the change (the generated request), not from a narrower initial literal (`state: null`)
+  initial: NoInfer<I>,
   options: FormOptions<T, I> = {},
 ): Form<I, T> {
   const client = options.client ?? getTarol().client;

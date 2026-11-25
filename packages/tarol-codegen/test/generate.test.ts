@@ -647,3 +647,21 @@ export async function screen(): Promise<string | undefined> {
     expect(typecheck({ 'artflow.ts': code, 'usage.ts': usage })).toEqual([]);
   });
 });
+
+describe('a form over a generated change with nothing chosen yet (TS-21, Tatalu FB-F01.1-11)', () => {
+  it('type-checks allowNull(requests.x) with null in a required member, and refuses null without it', () => {
+    const code = generate(fixture, { source: 'artflow.openapi.json' });
+    const usage = `
+import { allowNull, changeForm } from '@clorat/tarol-svelte';
+import { requests, rules } from './artflow.js';
+
+export function screen(): void {
+  const form = changeForm(allowNull(requests.createAuction), { reserve: null }, { rules: rules.createAuction });
+  form.values.reserve = 100;
+  // @ts-expect-error without allowNull the input type has no null
+  changeForm(requests.createAuction, { reserve: null });
+}
+`;
+    expect(typecheck({ 'artflow.ts': code, 'usage.ts': usage })).toEqual([]);
+  });
+});

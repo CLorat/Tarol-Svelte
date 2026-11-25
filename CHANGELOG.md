@@ -6,6 +6,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Added
 
+* `@clorat/tarol-svelte`: `allowNull(change)` and `FormInput<I>`: a form whose required members may be `null` until the user chooses; `changeForm`'s `initial` no longer narrows the input type (`NoInfer`) (TS-21).
 * `@clorat/tarol-svelte`: `changeForm(…, { draft })` keeps an unfinished input in browser storage, restores it and clears it on success or `reset()` (TS-20). New: `DraftOptions`, `DraftStorage`.
 * `@clorat/tarol-design`: `defineMessages(...parts)` merges catalogue parts and throws on a key with two different texts (TS-17).
 * `@clorat/tarol-design`: `Select` and `RadioGroup` (generic over the value, `null` until chosen), `TextField type="time"`. `@clorat/tarol-components`: `FormField type="select" | "radio" | "date" | "time"` with `options` and `placeholder` (TS-16).
