@@ -811,4 +811,25 @@ describe('multipleOf as the client rule Scale (TS-29, Tatalu FB-F04.5-1)', () =>
     expect(r).toContain('"rate": [{"rule":"Scale","code":"Scale","step":0.001}]');
     expect(code).toContain('  amount: number;');
   });
+
+  it('takes Scale from x-tarol-rules as Tarol-Net e147531 writes it (code Scale, a numeric step)', () => {
+    const tarol = generate(
+      doc(
+        {
+          SetPrice: {
+            type: 'object',
+            properties: {
+              price: {
+                type: 'number',
+                multipleOf: 0.01,
+                'x-tarol-rules': [{ rule: 'Scale', code: 'Scale', step: 0.01 }],
+              },
+            },
+          },
+        },
+        { '/prices': post('SetPrice', 'SetPrice') },
+      ),
+    );
+    expect(tarol).toContain('"price": [{"rule":"Scale","code":"Scale","step":0.01}]');
+  });
 });
