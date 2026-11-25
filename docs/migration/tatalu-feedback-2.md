@@ -94,3 +94,19 @@ path no field shows …" and "keeps the error of a path a FormField shows on tha
 the alert appeared for `note`), axe 0 violations.
 
 Public API: `Form.register` (API report regenerated). Behaviour change: such a submit sets `formError` (it stayed as it was).
+
+## TS-13: `ready`
+
+**Finding confirmed (as documented behaviour).** `query(…).loading` is `true` while any read is in flight, revalidations
+included (focus, own change, push). A form created "after loading" (`{#if !view.loading}`) is destroyed and created again
+on each revalidation, and the user's input is gone. Tatalu keeps its own `loaded` flag (`Profile.svelte`).
+
+**Change.** `Query.ready` and `List.ready`: `false` until a first successful read, then `true` for the life of the rune
+(also when a later read fails or the request changes). `loading` is unchanged; its doc comment now points to `ready`.
+Skill rule 4 says which to use.
+
+**[verified]** `tarol-svelte/test/query.svelte.test.ts` "is ready once the first value arrived …" (a failed first read is
+not ready; a revalidation has `loading: true, ready: true`; a failed revalidation stays ready) and "is ready once the first
+page arrived …" (red before: `ready` was `undefined`).
+
+Public API: `Query.ready`, `List.ready` (API report regenerated).

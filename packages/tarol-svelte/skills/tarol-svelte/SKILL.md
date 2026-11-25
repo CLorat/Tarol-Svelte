@@ -18,7 +18,8 @@ description: >-
    read `$state`; when that changes the rune reads again (a list restarts at page 1). Return `null` to read nothing.
 3. Lists are keyset-paged: `items`, `hasMore`, `more()`. Never compute offsets.
 4. A read failure does not throw: check `violation` (`{ kind: 'error', code }` or `{ kind: 'invalid', errors }`). The last
-   good `value`/`items` stay visible while revalidating.
+   good `value`/`items` stay visible while revalidating. `loading` is `true` on every revalidation (focus, own change,
+   push); `ready` turns `true` with the first value and stays so: gate "create the edit form once" on `ready`.
 5. Live data: `query(() => requests.auctionView({ auction: id }), { live: topics.bidPlaced })` (the generated `topics`)
    revalidates only for messages whose `subject` is this auction (the generated request carries `subject` and `stream`),
    and skips a message whose `revision` it already has (its own change). A `list(…, { live })` revalidates on every

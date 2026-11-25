@@ -67,6 +67,7 @@ export interface List<T> {
     readonly loading: boolean;
     more(): Promise<void>;
     patch(update: (items: readonly T[]) => readonly T[]): () => void;
+    readonly ready: boolean;
     refresh(): Promise<void>;
     readonly requestId: string | undefined;
     readonly stale: boolean;
@@ -97,6 +98,7 @@ export interface LiveTopic {
 export interface Query<T> {
     readonly loading: boolean;
     patch(update: (value: T) => T): () => void;
+    readonly ready: boolean;
     refresh(): Promise<void>;
     readonly requestId: string | undefined;
     readonly stale: boolean;
