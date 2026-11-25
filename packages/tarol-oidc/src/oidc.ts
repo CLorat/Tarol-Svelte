@@ -77,8 +77,25 @@ export interface OidcSession {
   readonly roles: readonly string[];
   /** All validated ID token claims. */
   readonly claims: Readonly<Record<string, unknown>>;
+  /** How the user signed in: the ID token's `amr` values (`pwd`, `otp`, `mfa` …), or none when it has no `amr`. */
+  readonly factors: readonly string[];
   /** When the access token expires, in milliseconds since the epoch. */
   readonly expiresAt: number;
+}
+
+/** Settings of one {@link Oidc.login}: a stronger or a fresh sign-in (step-up). */
+export interface LoginOptions {
+  /** The path to return to after the callback. Default: the current path. */
+  readonly returnTo?: string | undefined;
+  /** The authentication context classes to ask for (`acr_values`), most wanted first. */
+  readonly acr?: string | readonly string[] | undefined;
+  /**
+   * The oldest sign-in accepted, in seconds (`max_age`): the server asks again when its session is older, and the
+   * callback refuses an ID token whose `auth_time` is older.
+   */
+  readonly maxAge?: number | undefined;
+  /** `login` asks for the credentials again, `select_account` lets the user choose an account, `consent` asks again. */
+  readonly prompt?: 'login' | 'select_account' | 'consent' | undefined;
 }
 
 /** The outcome of {@link Oidc.handleRedirect}. */
@@ -98,8 +115,11 @@ export interface Oidc {
   session(): OidcSession | null;
   /** Calls `listener` on every sign-in, refresh and sign-out; returns the unsubscribe function. */
   subscribe(listener: (session: OidcSession | null) => void): () => void;
-  /** Redirects to the authorization server; `returnTo` (default: the current path) is restored after the callback. */
-  login(returnTo?: string): Promise<void>;
+  /**
+   * Redirects to the authorization server; `returnTo` (default: the current path) is restored after the callback. With
+   * {@link LoginOptions} it asks for a stronger or a fresh sign-in (`acr`, `maxAge`, `prompt`).
+   */
+  login(returnTo?: string | LoginOptions): Promise<void>;
   /**
    * After a reload (no tokens in memory): a top-level `prompt=none` redirect that the server's session answers. Offline, or
    * when the authorization server cannot be reached, it does not navigate and resolves `'offline'`.
@@ -122,6 +142,7 @@ interface Pending {
   readonly verifier: string;
   readonly nonce: string;
   readonly returnTo: string;
+  readonly maxAge?: number;
 }
 
 interface Tokens {
@@ -218,6 +239,7 @@ export function createOidc(options: OidcOptions): Oidc {
         tenant: mapped.tenant,
         roles: mapped.roles,
         claims,
+        factors: Array.isArray(claims['amr']) ? claims['amr'].filter((f): f is string => typeof f === 'string') : [],
         expiresAt: Date.now() + (r.expires_in ?? 300) * 1000,
       },
     };
@@ -254,13 +276,18 @@ export function createOidc(options: OidcOptions): Oidc {
     return refreshing;
   };
 
-  const redirect = async (returnTo: string, prompt: string | undefined): Promise<void> => {
+  const redirect = async (returnTo: string, prompt: string | undefined, extra: LoginOptions = {}): Promise<void> => {
     const as = await discover();
     if (!as.authorization_endpoint) throw new Error('tarol-oidc: the server has no authorization_endpoint');
     const verifier = oauth.generateRandomCodeVerifier();
     const state = oauth.generateRandomState();
     const nonce = oauth.generateRandomNonce();
-    const pending: Pending = { verifier, nonce, returnTo };
+    const pending: Pending = {
+      verifier,
+      nonce,
+      returnTo,
+      ...(extra.maxAge === undefined ? {} : { maxAge: extra.maxAge }),
+    };
     storage().setItem(pendingKey + state, JSON.stringify(pending));
     const url = new URL(as.authorization_endpoint);
     const query = url.searchParams;
@@ -273,6 +300,9 @@ export function createOidc(options: OidcOptions): Oidc {
     query.set('code_challenge', await oauth.calculatePKCECodeChallenge(verifier));
     query.set('code_challenge_method', 'S256');
     if (prompt) query.set('prompt', prompt);
+    const acr = typeof extra.acr === 'string' ? [extra.acr] : (extra.acr ?? []);
+    if (acr.length > 0) query.set('acr_values', acr.join(' '));
+    if (extra.maxAge !== undefined) query.set('max_age', String(extra.maxAge));
     navigate(url.href);
   };
 
@@ -305,6 +335,7 @@ export function createOidc(options: OidcOptions): Oidc {
       const result = await oauth.processAuthorizationCodeResponse(as, client, response, {
         expectedNonce: pending.nonce,
         requireIdToken: true,
+        ...(pending.maxAge === undefined ? {} : { maxAge: pending.maxAge }),
       });
       set(await accept(result, null));
       return { kind: 'signed-in', returnTo };
@@ -351,7 +382,8 @@ export function createOidc(options: OidcOptions): Oidc {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    login: (returnTo) => redirect(returnTo ?? here(), undefined),
+    login: (to) =>
+      typeof to === 'object' ? redirect(to.returnTo ?? here(), to.prompt, to) : redirect(to ?? here(), undefined),
     async restore(returnTo) {
       if (!online()) return 'offline';
       let as: oauth.AuthorizationServer;

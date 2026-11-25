@@ -5,6 +5,7 @@ export {
   type OidcOptions,
   type OidcSession,
   type LastSession,
+  type LoginOptions,
   type OidcStorage,
   type RedirectResult,
   type RestoreResult,

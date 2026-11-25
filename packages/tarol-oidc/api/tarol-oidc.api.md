@@ -18,10 +18,18 @@ export interface LastSession {
 }
 
 // @public
+export interface LoginOptions {
+    readonly acr?: string | readonly string[] | undefined;
+    readonly maxAge?: number | undefined;
+    readonly prompt?: 'login' | 'select_account' | 'consent' | undefined;
+    readonly returnTo?: string | undefined;
+}
+
+// @public
 export interface Oidc {
     handleRedirect(url?: string): Promise<RedirectResult>;
     lastSession(): LastSession | null;
-    login(returnTo?: string): Promise<void>;
+    login(returnTo?: string | LoginOptions): Promise<void>;
     logout(): Promise<void>;
     readonly provider: TokenProvider;
     restore(returnTo?: string): Promise<RestoreResult>;
@@ -57,6 +65,7 @@ export interface OidcOptions {
 export interface OidcSession {
     readonly claims: Readonly<Record<string, unknown>>;
     readonly expiresAt: number;
+    readonly factors: readonly string[];
     readonly roles: readonly string[];
     readonly subject: string;
     readonly tenant: string | null;

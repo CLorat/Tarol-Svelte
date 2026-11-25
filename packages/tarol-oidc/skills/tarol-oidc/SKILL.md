@@ -26,6 +26,8 @@ description: >-
    401 by itself. A refused refresh signs out and calls `onSignOut`.
 6. `onSignOut: () => tarol.invalidate()` drops cached reads when the user signs out.
 7. Roles and tenant come from `oidc.session()` (`roles`, `tenant`); for UI decisions only, the backend checks again.
+8. A stronger or fresh sign-in before a sensitive step: `oidc.login({ returnTo, acr: 'mfa', maxAge: 300, prompt: 'login' })`
+   (the callback refuses an ID token older than `maxAge`); `session.factors` is the token's `amr` (`['pwd', 'otp']`).
 
 ## Offline PWA
 

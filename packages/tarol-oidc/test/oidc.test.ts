@@ -300,3 +300,35 @@ describe('an offline PWA (TS-23, Tatalu FB-F17.3-4)', () => {
     expect(setup().oidc.lastSession()).toBeNull(); // off by default
   });
 });
+
+describe('a stronger sign-in (TS-24, Tatalu FB-F13.2-1)', () => {
+  it('login({ acr, maxAge, prompt }) asks for it, and the callback checks auth_time against maxAge', async () => {
+    const { oidc, navigations, server } = setup();
+    await oidc.login({ returnTo: '/finances', acr: ['mfa', 'urn:example:loa:2'], maxAge: 300, prompt: 'login' });
+    const q = new URL(navigations[0] ?? '').searchParams;
+    expect(q.get('acr_values')).toBe('mfa urn:example:loa:2');
+    expect(q.get('max_age')).toBe('300');
+    expect(q.get('prompt')).toBe('login');
+    server.claims = { auth_time: Math.floor(Date.now() / 1000) - 600 }; // signed in 10 minutes ago: too old
+    expect(await oidc.handleRedirect(server.authorize(navigations[0] ?? ''))).toMatchObject({
+      kind: 'signed-out',
+      returnTo: '/finances',
+    });
+    await oidc.login({ returnTo: '/finances', maxAge: 300 });
+    server.claims = { auth_time: Math.floor(Date.now() / 1000), amr: ['pwd', 'otp', 7] };
+    expect(await oidc.handleRedirect(server.authorize(navigations[1] ?? ''))).toEqual({
+      kind: 'signed-in',
+      returnTo: '/finances',
+    });
+  });
+
+  it('gives the factors of the sign-in (amr) on the session', async () => {
+    const { oidc, signIn, server } = setup();
+    server.claims = { amr: ['pwd', 'otp', 7] };
+    await signIn();
+    expect(oidc.session()?.factors).toEqual(['pwd', 'otp']);
+    server.claims = {};
+    await signIn();
+    expect(oidc.session()?.factors).toEqual([]);
+  });
+});

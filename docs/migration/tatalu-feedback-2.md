@@ -337,3 +337,22 @@ tokens, contains no token text, and is gone after `logout()`; off by default. Re
 Public API: `RestoreResult`, `LastSession`, `OidcOptions.online`, `OidcOptions.lastSession`, `Oidc.lastSession`,
 `Oidc.restore` now returns `Promise<RestoreResult>` (API reports regenerated). Size **[verified]** `pnpm size`: 8.01 kB gzip
 of 9 kB.
+
+## TS-24: a stronger sign-in
+
+**Finding confirmed.** `login(returnTo)` could not ask for a stronger or a fresh sign-in (no `acr_values`, `max_age`,
+`prompt=login`); Tatalu reads `amr` from `session.claims` itself (`main.ts`).
+
+**Change.** `login(returnTo?: string | LoginOptions)`; `LoginOptions { returnTo, acr, maxAge, prompt }` sends
+`acr_values` (space-separated), `max_age` and `prompt` (`login`, `select_account`, `consent`). `maxAge` is kept with the
+pending login, so the callback passes it to `oauth4webapi`'s check of `auth_time` (an older sign-in is
+`{ kind: 'signed-out', error: 'invalid_response' }`). `OidcSession.factors` is the ID token's `amr` (strings only; `[]`
+without). Not done: Zitadel values in the preset (which `acr` values Zitadel honours is not documented; `amr` is read as it
+comes); the backend policy is Tarol-Net's part.
+
+**[verified]** `tarol-oidc/test/oidc.test.ts` "a stronger sign-in (TS-24 …)": the three parameters in the authorization
+URL, a sign-in older than `maxAge` refused, a fresh one accepted, `factors` from `amr` (red before: no `acr_values`, no
+`factors`).
+
+Public API: `LoginOptions`, `OidcSession.factors`, `Oidc.login`'s parameter (API reports regenerated). Behaviour: none
+for `login(returnTo)`.
