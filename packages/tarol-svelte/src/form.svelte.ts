@@ -3,6 +3,24 @@ import { getTarol } from './context.js';
 import { revalidated } from './query.svelte.js';
 import { check, rulePath, type Rules } from './rules.js';
 
+/** The part of the Web Storage API a draft needs (`localStorage`, `sessionStorage`, or a test double). */
+export interface DraftStorage {
+  /** The stored text, or `null`. */
+  getItem(key: string): string | null;
+  /** Stores the text. */
+  setItem(key: string, value: string): void;
+  /** Removes the entry. */
+  removeItem(key: string): void;
+}
+
+/** Where {@link FormOptions.draft} keeps the input: stored under `tarol.draft.<key>`. */
+export interface DraftOptions {
+  /** The draft's name, unique per form (add the user or tenant when several people share a device). */
+  readonly key: string;
+  /** Default `localStorage` (taken when the form is created; none outside a browser). */
+  readonly storage?: DraftStorage | undefined;
+}
+
 /** Settings of {@link changeForm}. */
 export interface FormOptions<T, I = unknown> {
   /** Client rules per field path, generated from the backend's validation metadata (SV-5). */
@@ -14,6 +32,12 @@ export interface FormOptions<T, I = unknown> {
    * the screen shows the saved state before "Saved" and a next submit starts from it (TS-14). Default `false`.
    */
   readonly awaitRevalidation?: boolean;
+  /**
+   * Keep the input of an unfinished form in browser storage (`localStorage` by default) and restore it when the form is
+   * created again; cleared after a successful submit and by `reset()`. A storage that fails (private window, blocked
+   * storage) means no draft. For creation forms: with `from`, the server's values replace a restored draft.
+   */
+  readonly draft?: string | DraftOptions;
   /** Called after a successful submit. */
   readonly onSuccess?: (result: Extract<Result<T>, { ok: true }>) => void;
   /** The client, when not taken from {@link setTarol}'s context. */
@@ -126,6 +150,28 @@ export function changeForm<I extends object, T = undefined>(
   const client = options.client ?? getTarol().client;
   const rules = options.rules ?? {};
   let values = $state(structuredClone(initial));
+  // option `draft` (TS-20): restore, keep while the user types, drop on success and reset
+  const draft = typeof options.draft === 'string' ? { key: options.draft } : options.draft;
+  const store = draft ? (draft.storage ?? (globalThis as { localStorage?: DraftStorage }).localStorage) : undefined;
+  const draftKey = `tarol.draft.${draft?.key ?? ''}`;
+  const attempt = <R>(f: (s: DraftStorage) => R): R | undefined => {
+    try {
+      return store ? f(store) : undefined;
+    } catch {
+      return undefined; // no draft then
+    }
+  };
+  if (store) {
+    const saved = attempt((s) => s.getItem(draftKey));
+    if (saved) Object.assign(values, JSON.parse(saved) as Partial<I>);
+    $effect(() => {
+      const text = JSON.stringify(values);
+      attempt((s) => {
+        if (text === JSON.stringify(initial)) s.removeItem(draftKey);
+        else s.setItem(draftKey, text);
+      });
+    });
+  }
   let clientErrors = $state<Record<string, readonly string[]>>({});
   let serverErrors = $state<Record<string, readonly string[]>>({});
   let serverDetails = $state<Readonly<Record<string, readonly FieldError[]>>>({});
@@ -165,6 +211,13 @@ export function changeForm<I extends object, T = undefined>(
       conflicts = found;
       base = $state.snapshot(next);
       if (!dirty) baseVersion = version;
+    });
+  }
+
+  /** Drops the stored draft; the next change of the values (a new input after a success) starts a new one. */
+  function dropDraft(): void {
+    attempt((s) => {
+      s.removeItem(draftKey);
     });
   }
 
@@ -245,6 +298,7 @@ export function changeForm<I extends object, T = undefined>(
         requestId = r.ok ? undefined : r.requestId;
         if (r.ok) {
           sent = undefined;
+          dropDraft();
           serverErrors = {};
           serverDetails = {};
           if (options.awaitRevalidation === true) await revalidated(client);
@@ -282,6 +336,7 @@ export function changeForm<I extends object, T = undefined>(
       if (Object.keys(conflicts).length === 0) baseVersion = options.expectedVersion?.();
     },
     reset(next) {
+      dropDraft();
       values = structuredClone(next ?? initial);
       conflicts = {};
       base = undefined; // the next `from` value is taken as it is

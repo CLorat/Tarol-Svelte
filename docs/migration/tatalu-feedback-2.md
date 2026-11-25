@@ -241,3 +241,24 @@ bottom, axe 0 violations; red before: document 3,797 px > 740); the TS-1 cases p
 `window.scrollTo`.
 
 No API change.
+
+## TS-20: drafts
+
+**Finding confirmed.** A half-filled `changeForm` was gone once the form closed (Tatalu US-01.1.3 AC 2); Tatalu wrote
+`lib/draft.svelte.ts` (`keepDraft`: load with `Object.assign`, an `$effect` that writes, `clear()`).
+
+**Change.** `FormOptions.draft: string | { key, storage? }`. The input is stored as JSON under `tarol.draft.<key>` in
+`storage` (default `localStorage`, read from `globalThis` when the form is created, so nothing happens outside a browser):
+restored (shallow `Object.assign` over `initial`, as Tatalu did) when the form is created, written by an `$effect` on every
+change (removed while the values equal `initial`), removed after a successful submit and by `reset()`. Every storage call is
+in `try`/`catch`: a private window or a blocked storage means no draft, never an error. New types `DraftOptions`,
+`DraftStorage` (the three Web Storage methods).
+
+Notes: the draft is per device and browser profile; give the key the user or tenant when people share a device (Tatalu's
+key is per screen). With `from` (edit forms) the server's first value replaces a restored draft: drafts are for creation
+forms.
+
+**[verified]** `tarol-svelte/test/form.svelte.test.ts` "keeps a draft in browser storage, restores it, and clears it on
+success" (red before: nothing was stored) and "works without a draft when the storage fails".
+
+Public API: `FormOptions.draft`, `DraftOptions`, `DraftStorage` (API report regenerated).

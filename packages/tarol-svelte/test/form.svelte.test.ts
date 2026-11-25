@@ -242,6 +242,47 @@ describe('changeForm', () => {
     expect(form.pending).toBe(false);
   });
 
+  it('keeps a draft in browser storage, restores it, and clears it on success (TS-20)', async () => {
+    localStorage.removeItem('tarol.draft.order');
+    const f = fakeClient(() => okResult(1));
+    const first = root(() => changeForm(placeOrder, initial, { client: f.client, draft: 'order' }));
+    first.values.customer = 'Grace';
+    flushSync();
+    expect(JSON.parse(localStorage.getItem('tarol.draft.order') ?? '{}')).toMatchObject({ customer: 'Grace' });
+    cleanup?.(); // the form is closed
+    const again = root(() => changeForm(placeOrder, initial, { client: f.client, draft: 'order' }));
+    expect(again.values.customer).toBe('Grace');
+    expect((await again.submit())?.ok).toBe(true);
+    flushSync();
+    expect(localStorage.getItem('tarol.draft.order')).toBeNull();
+    again.values.customer = 'Ada Lovelace';
+    flushSync();
+    again.reset(); // discarding the input discards the draft
+    flushSync();
+    expect(localStorage.getItem('tarol.draft.order')).toBeNull();
+  });
+
+  it('works without a draft when the storage fails (private window, blocked storage) (TS-20)', () => {
+    const broken = {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+      removeItem: () => {
+        throw new Error('SecurityError');
+      },
+    };
+    const f = fakeClient(() => okResult(1));
+    const form = root(() =>
+      changeForm(placeOrder, initial, { client: f.client, draft: { key: 'order', storage: broken } }),
+    );
+    form.values.customer = 'Grace';
+    flushSync();
+    expect(form.values.customer).toBe('Grace');
+  });
+
   it('reads values at backend paths', () => {
     expect(at(initial, 'lines[1].quantity')).toBe(2);
     expect(at(initial, 'lines[5].quantity')).toBeUndefined();

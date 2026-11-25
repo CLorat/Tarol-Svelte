@@ -34,6 +34,7 @@ description: >-
    value for; a hand-written field over an absent member calls `form.register(path)` in an `$effect`), the request id in `form.requestId` (`query(…).requestId` for reads). A retry of an
    unchanged input reuses the idempotency key, so double clicks and network retries are safe. A generated creation's
    request carries its result (`ChangeRequest<Created>`): `(await form.submit())?.value.id` is typed, no `changeForm<I, Created>`.
+   `draft: 'child-new'` keeps an unfinished creation form in `localStorage` (restored on return, cleared on success/reset).
 6a. Optimistic changes are opt-in per form: `changeForm(bid, initial, { expectedVersion: () => view.version,
    optimistic: (input) => view.patch((a) => ({ ...a, highest: input.amount })) })`. The patch shows at once; any failure
    (409 `Stream.VersionConflict`, 400, 403, a throw) rolls it back and reads again; success keeps it until the own-change

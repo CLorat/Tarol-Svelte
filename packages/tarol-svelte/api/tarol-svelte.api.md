@@ -45,6 +45,19 @@ export function changeForm<I extends object, T = undefined>(change: (input: I) =
 export function check(value: unknown, rules: readonly Rule[]): string | null;
 
 // @public
+export interface DraftOptions {
+    readonly key: string;
+    readonly storage?: DraftStorage | undefined;
+}
+
+// @public
+export interface DraftStorage {
+    getItem(key: string): string | null;
+    removeItem(key: string): void;
+    setItem(key: string, value: string): void;
+}
+
+// @public
 export interface Form<I, T> {
     conflict(path: string): {
         readonly theirs: unknown;
@@ -68,6 +81,7 @@ export interface Form<I, T> {
 export interface FormOptions<T, I = unknown> {
     readonly awaitRevalidation?: boolean;
     readonly client?: TarolClient;
+    readonly draft?: string | DraftOptions;
     readonly expectedVersion?: () => number | undefined;
     readonly from?: () => Partial<I> | undefined;
     readonly onSuccess?: (result: Extract<Result<T>, {
