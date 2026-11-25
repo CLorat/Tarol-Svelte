@@ -610,7 +610,7 @@
   "Tabs": {
     "package": "@clorat/tarol-design",
     "name": "Tabs",
-    "doc": "Tabs (WAI-ARIA APG tabs, automatic activation): one tab stop for the tab list; Arrow Left/Right move and select (wrapping), Home/End go to the first and last tab. Only the selected panel is rendered; it is focusable so its content can be reached with Tab.",
+    "doc": "Tabs (WAI-ARIA APG tabs, automatic activation): one tab stop for the tab list; Arrow Left/Right move and select (wrapping), Home/End go to the first and last tab. Only the selected panel is rendered; it is focusable so its content can be reached with Tab. More tabs than fit scroll inside the tab list; the focused tab scrolls into view.",
     "extends": "",
     "props": [
       {
@@ -776,7 +776,7 @@
   "AppShell": {
     "package": "@clorat/tarol-components",
     "name": "AppShell",
-    "doc": "The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark. Below 40rem the navigation is stacked above the page (`navPosition=\"side\"`, the default) or a one-row bar at the bottom of the viewport, in thumb reach (`navPosition=\"bottom\"`: its list items share the row, each target at least 44 px high).",
+    "doc": "The page frame: a skip link, a header with the app's name and actions, an optional navigation and the main landmark. Below 40rem the navigation is stacked above the page (`navPosition=\"side\"`, the default) or a one-row bar at the bottom of the viewport, in thumb reach (`navPosition=\"bottom\"`: its list items share the row, each target at least 44 px high; the shell is then exactly the viewport's height and the page scrolls in the main landmark, never under the bar).",
     "extends": "",
     "props": [
       {
