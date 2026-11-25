@@ -22,6 +22,37 @@ export const AppShell: Component<Props, {}, "">;
 // @public
 export type AppShell = ReturnType<typeof AppShell>;
 
+// Warning: (ae-forgotten-export) The symbol "$$IsomorphicComponent" needs to be exported by the entry point index.d.ts
+//
+// @public
+export const Calendar: $$IsomorphicComponent;
+
+// @public
+export type Calendar<T> = InstanceType<typeof Calendar<T>>;
+
+// @public
+export interface CalendarProps<T> {
+    date?: string | undefined;
+    day?: Snippet<[string]> | undefined;
+    dots?: number | undefined;
+    entries?: ((day: string) => readonly T[]) | undefined;
+    entry?: Snippet<[T]> | undefined;
+    firstDay?: number | undefined;
+    label: string;
+    locale?: string | undefined;
+    onselect?: ((day: string) => void) | undefined;
+    today?: string | undefined;
+    tone?: ((entry: T) => CalendarTone) | undefined;
+    view?: CalendarView | undefined;
+    views?: readonly CalendarView[] | undefined;
+}
+
+// @public
+export type CalendarTone = 'accent' | 'danger' | 'warning' | 'success' | 'muted';
+
+// @public
+export type CalendarView = 'month' | 'week' | 'day';
+
 // Warning: (ae-forgotten-export) The symbol "Props_2" needs to be exported by the entry point index.d.ts
 //
 // @public
@@ -42,10 +73,10 @@ export interface Column {
     readonly width?: string;
 }
 
-// Warning: (ae-forgotten-export) The symbol "$$IsomorphicComponent" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "$$IsomorphicComponent_2" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const DataTable: $$IsomorphicComponent;
+export const DataTable: $$IsomorphicComponent_2;
 
 // @public
 export type DataTable<T> = InstanceType<typeof DataTable<T>>;
@@ -64,10 +95,10 @@ export interface DataTableProps<T> {
     virtualizeAbove?: number | undefined;
 }
 
-// Warning: (ae-forgotten-export) The symbol "$$IsomorphicComponent_2" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "$$IsomorphicComponent_3" needs to be exported by the entry point index.d.ts
 //
 // @public
-export const DetailLayout: $$IsomorphicComponent_2;
+export const DetailLayout: $$IsomorphicComponent_3;
 
 // @public
 export type DetailLayout<T> = InstanceType<typeof DetailLayout<T>>;

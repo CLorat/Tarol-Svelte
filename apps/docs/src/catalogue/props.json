@@ -837,6 +837,118 @@
       }
     ]
   },
+  "Calendar": {
+    "package": "@clorat/tarol-components",
+    "name": "Calendar",
+    "doc": "A calendar of days with entries: a month grid (entries as dots), a week (the days in rows with their entries) and a day. The month and week are WAI-ARIA grids with one tab stop: Arrow keys move by a day (Up/Down by a week in the month), Home and End go to the first and last day of the week, Ctrl+Home/End to the first and last day of the month, Page Up/Down to the previous and next month (Shift: year; in the week view: week). Enter or Space activates a day: `onselect`, or the day view when there is no `onselect`. A day's accessible name is its full date and entry count (`aria-labelledby` a visually hidden text); it contains the visible number, so axe's `label-content-name-mismatch` holds. Days are ISO strings `YYYY-MM-DD`.",
+    "extends": "",
+    "props": [
+      {
+        "name": "label",
+        "type": "string",
+        "optional": false,
+        "bindable": false,
+        "default": null,
+        "doc": "The calendar's accessible name (the app's own text, e.g. \"Calendar\")."
+      },
+      {
+        "name": "date",
+        "type": "string",
+        "optional": true,
+        "bindable": true,
+        "default": "today",
+        "doc": "The focused day, `YYYY-MM-DD` (bindable). Default: today."
+      },
+      {
+        "name": "view",
+        "type": "CalendarView",
+        "optional": true,
+        "bindable": true,
+        "default": "'month'",
+        "doc": "The view (bindable). Default `month`."
+      },
+      {
+        "name": "views",
+        "type": "readonly CalendarView[]",
+        "optional": true,
+        "bindable": false,
+        "default": "['month', 'week', 'day']",
+        "doc": "The views to offer; one view shows no switch. Default all three."
+      },
+      {
+        "name": "entries",
+        "type": "((day: string) => readonly T[])",
+        "optional": true,
+        "bindable": false,
+        "default": "() => []",
+        "doc": "The entries of a day, in display order. Default: no entries."
+      },
+      {
+        "name": "entry",
+        "type": "Snippet<[T]>",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Renders an entry's text (in the week and day views, after its dot)."
+      },
+      {
+        "name": "tone",
+        "type": "((entry: T) => CalendarTone)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "The dot colour of an entry. Default `accent`."
+      },
+      {
+        "name": "day",
+        "type": "Snippet<[string]>",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Extra content of a day in the week and day views, before its entries (e.g. \"5 children expected\")."
+      },
+      {
+        "name": "onselect",
+        "type": "((day: string) => void)",
+        "optional": true,
+        "bindable": false,
+        "default": null,
+        "doc": "Called when a day is activated (Enter, Space, click). Without it, the day view opens (when offered)."
+      },
+      {
+        "name": "locale",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "'en'",
+        "doc": "The locale of the date texts (`Intl`), e.g. the ThemeRoot's `de`. Default `en`."
+      },
+      {
+        "name": "firstDay",
+        "type": "number",
+        "optional": true,
+        "bindable": false,
+        "default": "1",
+        "doc": "The first day of the week: 0 Sunday … 6 Saturday. Default 1 (Monday)."
+      },
+      {
+        "name": "today",
+        "type": "string",
+        "optional": true,
+        "bindable": false,
+        "default": "fallbackToday",
+        "doc": "Today, `YYYY-MM-DD` (marked with `aria-current=\"date\"`). Default: today in the browser's time zone."
+      },
+      {
+        "name": "dots",
+        "type": "number",
+        "optional": true,
+        "bindable": false,
+        "default": "3",
+        "doc": "Dots shown in a month cell before \"+n\". Default 3."
+      }
+    ]
+  },
   "ChangeForm": {
     "package": "@clorat/tarol-components",
     "name": "ChangeForm",

@@ -2,9 +2,10 @@
 name: tarol-components
 description: >-
   Use when building a Tarol app's screens from default components: a table of a backend list with sorting and "load
-  more", loading/empty/error states, a create or edit form bound to a backend change, or the page shell. Covers
-  DataTable, Column, QueryState, ChangeForm, FormField and AppShell from @clorat/tarol-components. Do not render large
-  lists with a plain {#each}, write your own loading/error branches, or map server field errors by hand.
+  more", loading/empty/error states, a form bound to a backend change, the page shell, or a month/week/day calendar.
+  Covers DataTable, Column, QueryState, ChangeForm, FormField, AppShell and Calendar from @clorat/tarol-components. Do not
+  render large lists with a plain {#each}, write your own loading/error branches or calendar grid, or map server field
+  errors by hand.
 ---
 
 # tarol-components
@@ -43,6 +44,11 @@ description: >-
 5c. `DataTable` is a grid: keyboard navigation is built in; put at most one widget (a link or a button) in a cell. It
    remembers the active row by `rowKey`, so a live update that re-sorts or removes rows keeps keyboard focus on the same
    row (or the same place): `rowKey` must be the row's id, never its index.
+5d. Calendar: `<Calendar label bind:date bind:view entries={(day) => …} tone={(e: E) => 'danger'} locale="de">` with
+   `{#snippet entry(e: E)}{e.title}{/snippet}`; days are `YYYY-MM-DD`, `view` is `month` (dots), `week` or `day` (dot and
+   text). Enter on a day opens the day view, or calls `onselect(day)`. Pass `today` from the app's time zone and the
+   ThemeRoot's `locale`. Keyboard and the day's accessible name are built in: never give a day button an `aria-label`
+   without its visible number (axe `label-content-name-mismatch`). The texts come from `en`/`de`, so it needs a ThemeRoot.
 6. All visible text comes from props (your labels) or the message catalogue; never literal text inside the components.
 
 ## Example
@@ -75,7 +81,7 @@ description: >-
 | `FormField path="Reserve"` (C# casing) | no error shown: server paths are camelCase (`reserve`) |
 | no `rules` on a FormField | the message has no bounds ("The value is out of range.") |
 | `getByRole('cell')` in tests of a DataTable | the cells are `gridcell`s (the table is a grid) |
-| ESLint `no-unsafe-*` on `row` in a `cell` snippet | typescript-eslint cannot infer a generic component's snippet types: write `{#snippet cell(row: AuctionRow, c: Column)}` and `rowKey={(r: AuctionRow) => r.id}` (svelte-check infers them) |
+| ESLint `no-unsafe-*` on `row` in a `cell` snippet (or `e` in a Calendar `entry`) | typescript-eslint cannot infer a generic component's snippet types: write `{#snippet cell(row: AuctionRow, c: Column)}`, `rowKey={(r: AuctionRow) => r.id}`, `{#snippet entry(e: E)}` (svelte-check infers them) |
 | content below a `QueryState` or `DetailLayout` jumps when the data arrives (CLS) | the skeletons are not the loaded height: pass `rows` close to the page size, or reserve the height (`min-height`) of the area |
 | two widgets in one DataTable cell | only the first gets the focus from the arrow keys; split the cell |
 | rendering a search snippet with `{@html}` | never: the snippet is plain text; `<b>` in it is the document's text. Use `highlight()` and render text nodes |

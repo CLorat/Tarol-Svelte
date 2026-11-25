@@ -4,6 +4,17 @@ import { uiEn } from './ui-en.js';
 /** English: the primitives' texts and the backend codes (validation, auth, conflicts). The default of ThemeRoot. */
 export const en: Catalogue = {
   ...uiEn,
+  // the calendar's texts (tarol-components Calendar): here, not in uiEn, so a primitive does not bundle them
+  'ui.previous': 'Previous',
+  'ui.next': 'Next',
+  'ui.today': 'Today',
+  'ui.month': 'Month',
+  'ui.week': 'Week',
+  'ui.day': 'Day',
+  'ui.calendarView': 'View',
+  'ui.weekOf': 'Week of {date}',
+  'ui.entries': ', entries: {count}',
+  'ui.noEntries': 'No entries.',
   Required: 'This field is required.',
   Range: 'Enter a value between {min} and {max}.',
   'Range.min': 'Enter a value of at least {min}.',

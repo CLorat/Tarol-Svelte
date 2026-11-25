@@ -1,3 +1,5 @@
+export { default as Calendar } from './Calendar.svelte';
+export type { CalendarProps, CalendarTone, CalendarView } from './Calendar.svelte';
 export { default as AppShell } from './AppShell.svelte';
 export { default as ChangeForm } from './ChangeForm.svelte';
 export { default as DataTable } from './DataTable.svelte';
