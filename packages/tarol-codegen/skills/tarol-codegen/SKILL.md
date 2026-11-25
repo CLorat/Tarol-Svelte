@@ -14,7 +14,10 @@ description: >-
 1. Generate from the backend's own document: `tarol-codegen <url or file> -o src/lib/api.ts`. The backend serves it when
    it calls `AddOpenApi(o => o.AddTarolEndpoints())` and `MapOpenApi()` (`/openapi/v1.json`).
 2. Never edit the generated file; regenerate after every backend change. In CI run the same command with `--check`
-   against a committed copy of the document: it exits 1 when the file is stale.
+   against a committed copy of the document: it exits 1 when the file is stale. Every failure (a document it cannot
+   translate, a missing file, an HTTP status other than 2xx, a body that is not JSON) exits 1 with one line
+   `tarol-codegen: …` on **stderr** and nothing on stdout; `wrote <file>` is the only stdout. So `tarol-codegen … >/dev/null`
+   still shows the error, but a script must check the exit code (`set -e`, `&&`), never chain with `;`.
 3. Use the three exports:
    * `requests.<op>(…)` builds a `ReadRequest` or `ChangeRequest`: pass it to `list(() => requests.x(q))`,
      `query(() => requests.y(p))`, `changeForm(requests.z, initial)` from `@clorat/tarol-svelte`. A view by id carries

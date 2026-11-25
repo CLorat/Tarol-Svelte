@@ -53,6 +53,11 @@ export interface ChangeOptions {
   readonly expectedVersion?: number;
   /** Aborts the request; an aborted call throws, as `fetch` does. */
   readonly signal?: AbortSignal;
+  /**
+   * Extra request headers, e.g. the outbox's `tarol-device`. They never replace the client's own (`idempotency-key`,
+   * `if-match`, `content-type`, `accept`, `authorization`, `traceparent`, `tarol-read-after`): those are dropped.
+   */
+  readonly headers?: Readonly<Record<string, string>>;
 }
 
 /** A query-string value; `undefined` and `null` are left out. */
@@ -127,6 +132,16 @@ interface Answer {
 }
 
 const json = 'application/json';
+/** Headers the client sets itself; {@link ChangeOptions.headers} cannot replace them. */
+const reserved = new Set([
+  'idempotency-key',
+  'if-match',
+  'content-type',
+  'accept',
+  'authorization',
+  'traceparent',
+  'tarol-read-after',
+]);
 
 /** Creates a client. Nothing is touched at import or creation time, so it is safe outside a browser. */
 export function createClient(options: ClientOptions): TarolClient {
@@ -228,7 +243,10 @@ export function createClient(options: ClientOptions): TarolClient {
     },
 
     async change<T>(request: ChangeRequest<T>, o: ChangeOptions = {}): Promise<Result<T>> {
-      const headers: Record<string, string> = { 'idempotency-key': o.key ?? globalThis.crypto.randomUUID() };
+      const headers: Record<string, string> = {};
+      for (const [name, value] of Object.entries(o.headers ?? {}))
+        if (!reserved.has(name.toLowerCase())) headers[name.toLowerCase()] = value;
+      headers['idempotency-key'] = o.key ?? globalThis.crypto.randomUUID();
       if (o.expectedVersion !== undefined) headers['if-match'] = `"${String(o.expectedVersion)}"`;
       const init: RequestInit = { method: request.method };
       if (request.body !== undefined) {

@@ -17,6 +17,7 @@ export interface ChangeEvent {
 // @public
 export interface ChangeOptions {
     readonly expectedVersion?: number;
+    readonly headers?: Readonly<Record<string, string>>;
     readonly key?: string;
     readonly signal?: AbortSignal;
 }
@@ -43,6 +44,12 @@ export interface ClientOptions {
 
 // @public
 export function comparePositions(a: string, b: string): number;
+
+// @public
+export interface Confirmation {
+    readonly args: Readonly<Record<string, string>>;
+    readonly code: string;
+}
 
 // @public
 export function createClient(options: ClientOptions): TarolClient;
@@ -108,9 +115,11 @@ export interface Page<T> {
 // @public
 export interface Problem<C extends string = string> {
     readonly code: C | ClientCode;
+    readonly confirm?: Confirmation;
     readonly detail?: string;
     readonly extensions?: Readonly<Record<string, unknown>>;
     readonly kind: 'error';
+    readonly reasons?: readonly string[];
 }
 
 // @public

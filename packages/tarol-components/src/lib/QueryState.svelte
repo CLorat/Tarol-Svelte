@@ -4,25 +4,35 @@
   shows skeletons of a fixed height (no layout shift); an error shows the code's message and a retry; the content stays
   visible while revalidating.
 -->
-<script lang="ts">
-  import { Button, getMessages, Skeleton } from '@clorat/tarol-design';
+<script module lang="ts">
   import type { Violation } from '@clorat/tarol-client';
-  import type { Snippet } from 'svelte';
 
   /** What QueryState reads: a `query(...)` or `list(...)` result. */
-  interface State {
+  export interface QueryStateSource {
+    /** A read is running. */
     readonly loading: boolean;
+    /** The last read's failure, if any. */
     readonly violation: Violation | undefined;
+    /** The failed request's id, shown to quote in a report. */
     readonly requestId?: string | undefined;
+    /** A list answered before catching up with this client's own write (`Tarol-Stale`). */
     readonly stale?: boolean;
+    /** A query's value. */
     readonly value?: unknown;
+    /** A list's rows. */
     readonly items?: readonly unknown[];
+    /** Reads again (the retry button). */
     refresh(): Promise<void>;
   }
+</script>
+
+<script lang="ts">
+  import { Button, getMessages, Skeleton } from '@clorat/tarol-design';
+  import type { Snippet } from 'svelte';
 
   interface Props {
     /** The query or list. */
-    state: State;
+    state: QueryStateSource;
     /** The content, rendered once there is a value (or at least one item). */
     children: Snippet;
     /** Replaces the default empty text. */

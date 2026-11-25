@@ -12,7 +12,9 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith('.svelte.d.ts'))) {
   const s = readFileSync(p, 'utf8');
   const m = /(\/\*\*(?:(?!\*\/)[\s\S])*\*\/)\s*declare const (\w+)\b[\s\S]*?;\n(type \2\b)/.exec(s);
   if (!m) continue;
-  writeFileSync(p, s.replace(m[3], `${m[1]}\n${m[3]}`));
+  // insert at the match, not at the first `type X…` of the file (`type CalendarView` comes before `type Calendar`)
+  const at = m.index + m[0].length - m[3].length;
+  writeFileSync(p, `${s.slice(0, at)}${m[1]}\n${s.slice(at)}`);
   fixed++;
 }
 console.log(`doc-svelte-dts: ${fixed} component declaration(s) documented`);

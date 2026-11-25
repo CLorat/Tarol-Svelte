@@ -4,8 +4,8 @@
  */
 export interface Rule {
   /** The rule kind. */
-  readonly rule: 'Required' | 'NotEmpty' | 'Range' | 'Length' | 'Pattern' | 'Email' | 'Count';
-  /** The backend's error code for it (`Range`, `Length`, `Pattern`, `Email`, `Count`, `Required`). */
+  readonly rule: 'Required' | 'NotEmpty' | 'Range' | 'Length' | 'Pattern' | 'Email' | 'Count' | 'Scale';
+  /** The backend's error code for it (`Range`, `Length`, `Pattern`, `Email`, `Count`, `Required`, `Scale`). */
   readonly code: string;
   /** Lower bound: the value (`Range`), the length (`Length`) or the item count (`Count`). */
   readonly min?: number;
@@ -15,6 +15,8 @@ export interface Rule {
   readonly pattern?: string;
   /** The backend's regular-expression flags (`i` for IgnoreCase, `u`); `u` is always used. */
   readonly flags?: string;
+  /** `Scale`: the value must be a multiple of it (JSON Schema `multipleOf`; `0.01` for a backend `[Scale(2)]`). */
+  readonly step?: number;
 }
 
 /** Rules per field path (`reserve`, `lines[1].quantity` uses the rules of `lines[].quantity`). */
@@ -55,9 +57,28 @@ function passes(r: Rule, v: unknown): boolean {
       return typeof v === 'string' && new RegExp(r.pattern ?? '', [...new Set(`u${r.flags ?? ''}`)].join('')).test(v);
     case 'Email':
       return typeof v === 'string' && isEmail(v);
+    case 'Scale':
+      return typeof v === 'number' && multipleOf(v, r.step ?? 1);
     default:
       return true;
   }
+}
+
+/** The decimal places of a number as JSON writes it (`0.30000000000000004` has 17, `1e-7` has 7). */
+function places(v: number): number {
+  const [mantissa = '', exponent = '0'] = String(Math.abs(v)).split('e');
+  return Math.max(0, (mantissa.split('.')[1]?.length ?? 0) - Number(exponent));
+}
+
+/**
+ * Whether `v` is a multiple of `step`. A power of ten (`0.01`) counts the decimal places of the JSON text, which is what
+ * the backend's `decimal` reads; another step divides with a tolerance for binary fractions.
+ */
+function multipleOf(v: number, step: number): boolean {
+  const n = -Math.log10(step);
+  if (Number.isInteger(n) && n >= 0) return places(v) <= n;
+  const q = v / step;
+  return Math.abs(q - Math.round(q)) <= 1e-9 * Math.max(1, Math.abs(q));
 }
 
 /** The backend's email rule (`Tarol.Validations/Rules.cs:42-65`): not a full RFC parser, the same check on both sides. */

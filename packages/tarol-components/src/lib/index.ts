@@ -1,9 +1,12 @@
+export { default as Calendar } from './Calendar.svelte';
+export type { CalendarProps, CalendarTone, CalendarView } from './Calendar.svelte';
 export { default as AppShell } from './AppShell.svelte';
 export { default as ChangeForm } from './ChangeForm.svelte';
 export { default as DataTable } from './DataTable.svelte';
 export { default as DetailLayout } from './DetailLayout.svelte';
 export { default as FormField } from './FormField.svelte';
 export { default as QueryState } from './QueryState.svelte';
+export type { QueryStateSource } from './QueryState.svelte';
 export { default as SearchBox } from './SearchBox.svelte';
 export type { SearchHit } from './SearchBox.svelte';
 export type { Column } from './column.js';

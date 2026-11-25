@@ -5,6 +5,7 @@
 ```ts
 
 import type { ChangeRequest } from '@clorat/tarol-client';
+import type { Confirmation } from '@clorat/tarol-client';
 import type { PushClient } from '@clorat/tarol-client/push';
 import type { PushedMessage } from '@clorat/tarol-client/push';
 import { QueryValue } from '@clorat/tarol-client';
@@ -62,6 +63,8 @@ export interface DraftStorage {
 
 // @public
 export interface Form<I, T> {
+    confirm(): Promise<Result<T> | undefined>;
+    readonly confirmation: Confirmation | undefined;
     conflict(path: string): {
         readonly theirs: unknown;
     } | undefined;
@@ -181,7 +184,8 @@ export interface Rule {
     readonly max?: number;
     readonly min?: number;
     readonly pattern?: string;
-    readonly rule: 'Required' | 'NotEmpty' | 'Range' | 'Length' | 'Pattern' | 'Email' | 'Count';
+    readonly rule: 'Required' | 'NotEmpty' | 'Range' | 'Length' | 'Pattern' | 'Email' | 'Count' | 'Scale';
+    readonly step?: number;
 }
 
 // @public

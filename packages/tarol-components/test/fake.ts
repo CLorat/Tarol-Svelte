@@ -1,4 +1,4 @@
-import type { ChangeRequest, Page, Result, TarolClient } from '@clorat/tarol-client';
+import type { ChangeOptions, ChangeRequest, Page, Result, TarolClient } from '@clorat/tarol-client';
 
 export interface Row {
   id: string;
@@ -23,7 +23,10 @@ const ok = <T>(value: T): Result<T> => ({
 });
 
 /** A client double over an in-memory list of `total` rows, paged by `limit` with cursors `c<offset>`. */
-export function fakeClient(total = 5, onChange: (r: ChangeRequest) => Result<unknown> = () => ok(undefined)) {
+export function fakeClient(
+  total = 5,
+  onChange: (r: ChangeRequest, o?: ChangeOptions) => Result<unknown> = () => ok(undefined),
+) {
   const reads: { path: string; query: Record<string, unknown> }[] = [];
   const client: TarolClient = {
     read<T>(path: string, o?: { query?: Record<string, unknown> }) {
@@ -35,8 +38,8 @@ export function fakeClient(total = 5, onChange: (r: ChangeRequest) => Result<unk
       const page: Page<Row> = { items: rows(end - start, start), next: end < total ? `c${String(end)}` : null };
       return Promise.resolve(ok(page) as Result<T>);
     },
-    change<T>(r: ChangeRequest) {
-      return Promise.resolve(onChange(r) as Result<T>);
+    change<T>(r: ChangeRequest, o?: ChangeOptions) {
+      return Promise.resolve(onChange(r, o) as Result<T>);
     },
     url: (p) => p,
     invalidate: () => undefined,

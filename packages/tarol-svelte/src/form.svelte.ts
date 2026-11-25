@@ -1,4 +1,4 @@
-import type { ChangeRequest, FieldError, Result, TarolClient, Violation } from '@clorat/tarol-client';
+import type { ChangeRequest, Confirmation, FieldError, Result, TarolClient, Violation } from '@clorat/tarol-client';
 import { getTarol } from './context.js';
 import { revalidated } from './query.svelte.js';
 import { check, rulePath, type Rules } from './rules.js';
@@ -84,6 +84,16 @@ export interface Form<I, T> {
   validate(): boolean;
   /** Checks, then sends the change. The idempotency key is kept while the input is unchanged, so a retry is safe. */
   submit(): Promise<Result<T> | undefined>;
+  /**
+   * The warning of the last submit that the person may confirm (Tarol-Net TN-37: a 409 with `confirm`), or `undefined`.
+   * Show `t(code, args)` with a confirm button that calls {@link Form.confirm}.
+   */
+  readonly confirmation: Confirmation | undefined;
+  /**
+   * Confirms {@link Form.confirmation} and sends the same input again with `Tarol-Confirm` (every code confirmed for
+   * this input) and the same idempotency key; `undefined` without a warning. A changed input starts over, unconfirmed.
+   */
+  confirm(): Promise<Result<T> | undefined>;
   /** The server's newer value of a top-level field the user changed (option `from`), or `undefined`. */
   conflict(path: string): { readonly theirs: unknown } | undefined;
   /** Ends a conflict: keep the user's input (`mine`) or take the server's value (`theirs`). */
@@ -191,7 +201,8 @@ export function changeForm<I extends object, T = undefined>(
   let requestId = $state<string | undefined>();
   let formError = $state<Violation | undefined>();
   let pending = $state(false);
-  let sent: { body: string; key: string } | undefined;
+  // the input as sent, its idempotency key, and the warnings confirmed for it (TN-37)
+  let sent: { body: string; key: string; confirmed: string[] } | undefined;
   // how many fields show each path (not reactive: read on submit only)
   const shown: Record<string, number> = {};
   // option `from` (SV-26): the server values the input is based on, and the version they had
@@ -296,16 +307,17 @@ export function changeForm<I extends object, T = undefined>(
       // the input as JSON is what the backend gets and fingerprints with the key, so compare and send exactly that
       const body = JSON.stringify(values);
       const input = JSON.parse(body) as I;
-      if (sent?.body !== body) sent = { body, key: globalThis.crypto.randomUUID() };
+      if (sent?.body !== body) sent = { body, key: globalThis.crypto.randomUUID(), confirmed: [] };
       pending = true;
       formError = undefined;
       let rollback = options.optimistic?.(input);
       try {
         const version = from ? baseVersion : options.expectedVersion?.();
-        const r = await client.change<T>(
-          change(input),
-          version === undefined ? { key: sent.key } : { key: sent.key, expectedVersion: version },
-        );
+        const r = await client.change<T>(change(input), {
+          key: sent.key,
+          ...(version === undefined ? {} : { expectedVersion: version }),
+          ...(sent.confirmed.length > 0 ? { headers: { 'tarol-confirm': sent.confirmed.join(', ') } } : {}),
+        });
         if (!r.ok) rollback?.();
         rollback = undefined;
         requestId = r.ok ? undefined : r.requestId;
@@ -338,6 +350,17 @@ export function changeForm<I extends object, T = undefined>(
         rollback?.(); // the change threw (aborted): nothing was confirmed
         pending = false;
       }
+    },
+    get confirmation() {
+      return formError?.kind === 'error' ? formError.confirm : undefined;
+    },
+    async confirm() {
+      const warning = formError?.kind === 'error' ? formError.confirm : undefined;
+      if (!warning || pending) return undefined;
+      // confirmed for the input as it was sent: an edit since then is a new intent (submit gives it a new key)
+      if (sent?.body === JSON.stringify(values) && !sent.confirmed.includes(warning.code))
+        sent.confirmed.push(warning.code);
+      return this.submit();
     },
     conflict: (path) => conflicts[path],
     resolve(path, choice) {

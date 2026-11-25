@@ -24,6 +24,20 @@ const off = push.subscribe('artflow.bid-placed', (m) => console.log(m.data));
 push.onReconnect(() => tarol.invalidate('/auctions')); // the hub has no replay: refetch after a reconnect
 ```
 
+Offline capture and reads (subpaths, tree-shaken; `idb` is the only code that touches `indexedDB`):
+
+```ts
+import { createOutbox, offlineReads } from '@clorat/tarol-client/outbox';
+import { idbStore } from '@clorat/tarol-client/idb';
+
+const store = idbStore('app');
+const reads = offlineReads({ store, scope, keep: (path) => path.startsWith('/children/') });
+const tarol = createClient({ baseUrl: '/api', tokens, fetch: reads.fetch });
+const outbox = createOutbox({ client: tarol, store, scope }); // scope: () => `${tenant}/${subject}` or null
+const r = await outbox.submit({ method: 'POST', path: '/notes', body }, { label: 'note' }); // sent | queued | failed
+```
+
+
 | What | Behaviour |
 |---|---|
 | Changes | `Idempotency-Key` (new UUID, or yours to retry one intent); `If-Match` from `expectedVersion`; network failures retried with the same key and bytes |

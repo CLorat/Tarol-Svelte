@@ -112,6 +112,8 @@ export interface Schema {
   readonly minimum?: number | string;
   /** Rule `Range` (Tarol writes it as a string). */
   readonly maximum?: number | string;
+  /** Rule `Scale`: the step of a number (`0.01` for a backend `[Scale(2)]`, Tarol-Net TN-53). */
+  readonly multipleOf?: number;
   /** Rule `Count`. */
   readonly minItems?: number;
   /** Rule `Count`. */
@@ -128,7 +130,7 @@ export interface Schema {
 
 /** A rule as written into the generated file (the shape of `Rule` in `@clorat/tarol-svelte`). */
 export interface GeneratedRule {
-  /** The rule kind (`Required`, `NotEmpty`, `Range`, `Length`, `Pattern`, `Email`, `Count`). */
+  /** The rule kind (`Required`, `NotEmpty`, `Range`, `Length`, `Pattern`, `Email`, `Count`, `Scale`). */
   readonly rule: string;
   /** The backend error code. */
   readonly code: string;
@@ -140,6 +142,8 @@ export interface GeneratedRule {
   readonly pattern?: string;
   /** Extra regular-expression flags. */
   readonly flags?: string;
+  /** Rule `Scale`: the value is a multiple of it. */
+  readonly step?: number;
 }
 
 /** Settings of {@link generate}. */
@@ -173,7 +177,7 @@ export const emailRule =
   'one @ with 1 to 64 characters before it; a domain of at most 253 characters that contains a dot, does not start or end with one and has no empty label; no white space; at most 254 characters';
 
 /** The rule kinds `@clorat/tarol-svelte`'s `check` knows; another one cannot be checked in the browser. */
-const knownRules = new Set(['Required', 'NotEmpty', 'Range', 'Length', 'Pattern', 'Email', 'Count']);
+const knownRules = new Set(['Required', 'NotEmpty', 'Range', 'Length', 'Pattern', 'Email', 'Count', 'Scale']);
 
 /** The schema of every problem answer: the client reads it as its `Violation`, so no type is generated for it. */
 const problemSchema = 'TarolProblem';
@@ -734,6 +738,8 @@ function fieldRules(s: Schema, required: boolean, pointer: string): GeneratedRul
       ...(s.minimum === undefined ? {} : { min: Number(s.minimum) }),
       ...(s.maximum === undefined ? {} : { max: Number(s.maximum) }),
     });
+  if (typeof s.multipleOf === 'number' && s.multipleOf > 0 && (t.includes('number') || t.includes('integer')))
+    out.push({ rule: 'Scale', code: 'Scale', step: s.multipleOf });
   if (t.includes('array') && (s.minItems !== undefined || s.maxItems !== undefined))
     out.push({
       rule: 'Count',

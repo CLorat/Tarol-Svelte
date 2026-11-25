@@ -4,20 +4,22 @@
   Home/End go to the first and last tab. Only the selected panel is rendered; it is focusable so its content can be reached
   with Tab. More tabs than fit scroll inside the tab list; the focused tab scrolls into view.
 -->
-<script lang="ts">
-  import type { Snippet } from 'svelte';
-
+<script module lang="ts">
   /** One tab. */
-  interface Tab {
+  export interface TabItem {
     /** A stable id, the value of `selected`. */
     id: string;
     /** The tab's text (already translated). */
     label: string;
   }
+</script>
+
+<script lang="ts">
+  import type { Snippet } from 'svelte';
 
   interface Props {
     /** The tabs, in order. */
-    tabs: readonly Tab[];
+    tabs: readonly TabItem[];
     /** The selected tab's id (bindable). Default: the first tab. */
     selected?: string | undefined;
     /** The tab list's accessible name (already translated). */

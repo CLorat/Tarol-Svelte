@@ -4,6 +4,8 @@ import AdminAppSource from './examples/AdminApp.svelte?raw';
 import AppShell from './examples/AppShell.svelte';
 import AppShellSource from './examples/AppShell.svelte?raw';
 import Button from './examples/Button.svelte';
+import Calendar from './examples/Calendar.svelte';
+import CalendarSource from './examples/Calendar.svelte?raw';
 import Checkbox from './examples/Checkbox.svelte';
 import CheckboxSource from './examples/Checkbox.svelte?raw';
 import RadioGroup from './examples/RadioGroup.svelte';
@@ -160,6 +162,20 @@ export const pages: readonly CataloguePage[] = [
       ['Home, End', 'first, last cell of the row'],
       ['Ctrl+Home, Ctrl+End', 'first, last cell of the table'],
       ['Page Down/Up', '10 rows (virtual rows are scrolled in)'],
+    ],
+  },
+  {
+    name: 'Calendar',
+    example: Calendar,
+    source: CalendarSource,
+    keys: [
+      ['Tab', 'one tab stop in the grid: the chosen day'],
+      ['Arrow Left/Right', 'previous, next day'],
+      ['Arrow Up/Down', 'previous, next week (in the week view: day)'],
+      ['Home, End', 'first, last day of the week'],
+      ['Ctrl+Home, Ctrl+End', 'first, last day of the month'],
+      ['Page Up/Down', 'previous, next month (Shift: year; in the week view: week)'],
+      ['Enter, Space', 'activates the day (onselect, or the day view)'],
     ],
   },
   {

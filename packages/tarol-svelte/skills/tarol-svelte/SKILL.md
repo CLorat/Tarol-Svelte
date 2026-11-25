@@ -30,10 +30,11 @@ description: >-
 6. Forms: `changeForm(change, initial, { rules, expectedVersion })`. Bind inputs to `form.values.x`, call
    `form.touch('x')` on blur, show `form.error('x')`. Server 400 errors land on the field with the same path
    (`lines[1].quantity`), with the server's detail in `form.detail(path)` (`3..60`); errors no field shows, and coded
-   errors (403, 409), are in `form.formError` (so is a client rule's error on a path no field shows and the input has no
-   value for; a hand-written field over an absent member calls `form.register(path)` in an `$effect`), the request id in `form.requestId` (`query(…).requestId` for reads). A retry of an
-   unchanged input reuses the idempotency key, so double clicks and network retries are safe. A generated creation's
-   request carries its result (`ChangeRequest<Created>`): `(await form.submit())?.value.id` is typed, no `changeForm<I, Created>`.
+   errors (403, 409), are in `form.formError` (also a client rule's error on a path no field shows and the input lacks;
+   a hand-written field calls `form.register(path)` in an `$effect`), the request id in `form.requestId` (`query(…).requestId` for reads). A retry of an
+   unchanged input reuses the idempotency key, so double clicks and network retries are safe. A warning (409 with
+   `confirm`, TN-37) is `form.confirmation` (`t(code, args)`); `form.confirm()` resends with `Tarol-Confirm`. For a generated creation
+   `(await form.submit())?.value.id` is typed (`ChangeRequest<Created>`), no `changeForm<I, Created>`.
    A required enum or number with nothing chosen yet: `changeForm(allowNull(requests.x), { state: null }, { rules })`.
    `draft: 'child-new'` keeps an unfinished creation form in `localStorage` (restored on return, cleared on success/reset).
 6a. Optimistic changes are opt-in per form: `changeForm(bid, initial, { expectedVersion: () => view.version,
@@ -76,13 +77,13 @@ description: >-
 | Mistake | What happens |
 |---|---|
 | `list({ path })` (an object, not a function) | TypeScript error: the argument must be `() => ReadRequest \| null` |
-| calling `query()` inside an `onclick` | Svelte throws `lifecycle_outside_component` (context and runes need component initialisation) |
+| calling `query()` inside an `onclick` | Svelte throws `lifecycle_outside_component` |
 | no `setTarol` above the component | `Error: tarol-svelte: call setTarol(client) in a parent component first` |
 | `live()` without a push connection | `Error: tarol-svelte: live() needs a push connection` |
 | a hand-typed topic string (`'artflow.bid-placd'`) | no type error; the hub refuses it (`Hub.Forbidden` in `onRefused`) and the page never updates: use `topics.<name>` |
-| `live()` plus an `$effect` comparing `message.subject` to re-read a view | unnecessary, and lossy: `live()` keeps only the last message of a burst; use `query(…, { live })` |
+| `live()` plus an `$effect` comparing `message.subject` to re-read a view | lossy: `live()` keeps only the last message of a burst; use `query(…, { live })` |
 | a saga's topic on a view without `subject: null` | its messages carry the saga's stream id, so the view never updates |
-| refetching after `submit()` | unnecessary: queries revalidate after own changes (with `Tarol-Read-After`); to show "Saved" only once they did (a next save starts from the new view), pass `awaitRevalidation: true` |
+| refetching after `submit()` | unnecessary: queries revalidate after own changes (with `Tarol-Read-After`); to show "Saved" only once they did, pass `awaitRevalidation: true` |
 | `{@html}` of server text | never; render text |
 | changing `view.value` by hand for an optimistic UI | `value` is read-only; use `view.patch(update)` and return its rollback from `optimistic` |
 | an edit form with `expectedVersion: () => view.version` but no `from` under a live view | the version is read at submit, after the live view moved on: an edit made on old values **overwrites** another user's change silently |
@@ -93,4 +94,4 @@ description: >-
 
 * Plain Svelte 5 (Vite SPA). The runes are compiled by your app's Svelte plugin; nothing global runs at import.
 * `Rule` kinds: `Required`, `NotEmpty`, `Range`, `Length` (UTF-16 units), `Pattern` (ECMAScript, `u` flag), `Email` (the
-  backend's rule), `Count`; one code per value, as on the server. The generator (`@clorat/tarol-codegen`) writes them.
+  backend's rule), `Count`, `Scale` (`multipleOf`); one code per value, as on the server. The generator writes them.

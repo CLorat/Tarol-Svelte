@@ -6,28 +6,30 @@
   field restores the chosen option's label. With `filter={false}` the app supplies `options` for the text it gets in
   `onquery` (a server search).
 -->
-<script lang="ts">
-  import type { Snippet } from 'svelte';
-  import Field from './Field.svelte';
-  import { getMessages } from './messages.js';
-
+<script module lang="ts">
   /** One option. */
-  interface Option {
+  export interface ComboboxOption {
     /** The value `value` takes when it is chosen. */
     value: string;
     /** The option's text (already translated). */
     label: string;
   }
+</script>
+
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import Field from './Field.svelte';
+  import { getMessages } from './messages.js';
 
   interface Props {
     /** The visible label. */
     label: string;
     /** The options. */
-    options: readonly Option[];
+    options: readonly ComboboxOption[];
     /** The chosen option's value, or `null` (bindable). */
     value?: string | null | undefined;
     /** Filters `options` by the text (default: contains, ignoring case), or `false` when `options` are already filtered. */
-    filter?: ((option: Option, text: string) => boolean) | false | undefined;
+    filter?: ((option: ComboboxOption, text: string) => boolean) | false | undefined;
     /** Called with the text whenever it changes (for a server search). */
     onquery?: ((text: string) => void) | undefined;
     /** Called after an option was chosen. */
@@ -43,7 +45,7 @@
     /** The input's placeholder (already translated). */
     placeholder?: string | undefined;
     /** Renders an option's content (default: its label as text), e.g. a second line; never render server text as HTML. */
-    item?: Snippet<[Option]> | undefined;
+    item?: Snippet<[ComboboxOption]> | undefined;
   }
 
   let {
@@ -68,7 +70,8 @@
   let active = $state(-1);
   let list = $state<HTMLDivElement>();
 
-  const contains = (o: Option, q: string): boolean => o.label.toLocaleLowerCase().includes(q.toLocaleLowerCase());
+  const contains = (o: ComboboxOption, q: string): boolean =>
+    o.label.toLocaleLowerCase().includes(q.toLocaleLowerCase());
   const shown = $derived(
     filter === false || text === labelOf(value) ? options : options.filter((o) => (filter ?? contains)(o, text.trim())),
   );
@@ -89,7 +92,7 @@
     active = -1;
   }
 
-  function choose(option: Option): void {
+  function choose(option: ComboboxOption): void {
     value = option.value;
     text = option.label;
     hide();

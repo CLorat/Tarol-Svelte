@@ -2,7 +2,8 @@
   @component
   A `<form>` around a `changeForm(...)`: Enter submits, the submit button shows the pending state, and a violation that
   belongs to no field (403, 409, malformed body) is shown and announced above the button, with the request's reference
-  (`Tarol-Request-Id`) for a user to quote.
+  (`Tarol-Request-Id`) for a user to quote; the reasons of a refusal (`reasons`) are listed under its message, and a warning to confirm (Tarol-Net TN-37) gets a
+  Confirm button that sends the same input again with `Tarol-Confirm`.
 -->
 <script lang="ts">
   import { Button, getMessages } from '@clorat/tarol-design';
@@ -25,8 +26,10 @@
   const message = $derived.by(() => {
     const v = form.formError;
     if (!v) return undefined;
-    return v.kind === 'error' ? t(v.code) : t(Object.values(v.errors)[0]?.[0] ?? 'error.generic');
+    return v.kind === 'error' ? t(v.code, v.confirm?.args) : t(Object.values(v.errors)[0]?.[0] ?? 'error.generic');
   });
+  // the codes of the reasons of a refusal (Tarol-Net `reasons`), each a message of its own
+  const reasons = $derived(form.formError?.kind === 'error' ? (form.formError.reasons ?? []) : []);
 </script>
 
 <form
@@ -38,10 +41,22 @@
   }}
 >
   {@render children()}
-  {#if message}<p class="t-form-error" role="alert">
-      {message}
+  {#if message}<div class="t-form-error" role="alert">
+      <p>{message}</p>
+      {#if reasons.length > 0}<ul>
+          {#each reasons as r, i (i)}<li>{t(r)}</li>{/each}
+        </ul>{/if}
+      {#if form.confirmation}<Button
+          variant="secondary"
+          loading={form.pending}
+          onclick={() => {
+            void form.confirm();
+          }}
+        >
+          {t('ui.confirm')}
+        </Button>{/if}
       {#if form.requestId}<span class="t-reference">{t('ui.reference', { id: form.requestId })}</span>{/if}
-    </p>{/if}
+    </div>{/if}
   <div class="t-form-actions">
     {@render actions?.()}
     <Button type="submit" loading={form.pending}>{submitLabel}</Button>
@@ -55,9 +70,15 @@
     gap: var(--t-space-4);
   }
   .t-form-error {
-    margin: 0;
     color: var(--t-color-danger);
     font-size: var(--t-text-sm);
+  }
+  .t-form-error p,
+  .t-form-error ul {
+    margin: 0;
+  }
+  .t-form-error ul {
+    padding-inline-start: var(--t-space-4);
   }
   .t-form-actions {
     display: flex;

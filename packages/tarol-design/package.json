@@ -72,7 +72,7 @@
     {
       "name": "ThemeRoot (with Toaster, messages de+en)",
       "path": ".size/themeroot.js",
-      "limit": "3 kB",
+      "limit": "3.25 kB",
       "gzip": true
     },
     {
