@@ -14,6 +14,28 @@ import type { Topic } from '@clorat/tarol-client/push';
 import { Violation } from '@clorat/tarol-client';
 
 // @public
+export interface Action<I, T> {
+    readonly code: string | undefined;
+    readonly pending: boolean;
+    readonly requestId: string | undefined;
+    reset(): void;
+    run(input: I, options?: RunOptions): Promise<Result<T> | undefined>;
+    readonly violation: Violation | undefined;
+}
+
+// @public
+export function action<I, T = undefined>(change: (input: I) => ChangeRequest<T>, options?: ActionOptions<T>): Action<I, T>;
+
+// @public
+export interface ActionOptions<T> {
+    readonly awaitRevalidation?: boolean;
+    readonly client?: TarolClient;
+    readonly onSuccess?: (result: Extract<Result<T>, {
+        ok: true;
+    }>) => void;
+}
+
+// @public
 export function at(root: unknown, path: string): unknown;
 
 // @public
@@ -145,6 +167,11 @@ export function rulePath(path: string): string;
 
 // @public
 export type Rules = Readonly<Record<string, readonly Rule[]>>;
+
+// @public
+export interface RunOptions {
+    readonly expectedVersion?: number | undefined;
+}
 
 // @public
 export function setTarol(client: TarolClient, push?: PushClient): Tarol;

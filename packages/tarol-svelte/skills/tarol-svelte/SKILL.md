@@ -2,8 +2,8 @@
 name: tarol-svelte
 description: >-
   Use when building Svelte 5 screens on a Tarol backend: lists with keyset paging and filters, detail views, forms that
-  send a change and show the server's field errors, or live updates from push topics. Covers setTarol, query, list,
-  changeForm, live and Rule from @clorat/tarol-svelte. Do not write fetch/$effect loading code by hand, use Svelte 4
+  send a change and show the server's field errors, buttons that run a change, or live updates from push topics. Covers
+  setTarol, query, list, changeForm, action, live and Rule from @clorat/tarol-svelte. Do not write fetch/$effect loading code by hand, use Svelte 4
   stores or $: statements, or poll with setInterval.
 ---
 
@@ -43,6 +43,8 @@ description: >-
    server, an edited field keeps the input and `form.conflict('title')` gives `{ theirs }` when the server changed it
    too (`FormField` shows it with "Use the new value" / "Keep mine"; or call `form.resolve(path, 'mine' | 'theirs')`).
    The submit sends the version the edit started from, so a stale edit gets a 409 instead of overwriting.
+6c. A button without a form (choose, delete): `const main = action(requests.chooseMain)` at init, then
+   `main.run({ location }, { expectedVersion })`; show `main.pending` and `t(main.code)` (the refusal's or first field's code).
 7. Codes are not messages: map `form.error(path)` and `violation.code` to text through the message catalogue
    (`@clorat/tarol-design`), never hard-code user text.
 

@@ -130,3 +130,22 @@ so it is the owner's decision (proposed in the PR).
 queries its change revalidates" (red before: the submit resolved while the view still read `15:00`).
 
 Public API: `FormOptions.awaitRevalidation` (API report regenerated).
+
+## TS-15: `action`
+
+**Finding confirmed.** A change without a form (choose the main location, delete the account, deactivate a location) had
+no rune: Tatalu calls `tarol(getTarol().client).changes.*` and keeps its own `refusal` state and code extraction per
+screen (`Locations.svelte`, `BankSection.svelte`, `InsuranceSection.svelte`).
+
+**Change.** `@clorat/tarol-svelte` `action(change, { client, onSuccess, awaitRevalidation })` → `Action<I, T>`:
+`run(input, { expectedVersion })` returns the `Result` (or `undefined` when a run is already pending), `pending`,
+`violation` (cleared by a success or `reset()`), `code` (the coded refusal's `code`, else the first code of the first
+field of a 400, for `t(code)`), `requestId`. Like `changeForm`, a retry of the same input after a failure reuses the
+idempotency key, and `T` is inferred from the request (`ChangeRequest<Created>`, TS-11).
+
+**[verified]** `tarol-svelte/test/action.svelte.test.ts` (4 cases: pending and a 409's code and request id; a 400's field
+code, success clears it, key reuse; expected version, a second run while pending, the inferred `Created`; and
+`awaitRevalidation`). Red before: `The requested module '/src/index.ts' does not provide an export named 'action'`.
+
+Public API: `action`, `Action`, `ActionOptions`, `RunOptions` (API report regenerated). Size: not in the measured
+"svelte bindings" bundle (an unused export is tree-shaken); `action` alone is about 0.5 kB gzip.

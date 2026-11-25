@@ -1,3 +1,5 @@
+export { action } from './action.svelte.js';
+export type { Action, ActionOptions, RunOptions } from './action.svelte.js';
 export { getTarol, setTarol } from './context.js';
 export type { Tarol } from './context.js';
 export { at, changeForm } from './form.svelte.js';
