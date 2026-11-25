@@ -4,6 +4,12 @@ import AdminAppSource from './examples/AdminApp.svelte?raw';
 import AppShell from './examples/AppShell.svelte';
 import AppShellSource from './examples/AppShell.svelte?raw';
 import Button from './examples/Button.svelte';
+import Checkbox from './examples/Checkbox.svelte';
+import CheckboxSource from './examples/Checkbox.svelte?raw';
+import RadioGroup from './examples/RadioGroup.svelte';
+import RadioGroupSource from './examples/RadioGroup.svelte?raw';
+import Select from './examples/Select.svelte';
+import SelectSource from './examples/Select.svelte?raw';
 import ButtonSource from './examples/Button.svelte?raw';
 import ChangeForm from './examples/ChangeForm.svelte';
 import ChangeFormSource from './examples/ChangeForm.svelte?raw';
@@ -72,6 +78,22 @@ export const pages: readonly CataloguePage[] = [
     keys: [tab, ['Arrow Up/Down', 'changes the focused part (native)']],
   },
   { name: 'Field', example: Field, source: FieldSource, keys: [tab] },
+  { name: 'Checkbox', example: Checkbox, source: CheckboxSource, keys: [tab, ['Space', 'checks or unchecks (native)']] },
+  {
+    name: 'Select',
+    example: Select,
+    source: SelectSource,
+    keys: [tab, ['Arrow Up/Down', 'chooses an option (native)']],
+  },
+  {
+    name: 'RadioGroup',
+    example: RadioGroup,
+    source: RadioGroupSource,
+    keys: [
+      ['Tab', 'moves into the group (to the chosen option) and out of it'],
+      ['Arrow keys', 'choose the next or previous option (native)'],
+    ],
+  },
   {
     name: 'Combobox',
     example: Combobox,
