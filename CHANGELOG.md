@@ -6,6 +6,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ### Added
 
+* `@clorat/tarol-oidc`: `restore()` resolves `'offline'` without navigating when offline or the authorization server does not answer; opt-in `lastSession` and `oidc.lastSession()` (subject, tenant, roles; no tokens) for an app opened offline (TS-23).
 * `@clorat/tarol-components`: `DataTable filter` shows only the rows a function keeps; paging stays the list's (TS-22).
 * `@clorat/tarol-svelte`: `allowNull(change)` and `FormInput<I>`: a form whose required members may be `null` until the user chooses; `changeForm`'s `initial` no longer narrows the input type (`NoInfer`) (TS-21).
 * `@clorat/tarol-svelte`: `changeForm(…, { draft })` keeps an unfinished input in browser storage, restores it and clears it on success or `reset()` (TS-20). New: `DraftOptions`, `DraftStorage`.

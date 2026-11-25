@@ -17,7 +17,9 @@ export interface OidcOptions {
     readonly clientId: string;
     readonly fetch?: typeof fetch | undefined;
     readonly issuer: string;
+    readonly lastSession?: boolean | OidcStorage | undefined;
     readonly navigate?: ((url: string) => void) | undefined;
+    readonly online?: (() => boolean) | undefined;
     readonly onSignOut?: (() => void) | undefined;
     readonly postLogoutRedirectUri?: string | undefined;
     readonly redirectUri: string;

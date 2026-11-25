@@ -10,12 +10,21 @@ import type { TokenProvider } from '@clorat/tarol-client';
 export function createOidc(options: OidcOptions): Oidc;
 
 // @public
+export interface LastSession {
+    readonly roles: readonly string[];
+    readonly signedInAt: number;
+    readonly subject: string;
+    readonly tenant: string | null;
+}
+
+// @public
 export interface Oidc {
     handleRedirect(url?: string): Promise<RedirectResult>;
+    lastSession(): LastSession | null;
     login(returnTo?: string): Promise<void>;
     logout(): Promise<void>;
     readonly provider: TokenProvider;
-    restore(returnTo?: string): Promise<void>;
+    restore(returnTo?: string): Promise<RestoreResult>;
     session(): OidcSession | null;
     subscribe(listener: (session: OidcSession | null) => void): () => void;
 }
@@ -33,7 +42,9 @@ export interface OidcOptions {
     readonly clientId: string;
     readonly fetch?: typeof fetch | undefined;
     readonly issuer: string;
+    readonly lastSession?: boolean | OidcStorage | undefined;
     readonly navigate?: ((url: string) => void) | undefined;
+    readonly online?: (() => boolean) | undefined;
     readonly onSignOut?: (() => void) | undefined;
     readonly postLogoutRedirectUri?: string | undefined;
     readonly redirectUri: string;
@@ -71,6 +82,13 @@ export type RedirectResult =
     readonly returnTo: string;
     readonly error: string;
 };
+
+// @public
+export type RestoreResult =
+/** The browser is on its way to the authorization server (`prompt=none`). */
+'redirected'
+/** Offline, or the authorization server cannot be reached: nothing happened (no browser error page). */
+| 'offline';
 
 // (No @packageDocumentation comment for this package)
 

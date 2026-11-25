@@ -39,7 +39,33 @@ export interface OidcOptions {
   readonly replaceUrl?: ((url: string) => void) | undefined;
   /** Called after logout and after a refresh that failed, e.g. `() => client.invalidate()`. */
   readonly onSignOut?: (() => void) | undefined;
+  /** Whether the browser is online. Default `navigator.onLine` (`true` outside a browser). */
+  readonly online?: (() => boolean) | undefined;
+  /**
+   * Remember the last signed-in person (subject, tenant, roles; never a token) for an app opened offline: `true` keeps it
+   * in `localStorage`, or pass a storage. Forgotten by `logout()`. Default: not remembered.
+   */
+  readonly lastSession?: boolean | OidcStorage | undefined;
 }
+
+/** The person who signed in last on this device ({@link OidcOptions.lastSession}); no tokens. */
+export interface LastSession {
+  /** The `sub` claim. */
+  readonly subject: string;
+  /** The tenant, as the backend derives it. */
+  readonly tenant: string | null;
+  /** The roles granted at that sign-in. */
+  readonly roles: readonly string[];
+  /** When that sign-in (or its last refresh) happened, in milliseconds since the epoch. */
+  readonly signedInAt: number;
+}
+
+/** The outcome of {@link Oidc.restore}. */
+export type RestoreResult =
+  /** The browser is on its way to the authorization server (`prompt=none`). */
+  | 'redirected'
+  /** Offline, or the authorization server cannot be reached: nothing happened (no browser error page). */
+  | 'offline';
 
 /** The signed-in user, from the ID token (philosophy P5: auth is handled once). */
 export interface OidcSession {
@@ -74,8 +100,13 @@ export interface Oidc {
   subscribe(listener: (session: OidcSession | null) => void): () => void;
   /** Redirects to the authorization server; `returnTo` (default: the current path) is restored after the callback. */
   login(returnTo?: string): Promise<void>;
-  /** After a reload (no tokens in memory): a top-level `prompt=none` redirect that the server's session answers. */
-  restore(returnTo?: string): Promise<void>;
+  /**
+   * After a reload (no tokens in memory): a top-level `prompt=none` redirect that the server's session answers. Offline, or
+   * when the authorization server cannot be reached, it does not navigate and resolves `'offline'`.
+   */
+  restore(returnTo?: string): Promise<RestoreResult>;
+  /** The person who signed in last on this device (option `lastSession`), or `null`; for an app opened offline. */
+  lastSession(): LastSession | null;
   /** Handles the callback URL (default `location.href`); call it once at start-up. */
   handleRedirect(url?: string): Promise<RedirectResult>;
   /** Forgets the tokens and redirects to the end-session endpoint (when the server has one). */
@@ -85,6 +116,7 @@ export interface Oidc {
 /** The share of the token's lifetime after which it is refreshed ahead of time. */
 const refreshAt = 0.8;
 const pendingKey = 'tarol-oidc:';
+const lastKey = 'tarol-oidc-last';
 
 interface Pending {
   readonly verifier: string;
@@ -123,6 +155,26 @@ export function createOidc(options: OidcOptions): Oidc {
     else location.assign(url);
   };
   const scope = [...new Set(['openid', ...(options.scopes ?? [])])].join(' ');
+  const online = options.online ?? ((): boolean => (globalThis.navigator as Navigator | undefined)?.onLine !== false);
+  const remembered = (): OidcStorage | undefined =>
+    options.lastSession === true ? localStorage : options.lastSession === false ? undefined : options.lastSession;
+  const remember = (session: OidcSession | null): void => {
+    const store = remembered();
+    if (!store) return;
+    try {
+      if (session) {
+        const last: LastSession = {
+          subject: session.subject,
+          tenant: session.tenant,
+          roles: session.roles,
+          signedInAt: Date.now(),
+        };
+        store.setItem(lastKey, JSON.stringify(last));
+      } else store.removeItem(lastKey);
+    } catch {
+      // a blocked storage: nothing remembered
+    }
+  };
   const listeners = new Set<(session: OidcSession | null) => void>();
   let server: Promise<oauth.AuthorizationServer> | undefined;
   let tokens: Tokens | null = null;
@@ -143,6 +195,7 @@ export function createOidc(options: OidcOptions): Oidc {
   const set = (next: Tokens | null): void => {
     clearTimeout(timer);
     tokens = next;
+    if (next) remember(next.session);
     if (next) {
       const lifetime = next.session.expiresAt - Date.now();
       // a network failure here is not the end of the session: the next token() or 401 tries again
@@ -267,6 +320,7 @@ export function createOidc(options: OidcOptions): Oidc {
   const logout = async (): Promise<void> => {
     const idToken = tokens?.idToken;
     signOut();
+    remember(null); // an explicit sign-out forgets the person too
     const as = await discover();
     if (!as.end_session_endpoint) return;
     const url = new URL(as.end_session_endpoint);
@@ -298,7 +352,33 @@ export function createOidc(options: OidcOptions): Oidc {
       return () => listeners.delete(listener);
     },
     login: (returnTo) => redirect(returnTo ?? here(), undefined),
-    restore: (returnTo) => redirect(returnTo ?? here(), 'none'),
+    async restore(returnTo) {
+      if (!online()) return 'offline';
+      let as: oauth.AuthorizationServer;
+      try {
+        as = await discover();
+        // the metadata may come from a cache (a service worker): check that the server answers before leaving the page
+        if (as.authorization_endpoint)
+          await (options.fetch ?? globalThis.fetch)(as.authorization_endpoint, {
+            method: 'HEAD',
+            mode: 'no-cors',
+            cache: 'no-store',
+          });
+      } catch (e) {
+        if (e instanceof TypeError) return 'offline'; // fetch failed: no network or no server
+        throw e;
+      }
+      await redirect(returnTo ?? here(), 'none');
+      return 'redirected';
+    },
+    lastSession() {
+      try {
+        const raw = remembered()?.getItem(lastKey);
+        return raw ? (JSON.parse(raw) as LastSession) : null;
+      } catch {
+        return null;
+      }
+    },
     handleRedirect,
     logout,
   };

@@ -2,7 +2,7 @@
 name: tarol-oidc
 description: >-
   Use when adding login, logout, token refresh or the signed-in user's tenant and roles to a browser app on a Tarol
-  backend, especially one secured with Zitadel. Covers createOidc, handleRedirect, restore, login, logout, session,
+  backend, especially one secured with Zitadel, also offline (PWA). Covers createOidc, handleRedirect, restore, lastSession, login, logout, session,
   subscribe, provider (a TokenProvider for createClient and connectPush) and the zitadel preset with zitadelTenant and
   zitadelRoles from @clorat/tarol-oidc. Do not install oidc-client-ts, store tokens in localStorage, or derive the tenant
   by hand.
@@ -26,6 +26,15 @@ description: >-
    401 by itself. A refused refresh signs out and calls `onSignOut`.
 6. `onSignOut: () => tarol.invalidate()` drops cached reads when the user signs out.
 7. Roles and tenant come from `oidc.session()` (`roles`, `tenant`); for UI decisions only, the backend checks again.
+
+## Offline PWA
+
+* `await oidc.restore()` returns `'redirected'` or `'offline'`: offline (`navigator.onLine`, or the authorization server
+  does not answer) it does not leave the page, so the app opens instead of the browser's error page. Do not guard it with
+  your own `navigator.onLine` check.
+* Tokens stay in memory (never persist them). For "who used this app last" pass `lastSession: true` (or a storage):
+  `oidc.lastSession()` gives `{ subject, tenant, roles, signedInAt }`, no token; `logout()` forgets it. Use it to pick the
+  person's offline data; every backend call still needs a real sign-in once the network is back (`restore()` again).
 
 ## Example
 

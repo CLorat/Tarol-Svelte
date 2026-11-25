@@ -308,3 +308,32 @@ filter: when the filter keeps nothing, show your own text.
 them" (red before: all five rows were rendered), axe 0 violations.
 
 Public API: `DataTableProps.filter` (API report regenerated). The server-side range filter is Tarol-Net round 2.
+
+## TS-23: `tarol-oidc` offline
+
+**Finding confirmed.** `restore()` is a top-level redirect: offline it either rejected with `TypeError: Failed to fetch`
+(the discovery) or, with the metadata served from a service worker's cache, navigated to the authorization server and
+left the app on the browser's error page. There was no "last signed-in person" for an app opened offline. Tatalu calls
+`restore()` only when `navigator.onLine` (`lib/auth.ts`) and remembers subject, tenant and roles itself
+(`lib/offline/session.ts`).
+
+**Change.**
+
+* `restore(returnTo?)` resolves `RestoreResult` (`'redirected' | 'offline'`, it was `void`). Before it navigates it checks
+  `OidcOptions.online` (default `navigator.onLine`), the discovery, and a `HEAD` with `mode: 'no-cors'` and `cache:
+  'no-store'` to the authorization endpoint (an opaque answer is enough; a `TypeError` means no network or no server). Any
+  other error still throws.
+* `OidcOptions.lastSession: true | OidcStorage` (default off: a person's identifiers stay out of persistent storage unless
+  the app asks): every sign-in and refresh writes `{ subject, tenant, roles, signedInAt }` (no token) under
+  `tarol-oidc-last`; `logout()` removes it; a refused refresh keeps it (that person is still the last one).
+  `oidc.lastSession()` reads it (`null` when off, empty or unreadable).
+* Skill: a section "Offline PWA".
+
+**[verified]** `tarol-oidc/test/oidc.test.ts` "an offline PWA (TS-23 …)": offline → `'offline'`, no navigation; unreachable
+server → `'offline'`, then `'redirected'` once it answers; the last session survives a new `createOidc` (a reload) without
+tokens, contains no token text, and is gone after `logout()`; off by default. Red before: `restore()` resolved
+`undefined`, rejected with `TypeError: Failed to fetch`, and `lastSession` did not exist.
+
+Public API: `RestoreResult`, `LastSession`, `OidcOptions.online`, `OidcOptions.lastSession`, `Oidc.lastSession`,
+`Oidc.restore` now returns `Promise<RestoreResult>` (API reports regenerated). Size **[verified]** `pnpm size`: 8.01 kB gzip
+of 9 kB.
