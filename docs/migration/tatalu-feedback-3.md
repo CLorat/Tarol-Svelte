@@ -257,6 +257,20 @@ Public API: `Confirmation`, `Problem.confirm`, `Form.confirmation`, `Form.confir
 outbox 1.46 kB (1.5 kB), svelte bindings 4.3 kB / 3.83 kB brotli (5.25 kB, the round-2 proposal), ChangeForm + FormField
 2.55 kB (3 kB), ThemeRoot 3.03 kB (3.25 kB, proposed SV-37).
 
+## TS-41: capture headers on by default (owner decision C-3)
+
+Tarol-Net 0.1.0-preview.6 accepts `Tarol-Device` and `Tarol-Captured-At` (TN-60). The outbox now sends them whenever `device` is
+set; `captureHeaders: false` turns them off for an older backend (whose cross-origin preflight refuses them).
+
+* **Behaviour change:** `createOutbox({ device })` without `captureHeaders` sends the headers (it did not).
+* **Test [verified]:** `outbox.test.ts` "sends Tarol-Device and Tarol-Captured-At when a device is set, unless captureHeaders is
+  false" (red before: no headers without `captureHeaders: true`).
+* **Tatalu:** the `Capture` record in change inputs (`backend/src/Tatalu.Shared/Sync.cs`) can go with the backend's TN-60.
+
+## S-8: ThemeRoot budget 3.25 kB (owner decision)
+
+The proposal of `c2f323d` is decided: the ThemeRoot budget is 3.25 kB (measured 3,017 B gzip, 2,550 B brotli).
+
 ## TS-40: a change that may start its aggregate (Tarol-Net TN-42)
 
 Tarol-Net round 3c answers 201 `{id, version}` for every change whose commit started its stream (`IOrStart<T>`, an `ILoads`

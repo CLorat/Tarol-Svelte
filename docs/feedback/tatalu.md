@@ -68,5 +68,6 @@ first, or closed with *Checked* and the reason.
 | TS-38 | P0 | **Nullable objects in a row, an input, a view and an `Option<T>` of a change.** *Checked: covered by TS-9 (round 2, not yet in preview.5); a test with Tatalu's wave-3 shapes (`oneOf [null, $ref]` incl. TN-31, `["null", "object"]`) passed before any change.* | FB-F06.6-1, FB-F05.8-2, FB-F06.5-1 | closed: `c2da2a8` (test only) |
 | TS-39 | P1 | **One projection row** (`x-tarol-kind: row`, Tarol-Net TN-54 `IRowQuery<TRow>`): generated as a read like a view. | Tarol-Net TN-54 (Tatalu FB-F01.2-4) | built (red before: `GenerateError` "unknown kind row") |
 | TS-40 | P1 | **A change that may start its aggregate** (201 `{id, version}` next to 204, Tarol-Net TN-42 `IOrStart`/`ILoads`): the result is `Created | undefined`. | Tarol-Net TN-42 (Tatalu FB-F15.5-2) | built (red before: typed `undefined`, the new id unreachable) |
+| TS-41 | P1 | **Capture headers on by default** when the outbox has a `device` (owner decision C-3); `captureHeaders: false` for an older backend. | Tarol-Net TN-60 (Tatalu FB-F17.3-6) | built |
 | TS-26 | — | **The outbox keeps `detail` and `reasons` of a refusal** (added to TS-26 above). | FB-F05.1-3 | closed with TS-26: `bb08452`, `2f326b5` |
 

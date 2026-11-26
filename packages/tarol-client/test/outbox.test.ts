@@ -51,7 +51,15 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function setup(o: { online?: () => boolean; store?: OfflineStore; captureHeaders?: boolean; scope?: string } = {}) {
+function setup(
+  o: {
+    online?: () => boolean;
+    store?: OfflineStore;
+    captureHeaders?: boolean;
+    scope?: string;
+    device?: string | null;
+  } = {},
+) {
   const b = backend();
   const client = createClient({ baseUrl: 'http://api', fetch: b.fetch, retries: 0 });
   const store = o.store ?? memoryStore();
@@ -59,7 +67,7 @@ function setup(o: { online?: () => boolean; store?: OfflineStore; captureHeaders
     client,
     store,
     scope: () => o.scope ?? 't1/anna',
-    device: 'tablet-3',
+    ...(o.device === null ? {} : { device: o.device ?? 'tablet-3' }),
     now: clock,
     delays: [1000],
     ...(o.online ? { online: o.online } : {}),
@@ -183,12 +191,16 @@ describe('outbox (TS-26, Tatalu FB-F17.3-1, FB-F05.1-3)', () => {
     expect(b.calls).toHaveLength(3);
   });
 
-  it('sends Tarol-Device and Tarol-Captured-At only with captureHeaders (they wait for Tarol-Net TN-60)', async () => {
-    const off = setup();
+  it('sends Tarol-Device and Tarol-Captured-At when a device is set, unless captureHeaders is false (C-3, Tarol-Net TN-60)', async () => {
+    const off = setup({ captureHeaders: false });
     off.b.reply(json(204, undefined));
     await off.outbox.submit(note);
     expect(Object.keys(off.b.calls[0]?.headers ?? {})).not.toContain('tarol-device');
-    const on = setup({ captureHeaders: true });
+    const none = setup({ device: null });
+    none.b.reply(json(204, undefined));
+    await none.outbox.submit(note);
+    expect(Object.keys(none.b.calls[0]?.headers ?? {})).not.toContain('tarol-captured-at');
+    const on = setup();
     on.b.reply(json(204, undefined));
     await on.outbox.submit(note);
     expect(on.b.calls[0]?.headers).toMatchObject({

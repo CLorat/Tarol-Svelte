@@ -43,8 +43,8 @@ description: >-
    `retry(key)`, `confirm(key)` (a warning: resends with `Tarol-Confirm`) or `discard(key)`). A 401 sets `needsSignIn`: `flush()` after the sign-in. `subscribe(listener)` for a UI.
    Offline reads: `const reads = offlineReads({ store, scope, keep: (path) => path.startsWith('/children/') })`,
    `createClient({ fetch: reads.fetch })`; show `reads.savedAt(path)` ("as of …"). At sign-out call `outbox.clear()` and
-   `reads.clear()`: the stores are unencrypted. `captureHeaders: true` (+ `device`) sends `Tarol-Device` and
-   `Tarol-Captured-At`; leave it off until the backend accepts them (Tarol-Net TN-60).
+   `reads.clear()`: the stores are unencrypted. With `device` set the outbox sends `Tarol-Device` and
+   `Tarol-Captured-At` (Tarol-Net 0.1.0-preview.6, TN-60); `captureHeaders: false` turns them off for an older backend.
 
 ## Example
 
@@ -83,7 +83,7 @@ if (first.ok && first.value.next) await tarol.read<Page<AuctionRow>>('/auctions'
 | a topic without a dot (`bids`) | `TypeError: not a topic` before anything is sent |
 | `{@html}` of server text | never do it; render text |
 | `outbox.submit` without a signed-in scope | throws `outbox.submit needs a scope`; nothing is stored for nobody |
-| `captureHeaders: true` against a backend before TN-60 | a cross-origin preflight refuses the headers: every attempt is `Network` |
+| `device` set against a backend before TN-60 (without `captureHeaders: false`) | a cross-origin preflight refuses the headers: every attempt is `Network` |
 
 ## Notes
 
