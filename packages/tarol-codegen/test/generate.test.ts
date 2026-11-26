@@ -469,6 +469,93 @@ describe('a view of a per-tenant aggregate (TS-8, Tarol-Net TN-2)', () => {
   });
 });
 
+describe('one projection row (TS-39, Tarol-Net TN-54)', () => {
+  const schemas: Record<string, Schema> = {
+    HouseRow: {
+      type: 'object',
+      required: ['id', 'name', 'renames'],
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        renames: { type: 'integer', format: 'int32' },
+      },
+    },
+  };
+  // the document Tarol-Net writes for an IRowQuery<HouseRow>: x-tarol-kind row, a Tarol-Read-After header
+  const rows = doc(schemas, {
+    '/house/row': {
+      get: {
+        operationId: 'TenantHouseRow',
+        'x-tarol-kind': 'row',
+        'x-tarol-errors': ['Auth.Forbidden', 'House.NotFound', 'Projection.Building'],
+        parameters: [{ name: 'Tarol-Read-After', in: 'header', schema: { type: 'string' } }],
+        responses: {
+          '200': { content: { 'application/json': { schema: { $ref: '#/components/schemas/HouseRow' } } } },
+        },
+      },
+    },
+  });
+  const code = generate(rows);
+
+  it('is a read of the row, like a view', () => {
+    expect(code).toContain('tenantHouseRow: (): ReadRequest => ({ path: `/house/row` }),');
+    expect(code).toContain('tenantHouseRow: (): Promise<Result<HouseRow, TenantHouseRowCode>> => {');
+  });
+
+  it('compiles', () => {
+    expect(typecheck({ 'api.ts': code })).toEqual([]);
+  });
+});
+
+describe('a change that may start its aggregate (TS-40, Tarol-Net TN-42)', () => {
+  // the document Tarol-Net writes for an IOrStart<T> change: 204, or 201 {id, version} when it started the stream
+  const starts = doc(
+    {},
+    {
+      '/attendance/{child}/{month}/check-in': {
+        post: {
+          operationId: 'CheckIn',
+          'x-tarol-kind': 'change',
+          'x-tarol-errors': ['Auth.Forbidden'],
+          parameters: [
+            { name: 'child', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+            { name: 'month', in: 'path', required: true, schema: { type: 'string' } },
+          ],
+          responses: {
+            '204': { description: 'Committed' },
+            '201': {
+              description: 'Committed, and the change started the aggregate (TN-42)',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    required: ['id', 'version'],
+                    properties: {
+                      id: { type: 'string', format: 'uuid' },
+                      version: { type: 'integer', format: 'int64' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  );
+  const code = generate(starts);
+
+  it('answers the new id when it started the aggregate, nothing otherwise', () => {
+    expect(code).toContain(
+      'checkIn: (input: CheckInInput, options?: ChangeOptions): Promise<Result<Created | undefined, CheckInCode>> =>',
+    );
+  });
+
+  it('compiles', () => {
+    expect(typecheck({ 'api.ts': code })).toEqual([]);
+  });
+});
+
 describe('nullable schemas (TS-9, Tatalu FB-3, FB-F01.1-4, FB-F17.3-3, FB-F02.1-5, FB-F13.3-5)', () => {
   const nul: Schema = { type: 'null' };
   const schemas: Record<string, Schema> = {

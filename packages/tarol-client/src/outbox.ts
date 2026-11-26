@@ -98,11 +98,12 @@ export interface OutboxOptions {
   readonly store: OfflineStore;
   /** `<tenant>/<person>` of the signed-in (or last signed-in) person; `null` without a session (nothing is sent). */
   readonly scope: () => string | null;
-  /** The app's id of this device (opaque). Only sent with `captureHeaders`. */
+  /** The app's id of this device (opaque), sent as `Tarol-Device`; with it the capture headers are on by default. */
   readonly device?: string;
   /**
-   * Sends `Tarol-Device` and `Tarol-Captured-At` with every attempt. Off by default: the backend accepts them only from
-   * Tarol-Net TN-60 on (before that a cross-origin preflight refuses them).
+   * Sends `Tarol-Device` and `Tarol-Captured-At` with every attempt. Default: on when `device` is set (owner decision C-3);
+   * Tarol-Net accepts them from 0.1.0-preview.6 (TN-60, `OperationContext.Capture`). Set `false` for an older backend, whose
+   * cross-origin preflight refuses them.
    */
   readonly captureHeaders?: boolean;
   /** Waits between attempts after a transient failure (ms); the last repeats. Default 5, 15, 30, 60 s. */
@@ -230,7 +231,7 @@ export function createOutbox(options: OutboxOptions): Outbox {
       for (const entry of [...entries]) {
         if (entry.state !== 'pending') continue;
         const headers: Record<string, string> = {};
-        if (options.captureHeaders) {
+        if (options.captureHeaders ?? options.device !== undefined) {
           headers['tarol-captured-at'] = entry.capturedAt;
           if (options.device !== undefined) headers['tarol-device'] = options.device;
         }

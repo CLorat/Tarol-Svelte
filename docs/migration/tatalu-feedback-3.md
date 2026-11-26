@@ -257,6 +257,39 @@ Public API: `Confirmation`, `Problem.confirm`, `Form.confirmation`, `Form.confir
 outbox 1.46 kB (1.5 kB), svelte bindings 4.3 kB / 3.83 kB brotli (5.25 kB, the round-2 proposal), ChangeForm + FormField
 2.55 kB (3 kB), ThemeRoot 3.03 kB (3.25 kB, proposed SV-37).
 
+## TS-41: capture headers on by default (owner decision C-3)
+
+Tarol-Net 0.1.0-preview.6 accepts `Tarol-Device` and `Tarol-Captured-At` (TN-60). The outbox now sends them whenever `device` is
+set; `captureHeaders: false` turns them off for an older backend (whose cross-origin preflight refuses them).
+
+* **Behaviour change:** `createOutbox({ device })` without `captureHeaders` sends the headers (it did not).
+* **Test [verified]:** `outbox.test.ts` "sends Tarol-Device and Tarol-Captured-At when a device is set, unless captureHeaders is
+  false" (red before: no headers without `captureHeaders: true`).
+* **Tatalu:** the `Capture` record in change inputs (`backend/src/Tatalu.Shared/Sync.cs`) can go with the backend's TN-60.
+
+## S-8: ThemeRoot budget 3.25 kB (owner decision)
+
+The proposal of `c2f323d` is decided: the ThemeRoot budget is 3.25 kB (measured 3,017 B gzip, 2,550 B brotli).
+
+## TS-40: a change that may start its aggregate (Tarol-Net TN-42)
+
+Tarol-Net round 3c answers 201 `{id, version}` for every change whose commit started its stream (`IOrStart<T>`, an `ILoads`
+load-or-create) and documents the 201 next to the 204. tarol-codegen typed such a change's result as `undefined`, so the new id
+was out of reach. Now a `change` operation with a 201 response returns `Created<Id> | undefined` (`undefined` for the 204).
+
+* **API change:** the generated result type of such changes; no new exports.
+* **Test [verified]:** `generate.test.ts` "a change that may start its aggregate (TS-40, Tarol-Net TN-42)" (red before: `undefined`).
+* **Tatalu:** the parents' `GET /ich/vorschlaege` round trip after a first proposal (FB-F15.5-2) can read the id from the answer.
+
+## TS-39: one projection row (Tarol-Net TN-54)
+
+Tarol-Net round 3b adds `IRowQuery<TRow>`: a GET answering one projection row, `x-tarol-kind: row`. tarol-codegen refused the
+document ("unknown kind row"). Now a `row` operation is a read like a view: `requests.<op>()` / `api.<op>()` returning the row type.
+
+* **API change:** the kind union accepts `row`; no new exports.
+* **Test [verified]:** `generate.test.ts` "one projection row (TS-39, Tarol-Net TN-54)" (red before: `GenerateError`).
+* **Tatalu:** `GET /tpp/aenderungen` as a list of one row and `items[0]` in the frontend become a row query and a plain read.
+
 ## Open items
 
 * **TS-28 (`client.download`)**: waits for Tarol-Net file endpoints (TN-65); [files-and-decimals.md](../architecture/files-and-decimals.md).
