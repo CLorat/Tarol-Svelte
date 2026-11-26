@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -59,11 +59,11 @@ jobs:
       # Tarol-Net v0.1.0-preview.6 (main after #126: Tatalu rounds 2 and 3; the ship commit changes no code)
       TAROL_NET_COMMIT: c9b662b77d5da9c25c2c4def196c45a6aaadbce6
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: CLorat/Tarol-Net
           ref: ${{ env.TAROL_NET_COMMIT }}
@@ -74,7 +74,7 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0, the pin of Tarol-Net's ci.yml
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v5.4.0, the pin of Tarol-Net's ci.yml
         with:
           global-json-file: tarol-net/global.json
 
@@ -118,7 +118,7 @@ jobs:
     timeout-minutes: 20
     container: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
