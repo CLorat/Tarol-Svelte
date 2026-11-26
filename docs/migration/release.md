@@ -125,3 +125,9 @@ Built against Tarol-Net `0.1.0-preview.5` (`380f177`, BC-23 and BC-25), which th
 tarol-svelte `0.1.0-preview.4` (SV-20: the next real release takes Tarol-Net's version). Shipped in the same pull request
 as the work it releases (SV-29). `release.mjs check 0.1.0-preview.5` after `set-version`: 7 packages, 0 problems
 [verified]. The environment `release` has no required reviewer, which the owner accepted (SV-30).
+
+## 0.1.0-preview.6 (2026-11-26)
+
+Built against Tarol-Net `0.1.0-preview.6`: its code is `main` after Tarol-Net #126 (`c9b662b`, Tatalu rounds 2 and 3, the audit
+packages), which the `e2e` job now pins; Tarol-Net's ship commit changes no code. Brings TS-22 … TS-41 (the client side of rounds
+2 and 3). `release.mjs check 0.1.0-preview.6` after `set-version`: 7 packages, 0 problems [verified].

@@ -56,8 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      # Tarol-Net v0.1.0-preview.5 (BC-23 revision and position in the pushed message, BC-25 x-tarol-topics)
-      TAROL_NET_COMMIT: 380f1779d025fac358790265dd88b574b42c5c24
+      # Tarol-Net v0.1.0-preview.6 (main after #126: Tatalu rounds 2 and 3; the ship commit changes no code)
+      TAROL_NET_COMMIT: c9b662b77d5da9c25c2c4def196c45a6aaadbce6
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
