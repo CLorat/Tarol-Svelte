@@ -461,7 +461,6 @@
         },
         "x-tarol-kind": "creation",
         "x-tarol-errors": [
-          "Auction.AlreadyExists",
           "Auth.Forbidden",
           "Idempotency.DuplicateKey",
           "Idempotency.KeyReused",

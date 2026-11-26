@@ -119,7 +119,7 @@ export type AuctionSearchQuery = {
 export type AuctionViewCode = "Auction.NotFound" | "Auth.Forbidden";
 
 /** The codes CreateAuction answers with, as the backend declares them (x-tarol-errors). */
-export type CreateAuctionCode = "Auction.AlreadyExists" | "Auth.Forbidden" | "Idempotency.DuplicateKey" | "Idempotency.KeyReused" | "Stream.VersionConflict";
+export type CreateAuctionCode = "Auth.Forbidden" | "Idempotency.DuplicateKey" | "Idempotency.KeyReused" | "Stream.VersionConflict";
 
 /** The input of CreateAuction. */
 export type CreateAuctionInput = CreateAuction;
@@ -290,7 +290,7 @@ export const rules = {
 export const errors = {
   auctionSearch: ["Auth.Forbidden", "Projection.Building"],
   auctionView: ["Auction.NotFound", "Auth.Forbidden"],
-  createAuction: ["Auction.AlreadyExists", "Auth.Forbidden", "Idempotency.DuplicateKey", "Idempotency.KeyReused", "Stream.VersionConflict"],
+  createAuction: ["Auth.Forbidden", "Idempotency.DuplicateKey", "Idempotency.KeyReused", "Stream.VersionConflict"],
   myAuctions: ["Auth.Forbidden", "Projection.Building"],
   placeBid: ["Auction.NotFound", "Auction.Settled", "Auth.Forbidden", "Bid.TooLow", "Idempotency.DuplicateKey", "Idempotency.KeyReused", "Stream.VersionConflict"],
   settleAuction: ["Auction.NotFound", "Auction.Settled", "Auth.Forbidden", "Idempotency.DuplicateKey", "Idempotency.KeyReused", "Stream.VersionConflict"],

@@ -4,7 +4,15 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 ## [Unreleased]
 
-### Added
+## [0.1.0]
+
+The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
+`0.1.0-preview.2` (2026-11-21), the version of Tarol-Net it is built and tested against (SV-20); there is no
+`0.1.0-preview.1` here. The "in 0.1.0-preview.N" parts list what each pre-release added; `0.1.0-preview.3` is built
+against Tarol-Net `0.1.0-preview.3`, `0.1.0-preview.5` against Tarol-Net `0.1.0-preview.5` (there is no tarol-svelte
+`0.1.0-preview.4`), `0.1.0-preview.6` against Tarol-Net `0.1.0-preview.6`.
+
+### Added in 0.1.0-preview.6
 
 * `@clorat/tarol-oidc`: `revoke()` revokes the refresh token at the server (RFC 7009) and signs out here without navigating (TS-25).
 * `@clorat/tarol-oidc`: `login({ returnTo, acr, maxAge, prompt })` for a stronger or fresh sign-in, and `session.factors` (the `amr` claim) (TS-24).
@@ -26,7 +34,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
   `checked`). `@clorat/tarol-components`: `FormField type="checkbox"` binds a boolean member by path, touched on the change,
   with the server's error of its path (TS-4).
 
-### Fixed
+### Fixed in 0.1.0-preview.6
 
 * `@clorat/tarol-design`: `Tabs` with more tabs than fit scroll inside the tab list instead of widening the page; the focus ring is drawn inside the tab (TS-18).
 * `@clorat/tarol-svelte`: a submit blocked by a client rule on a path no field shows (and the input has no value for) reports it in `formError` instead of returning silently (TS-12). New: `Form.register(path)`; `@clorat/tarol-components` `FormField` calls it.
@@ -34,7 +42,7 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 * `@clorat/tarol-design`: `Field` (and so `TextField`, `NumberField`, `DateField`, `FormField`) puts a (no-break) space between
   the label and the required marker: "Vorname (Pflichtfeld)", not "Vorname(Pflichtfeld)" (TS-5).
 
-### Changed
+### Changed in 0.1.0-preview.6
 
 * `@clorat/tarol-components`: `AppShell navPosition="bottom"` on a phone is exactly the viewport's height and the page scrolls in the main landmark between header and bar, so nothing is ever under the bar and the document does not scroll; `main` is a tab stop in that mode (TS-19).
 * `@clorat/tarol-client`: `ChangeRequest<T = undefined>` carries the result type of a change (type only); `TarolClient.change` and `@clorat/tarol-svelte` `changeForm` infer it. `@clorat/tarol-codegen` types the request of a creation as `ChangeRequest<Created<…>>`, so `changeForm(requests.createX, …)` needs no `<I, Created>` (TS-11).
@@ -44,14 +52,6 @@ All notable changes to the tarol-svelte packages. The format follows Keep a Chan
 
 * `@clorat/tarol-design`: `translator` falls back from an unknown `X.Y` to the generic `Y` before `error.generic` (TS-2):
   `ChildDayCare.NotFound` reads as `NotFound`'s text.
-
-## [0.1.0]
-
-The first release of tarol-svelte: 7 packages under `@clorat/` on GitHub Packages. Its first pre-release is
-`0.1.0-preview.2` (2026-11-21), the version of Tarol-Net it is built and tested against (SV-20); there is no
-`0.1.0-preview.1` here. The "in 0.1.0-preview.N" parts list what each pre-release added; `0.1.0-preview.3` is built
-against Tarol-Net `0.1.0-preview.3`, `0.1.0-preview.5` against Tarol-Net `0.1.0-preview.5` (there is no tarol-svelte
-`0.1.0-preview.4`).
 
 ### Added in 0.1.0-preview.5
 
